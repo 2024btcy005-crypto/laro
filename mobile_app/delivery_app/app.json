@@ -8,8 +8,11 @@
     "ios": {
       "supportsTablet": true
     },
+    "icon": "./assets/icon.png",
     "android": {
+      "package": "com.zippit.delivery",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
     },

@@ -1,0 +1,68 @@
+name: Build Android APKs
+
+on:
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # --- CUSTOMER APP BUILD ---
+      - name: Install Customer App Dependencies
+        run: |
+          cd mobile_app/customer_app
+          npm install
+
+      - name: Prebuild Customer App
+        run: |
+          cd mobile_app/customer_app
+          npx expo prebuild --platform android
+
+      - name: Compile Customer App APK
+        run: |
+          cd mobile_app/customer_app/android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      # --- DELIVERY APP BUILD ---
+      - name: Install Delivery App Dependencies
+        run: |
+          cd mobile_app/delivery_app
+          npm install
+
+      - name: Prebuild Delivery App
+        run: |
+          cd mobile_app/delivery_app
+          npx expo prebuild --platform android
+
+      - name: Compile Delivery App APK
+        run: |
+          cd mobile_app/delivery_app/android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      # --- UPLOAD ARTIFACTS ---
+      - name: Upload APKs to GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Zippit_APKs
+          path: |
+            mobile_app/customer_app/android/app/build/outputs/apk/release/app-release.apk
+            mobile_app/delivery_app/android/app/build/outputs/apk/release/app-release.apk
