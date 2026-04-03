@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Laro",
+    "slug": "customer-app",
+    "owner": "devikumar",
+    "scheme": "laro",
+    "version": "1.0.4",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.zippit.laro"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "26511b09-ff05-4cec-a69a-90668ba66022"
+      }
+    }
+  }
+}

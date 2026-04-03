@@ -1,0 +1,12 @@
+/* App CSS */
+:root {
+    --primary-color: #84c225;
+    --secondary-color: #689f38;
+    --bg-color: #f8f9fa;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-color);
+}

@@ -1,0 +1,250 @@
+.loyalty-page {
+    padding-bottom: 60px;
+}
+
+.loyalty-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 40px;
+    margin-top: 32px;
+}
+
+.milestone-card {
+    padding: 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+}
+
+.tier-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.tier-icon-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tier-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--gray);
+    letter-spacing: 1px;
+}
+
+.tier-name {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--black);
+}
+
+.points-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.points-value {
+    font-size: 72px;
+    font-weight: 900;
+    color: var(--primary);
+    line-height: 1;
+}
+
+.points-label {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--gray);
+    letter-spacing: 2px;
+    margin-top: 8px;
+}
+
+.progress-section {
+    width: 100%;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gray);
+    margin-bottom: 12px;
+}
+
+.progress-bar-container {
+    height: 12px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 1s ease-out;
+}
+
+.legend-status-msg {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fef3c7;
+    color: #92400e;
+    padding: 16px 24px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+.section-title-sm {
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--gray);
+    letter-spacing: 1.5px;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+}
+
+.benefits-section {
+    margin-top: 40px;
+}
+
+.benefits-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: white;
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-weight: 700;
+}
+
+.benefit-check {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.roadmap-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.roadmap-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border-radius: 24px;
+    background: white;
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+}
+
+.roadmap-item.active {
+    border-color: var(--primary);
+    background: #fff5faff;
+    box-shadow: 0 4px 20px rgba(157, 23, 77, 0.08);
+}
+
+.roadmap-item.locked {
+    opacity: 0.7;
+}
+
+.roadmap-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.roadmap-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.roadmap-info {
+    flex: 1;
+}
+
+.roadmap-tier {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--black);
+}
+
+.roadmap-desc {
+    font-size: 13px;
+    color: var(--gray);
+    font-weight: 600;
+}
+
+.loyalty-info-card {
+    margin-top: 32px;
+    background: #f8fafc;
+    border-radius: 24px;
+    padding: 24px;
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    color: var(--black);
+    margin-bottom: 16px;
+}
+
+.info-points {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.info-points li {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.5;
+    font-weight: 500;
+    position: relative;
+    padding-left: 20px;
+}
+
+.info-points li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+    font-weight: 900;
+}
+
+@media (max-width: 1024px) {
+    .loyalty-grid {
+        grid-template-columns: 1fr;
+    }
+}

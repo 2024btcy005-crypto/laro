@@ -1,0 +1,269 @@
+﻿[dotenv@17.3.1] injecting env (11) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+Executing (default): SELECT 1+1 AS result
+Connected to database. Syncing tables...
+Executing (default): DELETE FROM "products"
+Cleared existing products.
+Executing (default): SELECT "id", "name", "address", "description", "category", "imageUrl", "isOpen", "rating", "ratingCount", "deliveryTime", "costForTwo", "promoted", "discount", "openingTime", "closingTime", "createdAt", "updatedAt" FROM "shops" AS "Shop";
+Executing (default): INSERT INTO "products" ("id","shopId","name","description","price","isAvailable","imageUrl","category","isVeg","createdAt","updatedAt") VALUES ('fd71c1e7-cd96-4023-928b-a86b2904f595','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Alphonso Mango','Sweet and premium Alphonso mangoes.',599,true,'https://images.unsplash.com/photo-1553279768-865429fa0078?q=80&w=500&auto=format&fit=crop','Fresh',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('110010b3-063d-46c4-96e7-fb892c6e71ae','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Banana Robusta','Energy-packed fresh bananas (6 units).',40,true,'https://images.unsplash.com/photo-1571771894821-ad99026.jpg','Fresh',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('7beadc4c-3fae-444c-a4b7-7240f74e04e0','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Red Apple','Crispy and juicy red apples from Shimla.',180,true,'https://images.unsplash.com/photo-1560806887-1e4cd0b6fa2b?q=80&w=500&auto=format&fit=crop','Fresh',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('c6c24c83-0d8e-4daf-813d-a2369c11706d','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Seedless Grapes','Sweet green grapes (500g).',90,true,'https://images.unsplash.com/photo-1537640538966-79f369143f8f?q=80&w=500&auto=format&fit=crop','Fresh',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('e35985d6-5eed-4a26-92e2-5da0d17e031b','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Fresh Milk (1L)','Full cream milk pasteurized for safety.',66,true,'https://images.unsplash.com/photo-1563636619-e91000b46618?q=80&w=500&auto=format&fit=crop','Grocery',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('6bc28d5d-1052-415c-b409-2def2de832c6','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Thick Curd (500g)','Creamy and thick farm fresh curd.',45,true,'https://images.unsplash.com/photo-1485962391944-82ea5593962b?q=80&w=500&auto=format&fit=crop','Grocery',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('42d28b90-c739-4258-bafb-f541e3ee692f','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Fresh Buttermilk','Refreshing spiced buttermilk (200ml).',15,true,'https://images.unsplash.com/photo-1571290274554-e91d90afb9bc?q=80&w=500&auto=format&fit=crop','Grocery',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('4421fd96-7aa3-401e-a8d3-102ff414e5fc','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Amul Butter (100g)','Utterly butterly delicious butter.',58,true,'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?q=80&w=500&auto=format&fit=crop','Grocery',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('985063be-a206-4319-aecb-b9a7153cc611','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Aashirvaad Atta (5kg)','Premium whole wheat flour.',285,true,'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=500&auto=format&fit=crop','Grocery & kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('8b792f34-232a-49c2-9730-ddbe18ff4779','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Basmati Rice (1kg)','Long grain aromatic basmati rice.',120,true,'https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=500&auto=format&fit=crop','Grocery & kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('0e73ee80-e34e-4473-b079-2296d5f098de','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Toor Dal (1kg)','Unpolished protein-rich pulses.',165,true,'https://images.unsplash.com/photo-1515942400420-2b98fed1f515?q=80&w=500&auto=format&fit=crop','Grocery & kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('e436115b-0437-4a08-b96b-e816b578e6b4','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Thums Up (750ml)','Strong carbonated soft drink.',45,true,'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=500&auto=format&fit=crop','Snacks & drinks',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('89a304ce-4207-42b3-885f-d30b410b627b','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Potato Chips','Classic salted crispy potato chips.',20,true,'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=500&auto=format&fit=crop','Snacks & drinks',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('2537a423-a1bb-46e3-81df-1881add26400','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Oreo Biscuits','Milk''s favorite cookie.',30,true,'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?q=80&w=500&auto=format&fit=crop','Snacks & drinks',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00') RETURNING "id","shopId","name","description","price","isAvailable","imageUrl","category","isVeg","createdAt","updatedAt";
+node : Γ¥î Seeding failed: Error
+At line:1 char:1
++ node scripts/seedProducts.js > seed_output.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Γ¥î Seeding failed: Error:String) [], Re 
+   moteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    at Query.run (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\node_modules\se
+quelize\lib\dialects\postgres\query.js:50:25)
+    at C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\node_modules\sequelize\lib
+\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.bulkInsert (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\
+Zippit\backend\node_modules\sequelize\lib\dialects\abstract\query-interface.js:346:21)
+    at async recursiveBulkCreate (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend
+\node_modules\sequelize\lib\model.js:1697:25)
+    at async Product.bulkCreate (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\
+node_modules\sequelize\lib\model.js:1786:12)
+    at async seedProducts 
+(C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\scripts\seedProducts.js:60:13) {
+  name: 'SequelizeDatabaseError',
+  parent: error: column "isVeg" of relation "products" does not exist
+      at parseErrorMessage (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\node_
+modules\pg-protocol\dist\parser.js:305:11)
+      at Parser.handlePacket (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\nod
+e_modules\pg-protocol\dist\parser.js:143:27)
+      at Parser.parse (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\node_modul
+es\pg-protocol\dist\parser.js:37:38)
+      at Socket.<anonymous> (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\node
+_modules\pg-protocol\dist\index.js:11:42)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+      at Readable.push (node:internal/streams/readable:392:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:189:23) {
+    length: 127,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '104',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_target.c',
+    line: '1073',
+    routine: 'checkInsertTargets',
+    sql: `INSERT INTO "products" ("id","shopId","name","description","price","isAvaila
+ble","imageUrl","category","isVeg","createdAt","updatedAt") VALUES ('fd71c1e7-cd96-402
+3-928b-a86b2904f595','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Alphonso Mango','Sweet 
+and premium Alphonso mangoes.',599,true,'https://images.unsplash.com/photo-1553279768-
+865429fa0078?q=80&w=500&auto=format&fit=crop','Fresh',true,'2026-03-10 15:43:08.798 
++00:00','2026-03-10 15:43:08.798 +00:00'),('110010b3-063d-46c4-96e7-fb892c6e71ae','0f2
+6d31e-bad4-4b92-88e9-28f59d4e0002','Banana Robusta','Energy-packed fresh bananas (6 un
+its).',40,true,'https://images.unsplash.com/photo-1571771894821-ad99026.jpg','Fresh',t
+rue,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('7beadc4c-3fae
+-444c-a4b7-7240f74e04e0','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Red Apple','Crispy 
+and juicy red apples from Shimla.',180,true,'https://images.unsplash.com/photo-1560806
+887-1e4cd0b6fa2b?q=80&w=500&auto=format&fit=crop','Fresh',true,'2026-03-10 
+15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('c6c24c83-0d8e-4daf-813d-a2369
+c11706d','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Seedless Grapes','Sweet green grapes 
+(500g).',90,true,'https://images.unsplash.com/photo-1537640538966-79f369143f8f?q=80&w=
+500&auto=format&fit=crop','Fresh',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 
+15:43:08.798 +00:00'),('e35985d6-5eed-4a26-92e2-5da0d17e031b','0f26d31e-bad4-4b92-88e9
+-28f59d4e0002','Fresh Milk (1L)','Full cream milk pasteurized for safety.',66,true,'ht
+tps://images.unsplash.com/photo-1563636619-e91000b46618?q=80&w=500&auto=format&fit=cro
+p','Grocery',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),(
+'6bc28d5d-1052-415c-b409-2def2de832c6','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Thick 
+Curd (500g)','Creamy and thick farm fresh curd.',45,true,'https://images.unsplash.com/
+photo-1485962391944-82ea5593962b?q=80&w=500&auto=format&fit=crop','Grocery',true,'2026
+-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('42d28b90-c739-4258-baf
+b-f541e3ee692f','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Fresh Buttermilk','Refreshing 
+spiced buttermilk (200ml).',15,true,'https://images.unsplash.com/photo-1571290274554-e
+91d90afb9bc?q=80&w=500&auto=format&fit=crop','Grocery',true,'2026-03-10 15:43:08.798 
++00:00','2026-03-10 15:43:08.798 +00:00'),('4421fd96-7aa3-401e-a8d3-102ff414e5fc','0f2
+6d31e-bad4-4b92-88e9-28f59d4e0002','Amul Butter (100g)','Utterly butterly delicious bu
+tter.',58,true,'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?q=80&w=50
+0&auto=format&fit=crop','Grocery',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 
+15:43:08.798 +00:00'),('985063be-a206-4319-aecb-b9a7153cc611','0f26d31e-bad4-4b92-88e9
+-28f59d4e0002','Aashirvaad Atta (5kg)','Premium whole wheat flour.',285,true,'https://
+images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=500&auto=format&fit=crop',
+'Grocery & kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00
+:00'),('8b792f34-232a-49c2-9730-ddbe18ff4779','0f26d31e-bad4-4b92-88e9-28f59d4e0002','
+Basmati Rice (1kg)','Long grain aromatic basmati rice.',120,true,'https://images.unspl
+ash.com/photo-1586201375761-83865001e31c?q=80&w=500&auto=format&fit=crop','Grocery & 
+kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('0e7
+3ee80-e34e-4473-b079-2296d5f098de','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Toor Dal 
+(1kg)','Unpolished protein-rich pulses.',165,true,'https://images.unsplash.com/photo-1
+515942400420-2b98fed1f515?q=80&w=500&auto=format&fit=crop','Grocery & 
+kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('e43
+6115b-0437-4a08-b96b-e816b578e6b4','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Thums Up 
+(750ml)','Strong carbonated soft drink.',45,true,'https://images.unsplash.com/photo-16
+22483767028-3f66f32aef97?q=80&w=500&auto=format&fit=crop','Snacks & 
+drinks',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('89a3
+04ce-4207-42b3-885f-d30b410b627b','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Potato 
+Chips','Classic salted crispy potato chips.',20,true,'https://images.unsplash.com/phot
+o-1566478989037-eec170784d0b?q=80&w=500&auto=format&fit=crop','Snacks & 
+drinks',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('2537
+a423-a1bb-46e3-81df-1881add26400','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Oreo 
+Biscuits','Milk''s favorite cookie.',30,true,'https://images.unsplash.com/photo-155896
+1363-fa8fdf82db35?q=80&w=500&auto=format&fit=crop','Snacks & drinks',true,'2026-03-10 
+15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00') RETURNING "id","shopId","name",
+"description","price","isAvailable","imageUrl","category","isVeg","createdAt","updated
+At";`,
+    parameters: undefined
+  },
+  original: error: column "isVeg" of relation "products" does not exist
+      at parseErrorMessage (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\node_
+modules\pg-protocol\dist\parser.js:305:11)
+      at Parser.handlePacket (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\nod
+e_modules\pg-protocol\dist\parser.js:143:27)
+      at Parser.parse (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\node_modul
+es\pg-protocol\dist\parser.js:37:38)
+      at Socket.<anonymous> (C:\Users\JEDEVIKUMAR\OneDrive\Desktop\Zippit\backend\node
+_modules\pg-protocol\dist\index.js:11:42)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+      at Readable.push (node:internal/streams/readable:392:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:189:23) {
+    length: 127,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '104',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_target.c',
+    line: '1073',
+    routine: 'checkInsertTargets',
+    sql: `INSERT INTO "products" ("id","shopId","name","description","price","isAvaila
+ble","imageUrl","category","isVeg","createdAt","updatedAt") VALUES ('fd71c1e7-cd96-402
+3-928b-a86b2904f595','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Alphonso Mango','Sweet 
+and premium Alphonso mangoes.',599,true,'https://images.unsplash.com/photo-1553279768-
+865429fa0078?q=80&w=500&auto=format&fit=crop','Fresh',true,'2026-03-10 15:43:08.798 
++00:00','2026-03-10 15:43:08.798 +00:00'),('110010b3-063d-46c4-96e7-fb892c6e71ae','0f2
+6d31e-bad4-4b92-88e9-28f59d4e0002','Banana Robusta','Energy-packed fresh bananas (6 un
+its).',40,true,'https://images.unsplash.com/photo-1571771894821-ad99026.jpg','Fresh',t
+rue,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('7beadc4c-3fae
+-444c-a4b7-7240f74e04e0','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Red Apple','Crispy 
+and juicy red apples from Shimla.',180,true,'https://images.unsplash.com/photo-1560806
+887-1e4cd0b6fa2b?q=80&w=500&auto=format&fit=crop','Fresh',true,'2026-03-10 
+15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('c6c24c83-0d8e-4daf-813d-a2369
+c11706d','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Seedless Grapes','Sweet green grapes 
+(500g).',90,true,'https://images.unsplash.com/photo-1537640538966-79f369143f8f?q=80&w=
+500&auto=format&fit=crop','Fresh',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 
+15:43:08.798 +00:00'),('e35985d6-5eed-4a26-92e2-5da0d17e031b','0f26d31e-bad4-4b92-88e9
+-28f59d4e0002','Fresh Milk (1L)','Full cream milk pasteurized for safety.',66,true,'ht
+tps://images.unsplash.com/photo-1563636619-e91000b46618?q=80&w=500&auto=format&fit=cro
+p','Grocery',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),(
+'6bc28d5d-1052-415c-b409-2def2de832c6','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Thick 
+Curd (500g)','Creamy and thick farm fresh curd.',45,true,'https://images.unsplash.com/
+photo-1485962391944-82ea5593962b?q=80&w=500&auto=format&fit=crop','Grocery',true,'2026
+-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('42d28b90-c739-4258-baf
+b-f541e3ee692f','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Fresh Buttermilk','Refreshing 
+spiced buttermilk (200ml).',15,true,'https://images.unsplash.com/photo-1571290274554-e
+91d90afb9bc?q=80&w=500&auto=format&fit=crop','Grocery',true,'2026-03-10 15:43:08.798 
++00:00','2026-03-10 15:43:08.798 +00:00'),('4421fd96-7aa3-401e-a8d3-102ff414e5fc','0f2
+6d31e-bad4-4b92-88e9-28f59d4e0002','Amul Butter (100g)','Utterly butterly delicious bu
+tter.',58,true,'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?q=80&w=50
+0&auto=format&fit=crop','Grocery',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 
+15:43:08.798 +00:00'),('985063be-a206-4319-aecb-b9a7153cc611','0f26d31e-bad4-4b92-88e9
+-28f59d4e0002','Aashirvaad Atta (5kg)','Premium whole wheat flour.',285,true,'https://
+images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=500&auto=format&fit=crop',
+'Grocery & kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00
+:00'),('8b792f34-232a-49c2-9730-ddbe18ff4779','0f26d31e-bad4-4b92-88e9-28f59d4e0002','
+Basmati Rice (1kg)','Long grain aromatic basmati rice.',120,true,'https://images.unspl
+ash.com/photo-1586201375761-83865001e31c?q=80&w=500&auto=format&fit=crop','Grocery & 
+kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('0e7
+3ee80-e34e-4473-b079-2296d5f098de','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Toor Dal 
+(1kg)','Unpolished protein-rich pulses.',165,true,'https://images.unsplash.com/photo-1
+515942400420-2b98fed1f515?q=80&w=500&auto=format&fit=crop','Grocery & 
+kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('e43
+6115b-0437-4a08-b96b-e816b578e6b4','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Thums Up 
+(750ml)','Strong carbonated soft drink.',45,true,'https://images.unsplash.com/photo-16
+22483767028-3f66f32aef97?q=80&w=500&auto=format&fit=crop','Snacks & 
+drinks',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('89a3
+04ce-4207-42b3-885f-d30b410b627b','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Potato 
+Chips','Classic salted crispy potato chips.',20,true,'https://images.unsplash.com/phot
+o-1566478989037-eec170784d0b?q=80&w=500&auto=format&fit=crop','Snacks & 
+drinks',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('2537
+a423-a1bb-46e3-81df-1881add26400','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Oreo 
+Biscuits','Milk''s favorite cookie.',30,true,'https://images.unsplash.com/photo-155896
+1363-fa8fdf82db35?q=80&w=500&auto=format&fit=crop','Snacks & drinks',true,'2026-03-10 
+15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00') RETURNING "id","shopId","name",
+"description","price","isAvailable","imageUrl","category","isVeg","createdAt","updated
+At";`,
+    parameters: undefined
+  },
+  sql: `INSERT INTO "products" ("id","shopId","name","description","price","isAvailabl
+e","imageUrl","category","isVeg","createdAt","updatedAt") VALUES ('fd71c1e7-cd96-4023-
+928b-a86b2904f595','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Alphonso Mango','Sweet and 
+premium Alphonso mangoes.',599,true,'https://images.unsplash.com/photo-1553279768-8654
+29fa0078?q=80&w=500&auto=format&fit=crop','Fresh',true,'2026-03-10 15:43:08.798 
++00:00','2026-03-10 15:43:08.798 +00:00'),('110010b3-063d-46c4-96e7-fb892c6e71ae','0f2
+6d31e-bad4-4b92-88e9-28f59d4e0002','Banana Robusta','Energy-packed fresh bananas (6 un
+its).',40,true,'https://images.unsplash.com/photo-1571771894821-ad99026.jpg','Fresh',t
+rue,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('7beadc4c-3fae
+-444c-a4b7-7240f74e04e0','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Red Apple','Crispy 
+and juicy red apples from Shimla.',180,true,'https://images.unsplash.com/photo-1560806
+887-1e4cd0b6fa2b?q=80&w=500&auto=format&fit=crop','Fresh',true,'2026-03-10 
+15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('c6c24c83-0d8e-4daf-813d-a2369
+c11706d','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Seedless Grapes','Sweet green grapes 
+(500g).',90,true,'https://images.unsplash.com/photo-1537640538966-79f369143f8f?q=80&w=
+500&auto=format&fit=crop','Fresh',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 
+15:43:08.798 +00:00'),('e35985d6-5eed-4a26-92e2-5da0d17e031b','0f26d31e-bad4-4b92-88e9
+-28f59d4e0002','Fresh Milk (1L)','Full cream milk pasteurized for safety.',66,true,'ht
+tps://images.unsplash.com/photo-1563636619-e91000b46618?q=80&w=500&auto=format&fit=cro
+p','Grocery',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),(
+'6bc28d5d-1052-415c-b409-2def2de832c6','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Thick 
+Curd (500g)','Creamy and thick farm fresh curd.',45,true,'https://images.unsplash.com/
+photo-1485962391944-82ea5593962b?q=80&w=500&auto=format&fit=crop','Grocery',true,'2026
+-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('42d28b90-c739-4258-baf
+b-f541e3ee692f','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Fresh Buttermilk','Refreshing 
+spiced buttermilk (200ml).',15,true,'https://images.unsplash.com/photo-1571290274554-e
+91d90afb9bc?q=80&w=500&auto=format&fit=crop','Grocery',true,'2026-03-10 15:43:08.798 
++00:00','2026-03-10 15:43:08.798 +00:00'),('4421fd96-7aa3-401e-a8d3-102ff414e5fc','0f2
+6d31e-bad4-4b92-88e9-28f59d4e0002','Amul Butter (100g)','Utterly butterly delicious bu
+tter.',58,true,'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?q=80&w=50
+0&auto=format&fit=crop','Grocery',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 
+15:43:08.798 +00:00'),('985063be-a206-4319-aecb-b9a7153cc611','0f26d31e-bad4-4b92-88e9
+-28f59d4e0002','Aashirvaad Atta (5kg)','Premium whole wheat flour.',285,true,'https://
+images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=500&auto=format&fit=crop',
+'Grocery & kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00
+:00'),('8b792f34-232a-49c2-9730-ddbe18ff4779','0f26d31e-bad4-4b92-88e9-28f59d4e0002','
+Basmati Rice (1kg)','Long grain aromatic basmati rice.',120,true,'https://images.unspl
+ash.com/photo-1586201375761-83865001e31c?q=80&w=500&auto=format&fit=crop','Grocery & 
+kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('0e7
+3ee80-e34e-4473-b079-2296d5f098de','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Toor Dal 
+(1kg)','Unpolished protein-rich pulses.',165,true,'https://images.unsplash.com/photo-1
+515942400420-2b98fed1f515?q=80&w=500&auto=format&fit=crop','Grocery & 
+kitchen',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('e43
+6115b-0437-4a08-b96b-e816b578e6b4','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Thums Up 
+(750ml)','Strong carbonated soft drink.',45,true,'https://images.unsplash.com/photo-16
+22483767028-3f66f32aef97?q=80&w=500&auto=format&fit=crop','Snacks & 
+drinks',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('89a3
+04ce-4207-42b3-885f-d30b410b627b','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Potato 
+Chips','Classic salted crispy potato chips.',20,true,'https://images.unsplash.com/phot
+o-1566478989037-eec170784d0b?q=80&w=500&auto=format&fit=crop','Snacks & 
+drinks',true,'2026-03-10 15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00'),('2537
+a423-a1bb-46e3-81df-1881add26400','0f26d31e-bad4-4b92-88e9-28f59d4e0002','Oreo 
+Biscuits','Milk''s favorite cookie.',30,true,'https://images.unsplash.com/photo-155896
+1363-fa8fdf82db35?q=80&w=500&auto=format&fit=crop','Snacks & drinks',true,'2026-03-10 
+15:43:08.798 +00:00','2026-03-10 15:43:08.798 +00:00') RETURNING "id","shopId","name",
+"description","price","isAvailable","imageUrl","category","isVeg","createdAt","updated
+At";`,
+  parameters: {}
+}

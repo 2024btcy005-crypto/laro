@@ -1,0 +1,78 @@
+{
+  "orders": [
+    {
+      "id": "d33880d6-e7db-4822-a433-89b17f8a5639",
+      "customerId": "b2696630-69b8-44bf-8519-bfb6c85fd2b2",
+      "shopId": "5d96f800-58d3-41ad-b8e6-6143817e7393",
+      "totalAmount": "97.00",
+      "status": "placed",
+      "paymentMethod": "cod",
+      "paymentStatus": "pending",
+      "deliveryAddress": "joseph, 102, Joy University",
+      "couponCode": null,
+      "discountAmount": "0.00",
+      "deliveryOtp": "5021",
+      "universityId": null,
+      "createdAt": "2026-04-03T05:59:17.970Z",
+      "updatedAt": "2026-04-03T05:59:17.970Z"
+    },
+    {
+      "id": "cff13f58-ca12-4c88-b789-2d0dc730371d",
+      "customerId": "b2696630-69b8-44bf-8519-bfb6c85fd2b2",
+      "shopId": "5d96f800-58d3-41ad-b8e6-6143817e7393",
+      "totalAmount": "91.00",
+      "status": "placed",
+      "paymentMethod": "cod",
+      "paymentStatus": "pending",
+      "deliveryAddress": "joseph, 102, Joy University",
+      "couponCode": null,
+      "discountAmount": "0.00",
+      "deliveryOtp": "7359",
+      "universityId": null,
+      "createdAt": "2026-04-03T05:00:58.574Z",
+      "updatedAt": "2026-04-03T05:00:58.574Z"
+    }
+  ],
+  "partners": [
+    {
+      "id": "4966545e-08b3-440d-8953-d1d3733b80ec",
+      "phoneNumber": "9550028585",
+      "email": "anegondhikumar2@gmail.com",
+      "socialProviderId": null,
+      "passwordHash": "$2b$10$CtNxTx6RFPYT1hmwVRstmOjv1NK1XW9O1npyW0yZVN9v.poJbjUKO",
+      "role": "delivery",
+      "name": "Kumar ",
+      "fcmToken": null,
+      "isActive": true,
+      "loyaltyPoints": 8,
+      "loyaltyLevel": "Learner",
+      "laroCurrency": 0,
+      "vehicleType": "bicycle",
+      "vehicleNumber": "N/A",
+      "address": "Hostel 4, Room 205, Joy University",
+      "universityId": "a5d91b8c-4e11-4975-9271-1c29315d6f23",
+      "createdAt": "2026-03-14T07:59:51.678Z",
+      "updatedAt": "2026-04-03T05:02:27.252Z"
+    },
+    {
+      "id": "4e53e9c6-7073-4a52-8b33-2555f2cf15c5",
+      "phoneNumber": "9999988888",
+      "email": null,
+      "socialProviderId": null,
+      "passwordHash": "$2b$10$aEW05Lb6YFAQ34rKclIi5OVI28eH4WxZE1jrZjeJGfEAofdYq5Bva",
+      "role": "delivery",
+      "name": "Test Delivery Partner",
+      "fcmToken": null,
+      "isActive": true,
+      "loyaltyPoints": 0,
+      "loyaltyLevel": "Learner",
+      "laroCurrency": 0,
+      "vehicleType": null,
+      "vehicleNumber": null,
+      "address": null,
+      "universityId": "d83c9aea-2a38-416e-afa4-6fdc48bbcf5c",
+      "createdAt": "2026-03-07T03:22:47.896Z",
+      "updatedAt": "2026-04-03T05:29:11.535Z"
+    }
+  ]
+}
