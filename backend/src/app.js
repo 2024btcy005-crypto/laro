@@ -43,25 +43,30 @@ app.get('/init-admin', async (req, res) => {
     try {
         const { User } = require('./models');
         const bcrypt = require('bcryptjs');
-        const adminEmail = 'admin@zippit.com';
+        const adminEmail = 'admin@laro.com';
+        const adminPassword = 'password123';
 
-        const exists = await User.findOne({ where: { role: 'super_admin' } });
+        // Remove old trial if exists
+        await User.destroy({ where: { email: 'admin@zippit.com' } });
+
+        const exists = await User.findOne({ where: { email: adminEmail } });
         if (exists) {
             return res.json({ message: 'Super Admin already exists', email: exists.email });
         }
 
         const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash('admin123', salt);
+        const passwordHash = await bcrypt.hash(adminPassword, salt);
 
-        const newAdmin = await User.create({
+        await User.create({
             name: 'Super Admin',
             email: adminEmail,
+            phoneNumber: '0000000000',
             passwordHash,
             role: 'super_admin',
             isActive: true
         });
 
-        res.json({ message: '✅ Super Admin created successfully!', email: adminEmail, password: 'admin123' });
+        res.json({ message: '✅ Super Admin created successfully!', email: adminEmail, password: adminPassword });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
