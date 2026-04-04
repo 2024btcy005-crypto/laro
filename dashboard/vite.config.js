@@ -7,5 +7,8 @@ export default defineConfig({
         host: true, // This enables binding to all network interfaces (e.g., 0.0.0.0) which often fixes "localhost can't be reached"
         port: 5173,
         open: true
+    },
+    build: {
+        chunkSizeWarningLimit: 1600,
     }
 });

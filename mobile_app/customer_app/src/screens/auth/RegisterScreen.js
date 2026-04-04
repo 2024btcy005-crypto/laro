@@ -29,7 +29,19 @@ export default function RegisterScreen({ navigation }) {
     });
 
     const handleRegister = async () => {
-        if (!name || !email) return;
+        if (!name.trim()) {
+            Alert.alert('Missing Name', 'Please enter your full name');
+            return;
+        }
+        if (!email.includes('@')) {
+            Alert.alert('Invalid Email', 'Please enter a valid email address');
+            return;
+        }
+        if (password.length < 6) {
+            Alert.alert('Weak Password', 'Password must be at least 6 characters');
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await api.post('/auth/register', {
@@ -103,9 +115,9 @@ export default function RegisterScreen({ navigation }) {
                         </View>
 
                         <TouchableOpacity
-                            style={[styles.primaryButton, (name && email) && styles.primaryButtonActive]}
+                            style={[styles.primaryButton, (name && email && password.length >= 6) && styles.primaryButtonActive]}
                             onPress={handleRegister}
-                            disabled={!name || !email || loading}
+                            disabled={!name || !email || password.length < 6 || loading}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" size="small" />
