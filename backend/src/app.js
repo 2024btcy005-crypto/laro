@@ -38,6 +38,36 @@ app.get('/', (req, res) => {
     res.json({ message: 'Hostel Delivery API is running...' });
 });
 
+// Temp Init Route (REMOVE AFTER USE)
+app.get('/init-admin', async (req, res) => {
+    try {
+        const { User } = require('./models');
+        const bcrypt = require('bcryptjs');
+        const adminEmail = 'admin@zippit.com';
+
+        const exists = await User.findOne({ where: { role: 'super_admin' } });
+        if (exists) {
+            return res.json({ message: 'Super Admin already exists', email: exists.email });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash('admin123', salt);
+
+        const newAdmin = await User.create({
+            name: 'Super Admin',
+            email: adminEmail,
+            passwordHash,
+            role: 'super_admin',
+            isActive: true
+        });
+
+        res.json({ message: '✅ Super Admin created successfully!', email: adminEmail, password: 'admin123' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/shops', shopRoutes);
