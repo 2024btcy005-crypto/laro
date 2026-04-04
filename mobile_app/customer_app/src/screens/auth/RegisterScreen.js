@@ -35,7 +35,8 @@ export default function RegisterScreen({ navigation }) {
             const response = await api.post('/auth/register', {
                 phoneNumber: initialPhone,
                 name,
-                email, // Optional in our DB schema maybe, but we'll send it
+                email,
+                password,
                 role: 'customer'
             });
 
