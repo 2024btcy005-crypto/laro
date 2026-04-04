@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://laro-production.up.railway.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://laro.onrender.com/api';
 
 const api = axios.create({
     baseURL: API_BASE_URL,

@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // PRODUCTION URL
-const PRODUCTION_URL = 'https://laro-production.up.railway.app/api';
+const PRODUCTION_URL = 'https://laro.onrender.com/api';
 
 // Replace with your local machine's IP address when testing on physical device
 export const API_BASE_URL = __DEV__ ? 'http://10.217.30.250:5000/api' : PRODUCTION_URL;
