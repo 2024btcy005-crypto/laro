@@ -20,8 +20,14 @@ const searchProducts = async (req, res) => {
             include: [{
                 model: Shop,
                 as: 'shop',
-                where: universityId ? { universityId } : {},
-                required: universityId ? true : false
+                where: (universityId && universityId !== 'null') ? {
+                    [Op.or]: [
+                        { universityId: universityId },
+                        { universityId: { [Op.is]: null } },
+                        { id: { [Op.ne]: null } } // This effectively disables the product-level university filter
+                    ]
+                } : {},
+                required: (universityId && universityId !== 'null') ? true : false
             }]
         });
 

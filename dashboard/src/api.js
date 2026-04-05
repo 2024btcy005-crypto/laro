@@ -2,6 +2,13 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://laro.onrender.com/api';
 
+export const resolveImageUrl = (url) => {
+    if (!url) return 'https://via.placeholder.com/200?text=Product';
+    if (url.startsWith('http')) return url;
+    const serverRoot = API_BASE_URL.replace('/api', '');
+    return `${serverRoot}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 const api = axios.create({
     baseURL: API_BASE_URL,
 });

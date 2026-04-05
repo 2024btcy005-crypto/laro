@@ -49,24 +49,28 @@ app.get('/init-admin', async (req, res) => {
         // Remove old trial if exists
         await User.destroy({ where: { email: 'admin@zippit.com' } });
 
-        const exists = await User.findOne({ where: { email: adminEmail } });
-        if (exists) {
-            return res.json({ message: 'Super Admin already exists', email: exists.email });
-        }
-
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(adminPassword, salt);
 
-        await User.create({
-            name: 'Super Admin',
-            email: adminEmail,
-            phoneNumber: '0000000000',
-            passwordHash,
-            role: 'super_admin',
-            isActive: true
+        const [user, created] = await User.findOrCreate({
+            where: { email: adminEmail },
+            defaults: {
+                name: 'Super Admin',
+                email: adminEmail,
+                phoneNumber: '0000000000',
+                passwordHash,
+                role: 'super_admin',
+                isActive: true
+            }
         });
 
-        res.json({ message: '✅ Super Admin created successfully!', email: adminEmail, password: adminPassword });
+        if (!created) {
+            user.passwordHash = passwordHash;
+            user.role = 'super_admin';
+            await user.save();
+        }
+
+        res.json({ message: `✅ Super Admin ${created ? 'created' : 'updated'} successfully!`, email: adminEmail, password: adminPassword });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });

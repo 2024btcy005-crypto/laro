@@ -1,19 +1,26 @@
-const { User } = require('./src/models');
 const { sequelize } = require('./src/config/db');
+const { User } = require('./src/models');
 
-async function checkAllUsers() {
+async function checkUsers() {
     try {
-        const users = await User.findAll({
-            attributes: ['email', 'phoneNumber', 'name'],
-            limit: 10
+        await sequelize.authenticate();
+        console.log('✅ DB Connected');
+
+        const users = await User.findAll();
+        console.log(`\nFound ${users.length} total users:\n`);
+        users.forEach(u => {
+            console.log(`- NAME: ${u.name}`);
+            console.log(`  EMAIL: ${u.email}`);
+            console.log(`  ROLE: ${u.role}`);
+            console.log(`  UNI_ID: ${u.universityId || 'NONE'}`);
+            console.log('-------------------');
         });
-        console.log('Sample Users:');
-        console.table(users.map(u => u.toJSON()));
-    } catch (error) {
-        console.error('Error:', error);
+
+    } catch (err) {
+        console.error('❌ Error:', err);
     } finally {
         await sequelize.close();
     }
 }
 
-checkAllUsers();
+checkUsers();

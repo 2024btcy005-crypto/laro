@@ -13,7 +13,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import StoreIcon from '@mui/icons-material/Store';
 import SchoolIcon from '@mui/icons-material/School';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { getAllProducts, addProduct, updateProduct, deleteProduct, getAllShops, uploadImage, getAllCategories, getAllUniversities } from '../api';
+import { getAllProducts, addProduct, updateProduct, deleteProduct, getAllShops, uploadImage, getAllCategories, getAllUniversities, resolveImageUrl } from '../api';
 
 const INITIAL_FORM_STATE = {
     id: null,
@@ -121,7 +121,7 @@ export default function ProductManagement() {
                 sku: product.sku || '',
                 unit: product.unit || 'pc'
             });
-            setImagePreview(product.imageUrl ? `http://localhost:5000${product.imageUrl}` : null);
+            setImagePreview(resolveImageUrl(product.imageUrl));
         } else {
             setFormData({
                 ...INITIAL_FORM_STATE,
@@ -147,7 +147,7 @@ export default function ProductManagement() {
             variantOf: parent.id,
             variantName: ''
         });
-        setImagePreview(parent.imageUrl ? `http://localhost:5000${parent.imageUrl}` : null);
+        setImagePreview(resolveImageUrl(parent.imageUrl));
         setSelectedFile(null);
         setOpen(true);
     };
@@ -338,7 +338,7 @@ export default function ProductManagement() {
                                                         <CardMedia
                                                             component="img"
                                                             height="160"
-                                                            image={product.imageUrl ? `http://localhost:5000${product.imageUrl}` : 'https://via.placeholder.com/200?text=Product'}
+                                                            image={resolveImageUrl(product.imageUrl)}
                                                             alt={product.name}
                                                             sx={{
                                                                 transition: 'transform 0.4s ease-in-out',

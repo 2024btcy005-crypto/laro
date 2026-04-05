@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -46,23 +46,37 @@ export default function AddressBookScreen({ navigation, route }) {
     const fetchUniversities = async () => {
         try {
             const response = await api.get('/universities');
-            setUniversities(response.data);
+            if (Array.isArray(response.data)) {
+                setUniversities(response.data);
+            } else {
+                console.warn('[AddressBook] Universities response is not an array:', response.data);
+                setUniversities([]);
+            }
         } catch (err) {
             console.error('Failed to fetch universities:', err);
+            setUniversities([]);
         }
     };
 
     const loadAddresses = async () => {
         try {
             const storedAddresses = await AsyncStorage.getItem(addressKey);
-            let currentAddresses = storedAddresses ? JSON.parse(storedAddresses) : [];
+            let currentAddresses = [];
 
-            if (user?.address) {
-                const parts = user.address.split(',').map(p => p.trim());
+            try {
+                currentAddresses = storedAddresses ? JSON.parse(storedAddresses) : [];
+                if (!Array.isArray(currentAddresses)) currentAddresses = [];
+            } catch (e) {
+                console.error('[AddressBook] Failed to parse stored addresses:', e);
+                currentAddresses = [];
+            }
+
+            if (user?.address && typeof user.address === 'string' && user.address.trim() !== '') {
                 const fullAddress = user.address;
+                const parts = fullAddress.split(',').map(p => p.trim());
 
                 // If local is empty OR backend address is not in our local list, add/update it
-                const match = currentAddresses.find(a => a.address === fullAddress);
+                const match = currentAddresses.find(a => a && a.address === fullAddress);
 
                 if (!match) {
                     console.log('[AddressBook] Syncing backend address to local:', fullAddress);
@@ -77,17 +91,14 @@ export default function AddressBookScreen({ navigation, route }) {
                         isDefault: currentAddresses.length === 0 // Make default if nothing else exists
                     };
 
-                    // If we already have a list, just add it, don't necessarily overwrite default 
-                    // unless the list was empty or the user specifically wants web-parity.
-                    // For now, let's just ensure it's in the list.
-                    currentAddresses = [cloudAddr, ...currentAddresses.filter(a => a.id !== cloudAddr.id)];
+                    // Add to list and deduplicate
+                    currentAddresses = [cloudAddr, ...currentAddresses];
 
-                    // Deduplicate by address string
                     const uniqueAddresses = [];
-                    const map = new Map();
+                    const seen = new Set();
                     for (const item of currentAddresses) {
-                        if (!map.has(item.address)) {
-                            map.set(item.address, true);
+                        if (item && item.address && !seen.has(item.address)) {
+                            seen.add(item.address);
                             uniqueAddresses.push(item);
                         }
                     }
@@ -97,14 +108,12 @@ export default function AddressBookScreen({ navigation, route }) {
                 } else {
                     setAddresses(currentAddresses);
                 }
-            } else if (currentAddresses.length > 0) {
-                setAddresses(currentAddresses);
             } else {
-                // Total fallback placeholder
-                setAddresses([]);
+                setAddresses(currentAddresses);
             }
         } catch (error) {
             console.error('Failed to load addresses:', error);
+            setAddresses([]);
         }
     };
 
@@ -229,34 +238,37 @@ export default function AddressBookScreen({ navigation, route }) {
         }
     };
 
-    const renderAddress = (item) => (
-        <View key={item.id} style={[styles.addressCard, { backgroundColor: colors.white, borderColor: colors.border }]}>
-            <View style={styles.addressTypeHeader}>
-                <Ionicons name={item.type === 'Home' ? 'home-outline' : 'business-outline'} size={20} color={colors.black} />
-                <Text style={[styles.addressType, { color: colors.black }]}>{item.type}</Text>
-            </View>
-            {item.name ? <Text style={[styles.addressName, { color: colors.black }]}>{item.name} • {item.phone}</Text> : null}
-            <Text style={[styles.addressText, { color: colors.gray }]}>{item.address}</Text>
-            <View style={[styles.addressActions, { borderTopColor: colors.border }]}>
-                {item.isDefault ? (
-                    <Text style={styles.defaultText}>Default Address</Text>
-                ) : (
-                    <TouchableOpacity onPress={() => handleSetDefault(item.id)}>
-                        <Text style={styles.actionText}>Set as Default</Text>
-                    </TouchableOpacity>
-                )}
-                <View style={styles.editDeleteActions}>
-                    <TouchableOpacity style={styles.actionButton} onPress={() => handleAddOrEdit(item)}>
-                        <Text style={styles.actionText}>Edit</Text>
-                    </TouchableOpacity>
-                    <Text style={[styles.actionDivider, { color: colors.border }]}>|</Text>
-                    <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id)}>
-                        <Text style={[styles.actionTextDelete, { color: colors.gray }]}>Delete</Text>
-                    </TouchableOpacity>
+    const renderAddress = (item) => {
+        if (!item || !item.id) return null;
+        return (
+            <View key={item.id} style={[styles.addressCard, { backgroundColor: colors.white, borderColor: colors.border }]}>
+                <View style={styles.addressTypeHeader}>
+                    <Ionicons name={item.type === 'Home' ? 'home-outline' : 'business-outline'} size={20} color={colors.black} />
+                    <Text style={[styles.addressType, { color: colors.black }]}>{item.type}</Text>
+                </View>
+                {item.name ? <Text style={[styles.addressName, { color: colors.black }]}>{item.name} • {item.phone}</Text> : null}
+                <Text style={[styles.addressText, { color: colors.gray }]}>{item.address}</Text>
+                <View style={[styles.addressActions, { borderTopColor: colors.border }]}>
+                    {item.isDefault ? (
+                        <Text style={styles.defaultText}>Default Address</Text>
+                    ) : (
+                        <TouchableOpacity onPress={() => handleSetDefault(item.id)}>
+                            <Text style={styles.actionText}>Set as Default</Text>
+                        </TouchableOpacity>
+                    )}
+                    <View style={styles.editDeleteActions}>
+                        <TouchableOpacity style={styles.actionButton} onPress={() => handleAddOrEdit(item)}>
+                            <Text style={styles.actionText}>Edit</Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.actionDivider, { color: colors.border }]}>|</Text>
+                        <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id)}>
+                            <Text style={[styles.actionTextDelete, { color: colors.gray }]}>Delete</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
-        </View>
-    );
+        );
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>

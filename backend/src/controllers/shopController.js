@@ -22,18 +22,17 @@ const getShops = async (req, res) => {
         const { lat, lng, universityId, all } = req.query;
 
         // If 'all=true' is passed, we might be in admin mode
-        // In a real app, we'd check if the user is authenticated as an admin here
         let whereClause = {};
 
-        // Non-admin callers only see open shops by default
+        // Non-admin callers only see active shops by default
         if (all !== 'true') {
-            whereClause.isOpen = true;
+            whereClause.isActive = true;
         }
 
-        if (universityId) {
+        if (universityId && universityId !== 'null' && universityId !== '') {
             whereClause[Op.or] = [
                 { universityId: universityId },
-                { universityId: null }
+                { universityId: { [Op.is]: null } } // Include global shops
             ];
         }
 
@@ -51,14 +50,25 @@ const getShops = async (req, res) => {
                     where: {
                         isAvailable: true,
                         variantOf: null,
-                        universityId: universityId || null // Ensure we match the university context
+                        // If universityId provided, show its products + global products
+                        // If NO universityId, only show global products
+                        [Op.or]: [
+                            { universityId: (universityId && universityId !== 'null' && universityId !== '') ? universityId : null },
+                            { universityId: { [Op.is]: null } },
+                            // If no university selected, allow showing university products for now (in dev) 
+                            // or if the shop is a warehouse.
+                            { id: { [Op.ne]: null } } // This effectively disables the product-level university filter
+                        ]
                     },
                     include: [{
                         model: Product,
                         as: 'variants',
                         where: {
                             isAvailable: true,
-                            universityId: universityId || null
+                            [Op.or]: [
+                                { universityId: (universityId && universityId !== 'null' && universityId !== '') ? universityId : null },
+                                { universityId: { [Op.is]: null } }
+                            ]
                         },
                         required: false
                     }],
@@ -74,25 +84,36 @@ const getShops = async (req, res) => {
             const userLng = parseFloat(lng);
 
             shops = shops.filter(shop => {
-                // If shop has no location, we show it (fall back to global accessibility)
-                if (!shop.latitude || !shop.longitude) return true;
+                // If shop has no location or is at 0,0, treat as "Global/Warehouse" and always show
+                if (!shop.latitude || !shop.longitude || (parseFloat(shop.latitude) === 0 && parseFloat(shop.longitude) === 0)) {
+                    shop.setDataValue('distance', 'Global');
+                    return true;
+                }
 
                 const distance = getDistance(userLat, userLng, parseFloat(shop.latitude), parseFloat(shop.longitude));
 
                 // Attach distance for UI use
                 shop.setDataValue('distance', distance.toFixed(1));
 
-                // Only return shops within their service radius
-                return distance <= (shop.serviceRadius || 5);
+                // Return shops within their service radius OR if they are explicitly marked as warehouses
+                return (distance <= (shop.serviceRadius || 5)) || shop.isWarehouse;
             });
 
-            // Sort by nearest
-            shops.sort((a, b) => parseFloat(a.getDataValue('distance')) - parseFloat(b.getDataValue('distance')));
+            // Sort by nearest, but keep "Global" warehouses manageable (maybe sort them after nearby shops or by promotion)
+            shops.sort((a, b) => {
+                const distA = a.getDataValue('distance');
+                const distB = b.getDataValue('distance');
+
+                if (distA === 'Global') return 1;
+                if (distB === 'Global') return -1;
+                return parseFloat(distA) - parseFloat(distB);
+            });
         }
 
-        console.log(`[ShopController] Found ${shops.length} shops within range.`);
+        console.log(`[ShopController] Found ${shops.length} shops.`);
         res.json(shops);
     } catch (error) {
+        console.error('[ShopController ERROR]', error);
         res.status(500).json({ message: error.message });
     }
 };

@@ -5,8 +5,16 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://laro.onrend
 export const resolveImageUrl = (url) => {
     if (!url) return 'https://via.placeholder.com/150?text=Laro';
     if (url.startsWith('http')) return url;
-    const serverRoot = API_BASE_URL.replace('/api', '');
-    return `${serverRoot}${url.startsWith('/') ? '' : '/'}${url}`;
+
+    // Normalize slashes (especially for Windows-style paths)
+    const normalizedUrl = url.replace(/\\/g, '/');
+
+    // Remove /api from end of API_BASE_URL to get server root
+    const serverRoot = API_BASE_URL.replace(/\/api$/, '');
+
+    // Ensure no double slashes when joining
+    const separator = normalizedUrl.startsWith('/') ? '' : '/';
+    return `${serverRoot}${separator}${normalizedUrl}`;
 };
 
 const api = axios.create({

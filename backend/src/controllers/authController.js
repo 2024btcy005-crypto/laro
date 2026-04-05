@@ -344,6 +344,8 @@ const updateProfile = async (req, res) => {
         const userId = req.user.id;
         const { name, vehicleType, vehicleNumber, address, universityId } = req.body;
 
+        console.log(`[AUTH] Profile update request for user ${userId}:`, { name, vehicleType, vehicleNumber, universityId });
+
         const user = await User.findByPk(userId);
         if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -351,9 +353,13 @@ const updateProfile = async (req, res) => {
         if (vehicleType) user.vehicleType = vehicleType;
         if (vehicleNumber) user.vehicleNumber = vehicleNumber;
         if (address) user.address = address;
-        if (universityId) user.universityId = universityId;
+        if (universityId) {
+            console.log(`[AUTH] Setting universityId to ${universityId} for user ${userId}`);
+            user.universityId = universityId;
+        }
 
         await user.save();
+        console.log(`[AUTH] Profile updated successfully for user ${userId}`);
 
         res.status(200).json({
             message: "Profile updated successfully",
