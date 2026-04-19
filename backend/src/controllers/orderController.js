@@ -500,8 +500,7 @@ const findUserByPhone = async (req, res) => {
 
         const recipient = await User.findOne({
             where: {
-                phoneNumber: phone,
-                role: ['customer', 'delivery']
+                phoneNumber: phone
             },
             attributes: ['id', 'name']
         });
@@ -539,8 +538,7 @@ const transferCoins = async (req, res) => {
         // Fetch recipient with lock
         const recipient = await User.findOne({
             where: {
-                phoneNumber: recipientPhone,
-                role: ['customer', 'delivery']
+                phoneNumber: recipientPhone
             },
             transaction: t,
             lock: true

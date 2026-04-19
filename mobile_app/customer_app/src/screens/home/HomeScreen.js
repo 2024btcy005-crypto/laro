@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-    View, Text, StyleSheet, FlatList, TouchableOpacity,
+    View, Text, StyleSheet, TouchableOpacity,
     Image, TextInput, ScrollView, RefreshControl, StatusBar, Alert,
-    Animated, Dimensions, ActivityIndicator, Modal, Linking
+    Animated, Dimensions, ActivityIndicator, Modal, Linking, FlatList
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -372,7 +372,7 @@ export default function HomeScreen({ navigation }) {
             const isXerox = selectedCategory === 'Xerox';
             return (filteredData.length > 0 || isXerox) ? [{ title: selectedCategory, data: filteredData }] : [];
         }
-    }, [products, selectedCategory, searchQuery, mode]);
+    }, [products, selectedCategory, searchQuery, mode, recentProducts]);
 
     const cartOpacity = useRef(new Animated.Value(0)).current;
 
@@ -782,7 +782,7 @@ export default function HomeScreen({ navigation }) {
                     )
                 }
                 refreshControl={
-                    <RefreshControl refreshing={loading} onRefresh={fetchShops} tintColor={COLORS.primary} />
+                    <RefreshControl refreshing={loading} onRefresh={fetchShops} tintColor={colors.primary} />
                 }
             />
 

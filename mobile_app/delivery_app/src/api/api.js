@@ -6,7 +6,7 @@ const PRODUCTION_URL = 'https://laro.onrender.com/api';
 
 // Replace with your local machine's IP address
 const LOCAL_IP = '10.217.30.250'; // <--- UPDATE THIS
-export const API_BASE_URL = __DEV__ ? `http://${LOCAL_IP}:5000/api` : PRODUCTION_URL;
+export const API_BASE_URL = PRODUCTION_URL;
 
 export const resolveImageUrl = (url) => {
     if (!url) return 'https://via.placeholder.com/150?text=Laro';

@@ -5,6 +5,7 @@ const xeroxUpload = require('../config/xeroxMulterConfig');
 const { protect, admin } = require('../middlewares/authMiddleware');
 const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
+const cloudinary = require('../config/cloudinaryConfig');
 
 // @desc    Upload product image (admin)
 // @route   POST /api/upload
@@ -13,8 +14,8 @@ router.post('/', protect, admin, upload.single('image'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({ message: 'Image uploaded successfully', url: imageUrl });
+    // With CloudinaryStorage in multerConfig, req.file.path contains the full secure URL
+    res.json({ message: 'Image uploaded successfully', url: req.file.path });
 });
 
 // @desc    Upload a file for xerox/printing order
@@ -117,15 +118,39 @@ router.post('/xerox', protect, xeroxUpload.single('file'), async (req, res) => {
         }
     }
 
-    const fileUrl = `/uploads/xerox/${fileName}`;
-    res.json({
-        message: 'File uploaded successfully',
-        url: fileUrl,
-        originalName: req.file.originalname,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-        pageCount: pageCount
-    });
+    }
+
+    try {
+        console.log('[XeroxUpload] Persisting processed file to Cloudinary...');
+        const result = await cloudinary.uploader.upload(filePath, {
+            resource_type: 'raw',
+            folder: 'laro_xerox',
+            use_filename: true,
+            unique_filename: true
+        });
+
+        // Cleanup local files
+        try {
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            if (req.file.path !== filePath && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+        } catch (err) {
+            console.error('[XeroxUpload] Local cleanup failed:', err);
+        }
+
+        res.json({
+            message: 'File uploaded successfully',
+            url: result.secure_url,
+            originalName: req.file.originalname,
+            size: req.file.size,
+            mimetype: req.file.mimetype,
+            pageCount: pageCount
+        });
+    } catch (cloudErr) {
+        console.error('[XeroxUpload] Cloudinary persistence failed:', cloudErr);
+        res.status(500).json({ message: 'Cloud storage failed', error: cloudErr.message });
+    }
 });
 
 module.exports = router;

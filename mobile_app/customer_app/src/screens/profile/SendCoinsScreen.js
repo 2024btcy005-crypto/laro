@@ -212,15 +212,27 @@ export default function SendCoinsScreen({ navigation, route }) {
     };
 
 
-    const handleBarcodeScanned = ({ data }) => {
-        if (scanned.current) return;
+    const handleBarcodeScanned = (scanningResult) => {
+        if (scanned.current || !scanningResult.data) return;
         scanned.current = true;
-        // QR contains the 10-digit phone number
-        const scannedPhone = data.replace(/[^0-9]/g, '').slice(-10);
-        setScannerVisible(false);
-        setPhone(scannedPhone);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        scanned.current = false;
+
+        try {
+            const { data } = scanningResult;
+            // QR contains the 10-digit phone number
+            const scannedPhone = String(data).replace(/[^0-9]/g, '').slice(-10);
+
+            if (scannedPhone.length === 10) {
+                setScannerVisible(false);
+                setPhone(scannedPhone);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } else {
+                // If scanned something else, reset and allow another scan
+                scanned.current = false;
+            }
+        } catch (error) {
+            console.error('[QR] Scan error:', error);
+            scanned.current = false;
+        }
     };
 
     const openScanner = async () => {
