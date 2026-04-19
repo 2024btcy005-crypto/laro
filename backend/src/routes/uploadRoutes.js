@@ -118,8 +118,6 @@ router.post('/xerox', protect, xeroxUpload.single('file'), async (req, res) => {
         }
     }
 
-    }
-
     try {
         console.log('[XeroxUpload] Persisting processed file to Cloudinary...');
         const result = await cloudinary.uploader.upload(filePath, {
