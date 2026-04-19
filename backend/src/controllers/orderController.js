@@ -499,9 +499,10 @@ const findUserByPhone = async (req, res) => {
         if (!phone) return res.status(400).json({ message: 'Phone number is required' });
 
         const recipient = await User.findOne({
-            where: {
-                phoneNumber: phone
-            },
+            where: sequelize.where(
+                sequelize.fn('RIGHT', sequelize.col('phoneNumber'), 10),
+                phone.slice(-10)
+            ),
             attributes: ['id', 'name']
         });
 
@@ -537,9 +538,10 @@ const transferCoins = async (req, res) => {
 
         // Fetch recipient with lock
         const recipient = await User.findOne({
-            where: {
-                phoneNumber: recipientPhone
-            },
+            where: sequelize.where(
+                sequelize.fn('RIGHT', sequelize.col('phoneNumber'), 10),
+                recipientPhone.slice(-10)
+            ),
             transaction: t,
             lock: true
         });
