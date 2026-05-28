@@ -274,7 +274,16 @@ export default function AddressBookScreen({ navigation, route }) {
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
             <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={colors.white} />
             <View style={[styles.header, { backgroundColor: colors.white, borderBottomColor: colors.border }]}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                <TouchableOpacity 
+                    style={styles.backButton} 
+                    onPress={() => {
+                        if (navigation.canGoBack()) {
+                            navigation.goBack();
+                        } else {
+                            navigation.navigate('Main');
+                        }
+                    }}
+                >
                     <Ionicons name="arrow-back" size={26} color={colors.black} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: colors.black }]}>Address Book</Text>

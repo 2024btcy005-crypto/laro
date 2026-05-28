@@ -496,17 +496,29 @@ const getWalletHistory = async (req, res) => {
 const findUserByPhone = async (req, res) => {
     try {
         const { phone } = req.query;
+        console.log('[TRANSFER_DEBUG] Searching for phone:', phone);
+        
         if (!phone) return res.status(400).json({ message: 'Phone number is required' });
 
+        const cleanInputPhone = String(phone).replace(/[^0-9]/g, '').slice(-10);
+        console.log('[TRANSFER_DEBUG] Cleaned Input (last 10):', cleanInputPhone);
+
+        // This removes all non-numeric characters from the DB column before checking the rightmost 10 digits
         const recipient = await User.findOne({
             where: sequelize.where(
-                sequelize.fn('RIGHT', sequelize.col('phoneNumber'), 10),
-                phone.slice(-10)
+                sequelize.fn('RIGHT', sequelize.fn('regexp_replace', sequelize.col('phoneNumber'), '[^0-9]', 'g', 'i'), 10),
+                cleanInputPhone
             ),
-            attributes: ['id', 'name']
+            attributes: ['id', 'name', 'phoneNumber']
         });
 
-        if (!recipient) return res.status(404).json({ message: 'User not found' });
+        if (!recipient) {
+            console.log('[TRANSFER_DEBUG] No recipient found in DB matching:', cleanInputPhone);
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        console.log('[TRANSFER_DEBUG] Found Recipient:', recipient.name, 'ID:', recipient.id);
+        
         if (recipient.id === req.user.id) return res.status(400).json({ message: 'You cannot send coins to yourself' });
 
         res.json({ id: recipient.id, name: recipient.name });

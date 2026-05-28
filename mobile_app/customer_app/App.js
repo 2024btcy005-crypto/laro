@@ -229,33 +229,30 @@ function RootNavigator() {
         >
             {isAuthenticated ? (
                 <>
-                    {!selectedUniversity ? (
-                        <Stack.Screen name="UniversitySelection" component={UniversitySelectionScreen} options={{ headerShown: false }} />
-                    ) : (
-                        <>
-                            <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
-                            <Stack.Screen name="ShopDetails" component={ShopDetailsScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Cart" component={CartScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: 'Checkout' }} />
+                    {/* Screens always available when logged in */}
+                    <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
+                    <Stack.Screen name="AddressBook" component={AddressBookScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="LinkWallet" component={LinkWalletScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="UniversitySelection" component={UniversitySelectionScreen} options={{ headerShown: false }} />
 
-                            {/* Profile Sub-Screens */}
-                            <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="AddressBook" component={AddressBookScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="About" component={AboutScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Loyalty" component={LoyaltyScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="LaroCurrency" component={LaroCurrencyScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="SendCoins" component={SendCoinsScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="MyQR" component={MyQRScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="LinkWallet" component={LinkWalletScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="ShopDetails" component={ShopDetailsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Cart" component={CartScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: 'Checkout' }} />
 
-                            {/* Allow re-selecting university from within Main */}
-                            <Stack.Screen name="ChangeUniversity" component={UniversitySelectionScreen} options={{ headerShown: false }} />
-                        </>
-                    )}
+                    {/* Profile Sub-Screens */}
+                    <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="About" component={AboutScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Loyalty" component={LoyaltyScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="LaroCurrency" component={LaroCurrencyScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="SendCoins" component={SendCoinsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="MyQR" component={MyQRScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} options={{ headerShown: false }} />
+
+                    {/* Manage university selection */}
+                    <Stack.Screen name="ChangeUniversity" component={UniversitySelectionScreen} options={{ headerShown: false }} />
                 </>
             ) : (
                 <>

@@ -13,7 +13,9 @@ import Confetti from '../../components/Confetti';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useSelector } from 'react-redux';
 import { useTheme } from '../../context/ThemeContext';
+import LaroScannerOverlay from '../../components/LaroScannerOverlay';
 
 const { width, height } = Dimensions.get('window');
 
@@ -163,6 +165,7 @@ const ss = StyleSheet.create({
 
 export default function SendCoinsScreen({ navigation, route }) {
     const { colors, isDarkMode } = useTheme();
+    const { user } = useSelector(state => state.auth);
     const currentBalance = route.params?.balance || 0;
 
     const [phone, setPhone] = useState('');
@@ -178,6 +181,7 @@ export default function SendCoinsScreen({ navigation, route }) {
     const scanned = useRef(false);
     const [recentRecipients, setRecentRecipients] = useState([]);
     const [recentLoading, setRecentLoading] = useState(false);
+    const [torch, setTorch] = useState(false);
 
 
     const playSuccessSound = async () => {
@@ -339,25 +343,21 @@ export default function SendCoinsScreen({ navigation, route }) {
                         style={StyleSheet.absoluteFillObject}
                         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                         onBarcodeScanned={handleBarcodeScanned}
+                        enableTorch={torch}
                     />
-                    {/* Overlay */}
-                    <View style={styles.scanOverlay}>
-                        <View style={styles.scanTopBar}>
-                            <TouchableOpacity style={styles.scanCloseBtn} onPress={() => setScannerVisible(false)}>
-                                <Ionicons name="close" size={26} color="#fff" />
-                            </TouchableOpacity>
-                            <Text style={styles.scanTitle}>Scan QR Code</Text>
-                            <View style={{ width: 44 }} />
-                        </View>
-                        <View style={styles.scanFrame}>
-                            {/* Corner marks */}
-                            <View style={[styles.corner, styles.cornerTL]} />
-                            <View style={[styles.corner, styles.cornerTR]} />
-                            <View style={[styles.corner, styles.cornerBL]} />
-                            <View style={[styles.corner, styles.cornerBR]} />
-                        </View>
-                        <Text style={styles.scanHint}>Point at a Laro QR code to send coins</Text>
-                    </View>
+                    <LaroScannerOverlay 
+                        onScannerClose={() => setScannerVisible(false)}
+                        isTorchOn={torch}
+                        onTorchToggle={() => setTorch(prev => !prev)}
+                        recentRecipients={recentRecipients}
+                        currentBalance={currentBalance}
+                        userPhone={user?.phoneNumber}
+                        onRecipientPress={(item) => {
+                            setPhone(item.phoneNumber);
+                            setScannerVisible(false);
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        }}
+                    />
                 </View>
             </Modal>
 
