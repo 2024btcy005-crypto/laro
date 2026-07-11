@@ -1,4 +1,14 @@
-require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
+
+const envLocalPath = path.resolve(__dirname, '../.env.local');
+if (fs.existsSync(envLocalPath)) {
+    dotenv.config({ path: envLocalPath });
+    console.log('📝 Loaded environment variables from .env.local');
+} else {
+    dotenv.config();
+}
 const http = require('http');
 const app = require('./app');
 const { connectDB, sequelize } = require('./config/db');

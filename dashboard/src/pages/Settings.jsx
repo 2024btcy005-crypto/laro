@@ -6,7 +6,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import { Switch, FormControlLabel } from '@mui/material';
-import { getAdvertisement, updateAdvertisement, uploadImage, getAllProducts, getAllShops, getAllCoupons } from '../api';
+import { getAdvertisement, updateAdvertisement, uploadImage, getAllProducts, getAllShops, getAllCoupons, resolveImageUrl } from '../api';
 import api from '../api';
 
 const Settings = () => {
@@ -340,7 +340,7 @@ const Settings = () => {
                                     }}>
                                         {ad.imageUrl ? (
                                             <>
-                                                <img src={`http://localhost:5000${ad.imageUrl}`} alt="Preview" style={{ height: '100%', objectFit: 'contain' }} />
+                                                <img src={resolveImageUrl(ad.imageUrl)} alt="Preview" style={{ height: '100%', objectFit: 'contain' }} />
                                                 <Button
                                                     size="small"
                                                     color="primary"

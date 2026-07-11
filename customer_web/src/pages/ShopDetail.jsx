@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { shopAPI, resolveImageUrl } from '../api';
+import { shopAPI, resolveImageUrl, API_BASE_URL } from '../api';
 import { useCart } from '../context/CartContext';
 import { Star, Clock, MapPin, Plus, Minus, ChevronLeft, ShoppingBag, Heart, Upload, X, FileText, Search } from 'lucide-react';
 import { FavouriteService } from '../services/FavouriteService';
@@ -135,8 +135,7 @@ export default function ShopDetail() {
 
     const fetchPricing = async () => {
         try {
-            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            const res = await fetch(`${API_BASE}/xerox-pricing/shop/${shop.id}`);
+            const res = await fetch(`${API_BASE_URL}/xerox-pricing/shop/${shop.id}`);
             const data = await res.json();
             if (res.ok) {
                 setPricing(data);
@@ -177,8 +176,7 @@ export default function ShopDetail() {
             const token = localStorage.getItem('token');
             const formData = new FormData();
             formData.append('file', file);
-            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            const res = await fetch(`${API_BASE}/upload/xerox`, {
+            const res = await fetch(`${API_BASE_URL}/upload/xerox`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,

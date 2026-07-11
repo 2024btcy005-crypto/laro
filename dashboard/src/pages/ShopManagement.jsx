@@ -14,7 +14,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import InputAdornment from '@mui/material/InputAdornment';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
-import api, { uploadImage, getAllUniversities } from '../api';
+import api, { uploadImage, getAllUniversities, resolveImageUrl } from '../api';
 import SchoolIcon from '@mui/icons-material/School';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
@@ -452,7 +452,7 @@ export default function ShopManagement() {
                                     }}>
                                         {formData.imageUrl ? (
                                             <Box sx={{ mb: 2 }}>
-                                                <img src={`http://localhost:5000${formData.imageUrl}`} style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: '8px' }} alt="Preview" />
+                                                <img src={resolveImageUrl(formData.imageUrl)} style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: '8px' }} alt="Preview" />
                                                 <Button size="small" onClick={() => fileInputRef.current.click()} sx={{ mt: 1 }}>Change Photo</Button>
                                             </Box>
                                         ) : (

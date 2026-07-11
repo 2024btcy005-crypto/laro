@@ -6,8 +6,8 @@ const PRODUCTION_URL = 'https://laro.onrender.com/api';
 
 // Replace with your local machine's IP address when testing on physical device
 // Run 'ipconfig' in terminal and find 'IPv4 Address' under your Wi-Fi/Ethernet.
-const LOCAL_IP = '10.217.30.250'; // UPDATE THIS TO YOUR CURRENT IP
-export const API_BASE_URL = PRODUCTION_URL; // Using Render backend directly
+const LOCAL_IP = '10.149.78.250'; // Your current machine IP
+export const API_BASE_URL = PRODUCTION_URL; // Using production backend
 console.log('[API] Initialized with Base URL:', API_BASE_URL);
 
 const api = axios.create({
