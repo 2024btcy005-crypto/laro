@@ -84,7 +84,8 @@ export default function RegisterScreen({ navigation }) {
             await AsyncStorage.setItem('userToken', token);
             await AsyncStorage.setItem('userData', JSON.stringify(userData));
 
-            dispatch(signIn({ user: userData, token }));
+            // Dispatch signIn with setupPending=true — this tells App.js to start at LinkWallet
+            dispatch(signIn({ user: userData, token, setupPending: true }));
         } catch (error) {
             console.error('[REGISTER ERROR]', error.response?.data || error.message);
             setAlertConfig({

@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Image, StatusBar, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, CONSTANTS } from '../../theme';
 import { orderAPI } from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
-import { StatusBar } from 'react-native';
+
+const { width } = Dimensions.get('window');
 
 export default function OrdersScreen({ navigation }) {
     const { colors, isDarkMode } = useTheme();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [activeTab, setActiveTab] = useState('active'); // 'active' | 'past'
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
         title: '',
@@ -31,39 +33,34 @@ export default function OrdersScreen({ navigation }) {
             const response = await orderAPI.getMyOrders();
 
             if (!response.data || !Array.isArray(response.data)) {
-                console.warn('[Orders] Unexpected API response format:', response.data);
                 setOrders([]);
                 return;
             }
 
-            console.log(`[Orders] Received ${response.data.length} orders`);
-
-            // Format API response to match UI requirements
             const formattedOrders = response.data.map(order => {
                 try {
                     return {
                         id: (order.id || '').toString(),
                         store: order.shop?.name || 'Laro Store',
+                        storeCategory: order.shop?.category || 'Cafe & Grill',
                         date: order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', {
                             day: 'numeric',
                             month: 'short',
                             year: 'numeric'
                         }) : 'Date N/A',
                         total: `${CONSTANTS.CURRENCY}${parseFloat(order.totalAmount || 0).toFixed(2)}`,
-                        status: formatStatus(order.status || 'placed'),
-                        items: order.items?.map(i => `${i.quantity}x ${i.product?.name || 'Item'}`).join(', ') || 'No items listed'
+                        status: order.status || 'placed',
+                        statusLabel: formatStatus(order.status || 'placed'),
+                        items: order.items?.map(i => `${i.quantity}x ${i.product?.name || 'Item'}`).join(', ') || 'No items listed',
+                        itemCount: order.items?.reduce((acc, curr) => acc + (curr.quantity || 1), 0) || 0
                     };
                 } catch (e) {
-                    console.error('[Orders] Error formatting individual order:', e, order);
                     return null;
                 }
             }).filter(Boolean);
             setOrders(formattedOrders);
         } catch (error) {
             console.error('[Orders] Fetch error:', error.message);
-            if (error.response) {
-                console.error('[Orders] Response error:', error.response.status, error.response.data);
-            }
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -86,31 +83,11 @@ export default function OrdersScreen({ navigation }) {
         fetchOrders();
     };
 
-    const getStatusStyle = (status) => {
-        const isDelivered = status === 'Delivered';
-        const isNegative = status === 'Cancelled';
-
-        return {
-            fontSize: 12,
-            fontWeight: '900',
-            color: isDelivered ? '#24963f' : (isNegative ? '#fa3e4a' : COLORS.primary),
-            backgroundColor: isDarkMode ? (isDelivered ? '#064e3b' : (isNegative ? '#450a0a' : '#1e1b4b')) : (isDelivered ? '#eaf6ef' : (isNegative ? '#fff0f1' : `${COLORS.primary}10`)),
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 6,
-            overflow: 'hidden'
-        };
-    };
-
-    const handleViewDetail = (orderId) => {
-        navigation.navigate('OrderDetail', { orderId });
-    };
-
     const handleDeletePress = (order) => {
         setAlertConfig({
             visible: true,
             title: 'Delete Order?',
-            message: `Are you sure you want to remove this order from your history? this action cannot be undone.`,
+            message: `Are you sure you want to remove this order from history?`,
             orderId: order.id,
             onConfirm: () => confirmDelete(order.id)
         });
@@ -119,113 +96,166 @@ export default function OrdersScreen({ navigation }) {
     const confirmDelete = async (orderId) => {
         try {
             setAlertConfig(prev => ({ ...prev, visible: false }));
-            await orderAPI.deleteOrder(orderId); // Note: Need to verify if deleteOrder exists or add it
+            await orderAPI.deleteOrder(orderId);
             setOrders(prev => prev.filter(o => o.id !== orderId));
         } catch (error) {
-            console.error('[DELETE ORDER ERROR]', error);
             alert('Failed to delete order');
         }
     };
 
+    const getProgressValue = (status) => {
+        switch (status) {
+            case 'placed': return 0.2;
+            case 'accepted': return 0.5;
+            case 'out_for_delivery': return 0.8;
+            default: return 0.5;
+        }
+    };
+
+    const activeOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
+    const pastOrders = orders.filter(o => o.status === 'delivered' || o.status === 'cancelled');
+
     const renderOrderItem = ({ item }) => {
-        const isActive = item.status !== 'Delivered' && item.status !== 'Cancelled';
+        const isLive = item.status !== 'delivered' && item.status !== 'cancelled';
 
-        return (
-            <TouchableOpacity style={[styles.orderCard, { backgroundColor: colors.white, borderColor: colors.border }]} onPress={() => handleViewDetail(item.id)}>
-                <View style={styles.orderHeader}>
-                    <View style={[styles.storeAvatar, { backgroundColor: isDarkMode ? colors.background : `${COLORS.primary}05` }]}>
-                        <Ionicons name="business" size={20} color={COLORS.primary} />
+        if (isLive) {
+            const progress = getProgressValue(item.status);
+            return (
+                <View style={[styles.liveCard, { borderColor: '#eef5ee' }]}>
+                    <View style={styles.liveCardHeader}>
+                        <View style={styles.liveStoreInfo}>
+                            <View style={styles.storeIconWrapper}>
+                                <Ionicons name="cafe" size={22} color="#fff" />
+                            </View>
+                            <View style={styles.storeTextWrapper}>
+                                <Text style={styles.liveStoreName}>{item.store}</Text>
+                                <Text style={styles.liveStoreSub}>{item.storeCategory} • {item.itemCount} {item.itemCount === 1 ? 'item' : 'items'}</Text>
+                                <View style={styles.liveStatusRow}>
+                                    <View style={styles.greenDot} />
+                                    <Text style={styles.liveStatusText}>{item.statusLabel}</Text>
+                                </View>
+                            </View>
+                        </View>
+                        <Text style={styles.livePrice}>{item.total}</Text>
                     </View>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={[styles.restaurantName, { color: colors.black }]}>{item.store}</Text>
-                        <Text style={[styles.orderDate, { color: colors.gray }]}>{item.date} • {item.total}</Text>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={getStatusStyle(item.status)}>{item.status}</Text>
-                        <TouchableOpacity
-                            style={styles.deleteBtn}
-                            onPress={() => handleDeletePress(item)}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                            <Ionicons name="trash-outline" size={18} color="#fa3e4a" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-                <View style={styles.itemsRow}>
-                    <Ionicons name="basket-outline" size={14} color={colors.gray} style={{ marginRight: 6 }} />
-                    <Text style={[styles.orderItems, { color: colors.gray }]} numberOfLines={1}>{item.items}</Text>
-                </View>
 
-                <View style={[styles.orderActions, { borderTopColor: colors.border }]}>
-                    <TouchableOpacity
-                        style={[styles.reorderButton, isActive && { backgroundColor: isDarkMode ? colors.background : '#1a1a2e' }]}
-                        onPress={() => handleViewDetail(item.id)}
+                    {/* Progress Tracker */}
+                    <View style={styles.progressSection}>
+                        <View style={styles.progressBarWrapper}>
+                            <View style={styles.progressTrackBackground} />
+                            <View style={[styles.progressTrackActive, { width: `${progress * 100}%` }]} />
+                            <View style={[styles.progressIndicatorCircle, { left: `${progress * 100}%` }]} />
+                        </View>
+                        <View style={styles.progressLabelRow}>
+                            <Text style={[styles.progressLabel, progress >= 0.2 && styles.activeProgressLabel]}>Ordered</Text>
+                            <Text style={[styles.progressLabel, progress >= 0.5 && styles.activeProgressLabel]}>Preparing</Text>
+                            <Text style={[styles.progressLabel, progress >= 0.8 && styles.activeProgressLabel]}>Arriving</Text>
+                        </View>
+                    </View>
+
+                    <TouchableOpacity 
+                        style={styles.trackButton}
+                        onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
                     >
-                        <Text style={styles.reorderText}>{isActive ? 'Track Order' : 'View Details'}</Text>
+                        <Ionicons name="map" size={18} color="#fff" style={{ marginRight: 8 }} />
+                        <Text style={styles.trackButtonText}>Track Order</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.helpButton, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa', borderColor: colors.border }]}>
-                        <Text style={[styles.helpText, { color: colors.black }]}>Help</Text>
+                </View>
+            );
+        }
+
+        // Past Order Item
+        return (
+            <TouchableOpacity style={styles.pastCard} onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}>
+                <View style={styles.pastCardHeader}>
+                    <View style={styles.pastStoreInfo}>
+                        <View style={styles.pastStoreIcon}>
+                            <Ionicons name="receipt-outline" size={20} color="#666" />
+                        </View>
+                        <View style={{ marginLeft: 12 }}>
+                            <Text style={styles.pastStoreName}>{item.store}</Text>
+                            <Text style={styles.pastStoreSub}>{item.date} • {item.total}</Text>
+                        </View>
+                    </View>
+                    <Text style={[styles.pastStatus, item.status === 'cancelled' ? styles.statusCancelled : styles.statusDelivered]}>
+                        {item.statusLabel}
+                    </Text>
+                </View>
+                <Text style={styles.pastItems} numberOfLines={1}>{item.items}</Text>
+                <View style={styles.pastActions}>
+                    <TouchableOpacity style={styles.viewDetailsBtn} onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}>
+                        <Text style={styles.viewDetailsText}>View Details</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeletePress(item)}>
+                        <Ionicons name="trash-outline" size={18} color="#ef4444" />
                     </TouchableOpacity>
                 </View>
             </TouchableOpacity>
         );
     };
 
-    if (loading && !refreshing) {
-        return (
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-                <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={colors.white} />
-                <View style={[styles.header, { backgroundColor: colors.white, borderBottomColor: colors.border }]}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={26} color={colors.black} />
-                    </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: colors.black }]}>Your Orders</Text>
-                    <View style={{ width: 40 }} />
-                </View>
-                <View style={styles.centerContainer}>
-                    <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={[styles.loadingText, { color: colors.gray }]}>Fetching your orders...</Text>
-                </View>
-            </SafeAreaView>
-        );
-    }
-
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={colors.white} />
-            <View style={[styles.header, { backgroundColor: colors.white, borderBottomColor: colors.border }]}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={26} color={colors.black} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.black }]}>Your Orders</Text>
-                <View style={{ width: 40 }} />
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="dark-content" backgroundColor="#fcfdfc" />
+            
+            {/* Custom Header */}
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Your Orders</Text>
             </View>
 
-            {orders.length > 0 ? (
+            {/* Custom Tabs */}
+            <View style={styles.tabBar}>
+                <TouchableOpacity 
+                    style={[styles.tabButton, activeTab === 'active' && styles.activeTabButton]}
+                    onPress={() => setActiveTab('active')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>Active</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                    style={[styles.tabButton, activeTab === 'past' && styles.activeTabButton]}
+                    onPress={() => setActiveTab('past')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'past' && styles.activeTabText]}>Past</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Content list */}
+            {loading ? (
+                <View style={styles.centerContainer}>
+                    <ActivityIndicator size="large" color="#056f36" />
+                </View>
+            ) : (
                 <FlatList
-                    data={orders}
+                    data={activeTab === 'active' ? activeOrders : pastOrders}
                     keyExtractor={(item) => item.id}
                     renderItem={renderOrderItem}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#056f36" />
+                    }
+                    ListHeaderComponent={
+                        activeTab === 'active' && activeOrders.length > 0 ? (
+                            <Text style={styles.sectionTitle}>Live Status</Text>
+                        ) : null
+                    }
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <View style={styles.emptyIconCircle}>
+                                <Ionicons name="receipt-outline" size={60} color="#056f36" />
+                            </View>
+                            <Text style={styles.emptyTitle}>No orders found</Text>
+                            <Text style={styles.emptySub}>
+                                {activeTab === 'active' 
+                                    ? "You don't have any active orders right now. Order something tasty to get started!" 
+                                    : "You haven't placed any orders in the past."}
+                            </Text>
+                            <TouchableOpacity style={styles.shopBtn} onPress={() => navigation.navigate('Home')}>
+                                <Text style={styles.shopBtnText}>Browse Shop</Text>
+                            </TouchableOpacity>
+                        </View>
                     }
                 />
-            ) : (
-                <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
-                    <View style={[styles.emptyIconContainer, { backgroundColor: isDarkMode ? colors.white : `${COLORS.primary}05` }]}>
-                        <Ionicons name="receipt-outline" size={80} color={COLORS.primary} />
-                    </View>
-                    <Text style={[styles.emptyTitle, { color: colors.black }]}>No orders yet</Text>
-                    <Text style={[styles.emptySubtitle, { color: colors.gray }]}>Look like you haven't placed any orders yet. Let's find something delicious!</Text>
-                    <TouchableOpacity
-                        style={styles.browseButton}
-                        onPress={() => navigation.navigate('Main', { screen: 'Home' })}
-                    >
-                        <Text style={styles.browseButtonText}>Go Shopping</Text>
-                    </TouchableOpacity>
-                </View>
             )}
 
             <LaroAlert
@@ -242,36 +272,129 @@ export default function OrdersScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fcfcfc' },
+    container: { flex: 1, backgroundColor: '#fcfdfc' },
     centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 15, fontSize: 16, color: '#666', fontWeight: '600' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-    backButton: { width: 40, height: 40, justifyContent: 'center' },
-    headerTitle: { fontSize: 18, fontWeight: '900', color: '#1c1c1c', letterSpacing: -0.5 },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#fcfdfc',
+    },
+    menuBtn: { padding: 4 },
+    headerTitle: { fontSize: 20, fontWeight: '900', color: '#111' },
+    profileBtn: { width: 36, height: 36, borderRadius: 18, overflow: 'hidden' },
+    avatarImage: { width: '100%', height: '100%' },
+    
+    tabBar: {
+        flexDirection: 'row',
+        borderBottomWidth: 1,
+        borderBottomColor: '#edf2ed',
+        backgroundColor: '#fcfdfc',
+        paddingHorizontal: 10,
+    },
+    tabButton: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 3,
+        borderBottomColor: 'transparent',
+    },
+    activeTabButton: {
+        borderBottomColor: '#056f36',
+    },
+    tabText: { fontSize: 16, fontWeight: '700', color: '#666' },
+    activeTabText: { color: '#056f36' },
 
-    listContent: { padding: 15, paddingBottom: 40 },
-    orderCard: { backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3, borderWidth: 1, borderColor: '#f5f5f5' },
-    orderHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    storeAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: `${COLORS.primary}05`, justifyContent: 'center', alignItems: 'center' },
-    restaurantName: { fontSize: 15, fontWeight: '900', color: '#1c1c1c', marginBottom: 2 },
-    orderDate: { fontSize: 12, color: '#888', fontWeight: '500' },
-    itemsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-    orderItems: { fontSize: 13, color: '#666', fontWeight: '500' },
+    listContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 },
+    sectionTitle: { fontSize: 18, fontWeight: '900', color: '#111', marginBottom: 15 },
+    
+    liveCard: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 20,
+        borderWidth: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.03,
+        shadowRadius: 10,
+        elevation: 2,
+        marginBottom: 20,
+    },
+    liveCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    liveStoreInfo: { flexDirection: 'row', flex: 1 },
+    storeIconWrapper: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: '#34d399',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    storeTextWrapper: { marginLeft: 12, flex: 1 },
+    liveStoreName: { fontSize: 16, fontWeight: '900', color: '#111' },
+    liveStoreSub: { fontSize: 13, color: '#666', marginTop: 2 },
+    liveStatusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+    greenDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#056f36', marginRight: 6 },
+    liveStatusText: { fontSize: 13, fontWeight: '700', color: '#056f36' },
+    livePrice: { fontSize: 16, fontWeight: '900', color: '#056f36' },
 
-    orderActions: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#f8f8f8', paddingTop: 15, gap: 12 },
-    reorderButton: { flex: 1, backgroundColor: COLORS.primary, paddingVertical: 12, borderRadius: 12, alignItems: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 2 },
-    reorderText: { color: '#fff', fontWeight: '900', fontSize: 14 },
-    helpButton: { flex: 1, backgroundColor: '#f8f9fa', paddingVertical: 12, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: '#eee' },
-    helpText: { color: '#1c1c1c', fontWeight: 'bold', fontSize: 14 },
+    progressSection: { marginVertical: 20 },
+    progressBarWrapper: { height: 6, backgroundColor: '#edf2ed', borderRadius: 3, position: 'relative', overflow: 'visible', marginHorizontal: 10 },
+    progressTrackBackground: { ...StyleSheet.absoluteFillObject },
+    progressTrackActive: { height: '100%', backgroundColor: '#50e3c2', borderRadius: 3 },
+    progressIndicatorCircle: {
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        backgroundColor: '#056f36',
+        position: 'absolute',
+        top: -4,
+        marginLeft: -7,
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    progressLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+    progressLabel: { fontSize: 11, fontWeight: '700', color: '#999' },
+    activeProgressLabel: { color: '#056f36' },
 
-    emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30, backgroundColor: '#fff' },
-    emptyIconContainer: { width: 150, height: 150, borderRadius: 75, backgroundColor: `${COLORS.primary}05`, justifyContent: 'center', alignItems: 'center', marginBottom: 25 },
-    emptyTitle: { fontSize: 24, fontWeight: '900', color: '#1a1a2e', marginBottom: 12, textAlign: 'center' },
-    emptySubtitle: { fontSize: 16, color: '#64748b', textAlign: 'center', lineHeight: 24, paddingHorizontal: 20, marginBottom: 35 },
-    browseButton: { backgroundColor: COLORS.primary, paddingHorizontal: 40, paddingVertical: 18, borderRadius: 20, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
-    browseButtonText: { color: '#fff', fontSize: 16, fontWeight: '900' },
-    deleteBtn: {
-        marginTop: 8,
-        padding: 4,
-    }
+    trackButton: {
+        backgroundColor: '#056f36',
+        borderRadius: 12,
+        height: 48,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    trackButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+
+    pastCard: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#f0f4f0',
+        marginBottom: 15,
+    },
+    pastCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    pastStoreInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    pastStoreIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f0f4f0', justifyContent: 'center', alignItems: 'center' },
+    pastStoreName: { fontSize: 15, fontWeight: '800', color: '#111' },
+    pastStoreSub: { fontSize: 12, color: '#666', marginTop: 1 },
+    pastStatus: { fontSize: 12, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' },
+    statusDelivered: { backgroundColor: '#edf5ed', color: '#056f36' },
+    statusCancelled: { backgroundColor: '#fef2f2', color: '#ef4444' },
+    pastItems: { fontSize: 13, color: '#666', marginTop: 12, borderBottomWidth: 1, borderBottomColor: '#f7faf7', paddingBottom: 12 },
+    pastActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12 },
+    viewDetailsBtn: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#f0f4f0', borderRadius: 8 },
+    viewDetailsText: { fontSize: 12, fontWeight: '700', color: '#056f36' },
+    deleteBtn: { padding: 4 },
+
+    emptyContainer: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20 },
+    emptyIconCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#edf5ed', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+    emptyTitle: { fontSize: 18, fontWeight: '900', color: '#111', marginBottom: 8 },
+    emptySub: { fontSize: 13, color: '#666', textAlign: 'center', lineHeight: 18, marginBottom: 24, paddingHorizontal: 10 },
+    shopBtn: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: '#056f36', borderRadius: 12 },
+    shopBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' }
 });

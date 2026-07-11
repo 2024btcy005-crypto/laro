@@ -1,29 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, StatusBar
+    View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, StatusBar, Image, Dimensions
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import { clearCart } from '../../store/cartSlice';
 import { authAPI, orderAPI, couponAPI } from '../../services/api';
-import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import LaroAlert from '../../components/LaroAlert';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, CONSTANTS } from '../../theme';
 import OrderSuccessOverlay from '../../components/OrderSuccessOverlay';
 import { useTheme } from '../../context/ThemeContext';
+import LaroAlert from '../../components/LaroAlert';
+
+const { width } = Dimensions.get('window');
 
 export default function CheckoutScreen({ navigation }) {
     const { colors, isDarkMode } = useTheme();
+    const insets = useSafeAreaInsets();
     const cart = useSelector((state) => state.cart);
     const { user, selectedUniversity } = useSelector((state) => state.auth);
     const dispatch = useDispatch();
-    const [paymentMethod, setPaymentMethod] = useState('cod');
+    
+    // States
+    const [paymentMethod, setPaymentMethod] = useState('online'); // UPI is selected by default in mockup
     const [loading, setLoading] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [selectedAddress, setSelectedAddress] = useState({
-        address: 'Hostel 4, Room 205',
-        label: 'Default Address'
+        address: 'Engineering Block C, Room 102',
+        label: 'Engineering Block C'
     });
 
     const [couponCode, setCouponCode] = useState('');
@@ -38,11 +43,10 @@ export default function CheckoutScreen({ navigation }) {
         onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
     });
 
-    React.useEffect(() => {
+    useEffect(() => {
         const loadDefaultAddress = async () => {
             const key = `@user_addresses_${user?.id || 'guest'}`;
             try {
-                // 1. Try to load from local storage
                 const stored = await AsyncStorage.getItem(key);
                 if (stored) {
                     const addresses = JSON.parse(stored);
@@ -50,30 +54,15 @@ export default function CheckoutScreen({ navigation }) {
                     if (def) {
                         setSelectedAddress({
                             address: def.address,
-                            label: def.type || 'Home'
+                            label: def.hostel || def.type || 'Default Address'
                         });
-                        console.log('[Checkout] Loaded local default address:', def.address);
                         return;
                     }
                 }
-
-                // 2. Fallback: try to load from cloud (backend)
                 const summaryRes = await orderAPI.getUserSummary();
                 const cloudAddress = summaryRes.data?.user?.address;
                 if (cloudAddress) {
                     setSelectedAddress({ address: cloudAddress, label: 'Cloud Address' });
-                    console.log('[Checkout] Loaded cloud address fallback:', cloudAddress);
-
-                    // Optional: Seed local storage with this cloud address for parity
-                    const initialAddress = {
-                        id: Date.now().toString(),
-                        type: 'Home',
-                        name: user?.name || 'Student',
-                        phone: user?.phoneNumber || '',
-                        address: cloudAddress,
-                        isDefault: true
-                    };
-                    await AsyncStorage.setItem(key, JSON.stringify([initialAddress]));
                 }
             } catch (err) {
                 console.error('[Checkout] Failed to load address:', err);
@@ -89,36 +78,27 @@ export default function CheckoutScreen({ navigation }) {
         defaultDeliveryFee: 0.00
     });
     const [loadingConfig, setLoadingConfig] = useState(true);
-    const [loyaltyPoints, setLoyaltyPoints] = useState(0);
     const [laroCurrency, setLaroCurrency] = useState(0);
     const [loyaltyLevel, setLoyaltyLevel] = useState('Learner');
 
-    React.useEffect(() => {
-        const fetchLoyalty = async () => {
+    useEffect(() => {
+        const fetchLoyaltyAndConfig = async () => {
             try {
                 const res = await orderAPI.getUserSummary();
                 setLoyaltyLevel(res.data.loyaltyLevel || 'Learner');
-                setLoyaltyPoints(res.data.loyaltyPoints || 0);
                 setLaroCurrency(res.data.laroCurrency || 0);
-            } catch (err) {
-                console.log('Failed to fetch loyalty status');
-            }
-        };
-        fetchLoyalty();
-    }, []);
 
-    useEffect(() => {
-        const fetchConfig = async () => {
-            try {
-                const res = await orderAPI.getConfig();
-                if (res.data) setConfig(res.data);
+                const configRes = await orderAPI.getConfig();
+                if (configRes.data) {
+                    setConfig(configRes.data);
+                }
             } catch (err) {
-                console.log('Failed to fetch config');
+                console.log('Failed to fetch loyalty status or config');
             } finally {
                 setLoadingConfig(false);
             }
         };
-        fetchConfig();
+        fetchLoyaltyAndConfig();
     }, []);
 
     const handleApplyCoupon = async () => {
@@ -190,22 +170,7 @@ export default function CheckoutScreen({ navigation }) {
                 message: 'Please add a delivery address in your profile before checking out.',
                 onConfirm: () => {
                     setAlertConfig(prev => ({ ...prev, visible: false }));
-                    navigation.navigate('ProfileTab');
-                }
-            });
-            return;
-        }
-
-        if (subtotal < 50) {
-            setAlertConfig({
-                visible: true,
-                title: 'Minimum Order ₹50',
-                message: `Your cart total is ₹${subtotal.toFixed(2)}. Add items worth ₹${(50 - subtotal).toFixed(2)} more to place an order.`,
-                type: 'primary',
-                confirmText: 'Add More Items',
-                onConfirm: () => {
-                    setAlertConfig(prev => ({ ...prev, visible: false }));
-                    navigation.goBack();
+                    navigation.navigate('AddressBook');
                 }
             });
             return;
@@ -218,7 +183,7 @@ export default function CheckoutScreen({ navigation }) {
                 deliveryAddress: selectedAddress.address,
                 paymentMethod,
                 orderItems: cart.items.map(item => ({
-                    productId: item.id,
+                    productId: item.id || item._id,
                     quantity: item.quantity,
                     metadata: item.metadata
                 })),
@@ -229,12 +194,11 @@ export default function CheckoutScreen({ navigation }) {
             const orderResponse = await orderAPI.createOrder(orderPayload);
             const createdOrder = orderResponse.data;
 
-            // Sync the address to the user's cloud profile for web/cross-platform access
+            // Sync the address to the user's cloud profile
             try {
                 await authAPI.updateProfile({ address: selectedAddress.address });
-                console.log('[DEBUG] Address synced to cloud profile');
             } catch (cloudErr) {
-                console.log('[DEBUG] Cloud address sync failed (non-critical):', cloudErr.message);
+                console.log('[DEBUG] Cloud address sync failed:', cloudErr.message);
             }
 
             if (paymentMethod === 'cod' || paymentMethod === 'laro_coins') {
@@ -245,7 +209,7 @@ export default function CheckoutScreen({ navigation }) {
                 setAlertConfig({
                     visible: true,
                     title: 'Online Payment',
-                    message: `Razorpay order created: ${paymentResponse.data.rzpOrderId}\n\nIntegrate Razorpay SDK to complete payment.`,
+                    message: `Razorpay transaction created successfully.\n\nIntegrate Razorpay SDK to complete payment.`,
                     confirmText: 'Pay Now (Mock)',
                     onConfirm: () => {
                         setAlertConfig(prev => ({ ...prev, visible: false }));
@@ -268,209 +232,236 @@ export default function CheckoutScreen({ navigation }) {
         }
     };
 
-    const [stabilizing, setStabilizing] = useState(true);
-
-    React.useEffect(() => {
-        // Give Redux store a moment to stabilize during navigation transition
-        const timer = setTimeout(() => {
-            setStabilizing(false);
-        }, 600);
-        return () => clearTimeout(timer);
-    }, []);
-
-    if (stabilizing || loadingConfig || (loading && cart.items.length === 0)) {
+    if (loadingConfig) {
         return (
-            <SafeAreaView style={[styles.center, { backgroundColor: colors.background }]} edges={['top']}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={{ marginTop: 12, color: colors.gray, fontWeight: '600' }}>Preparing your checkout...</Text>
+            <SafeAreaView style={[styles.center, { backgroundColor: '#f2f7f2' }]} edges={['top']}>
+                <ActivityIndicator size="large" color="#056f36" />
+                <Text style={{ marginTop: 12, color: '#666', fontWeight: '800' }}>Preparing checkout...</Text>
             </SafeAreaView>
         );
     }
 
-    if (!stabilizing && cart.items.length === 0 && !orderSuccess) {
-        return (
-            <SafeAreaView style={[styles.center, { backgroundColor: colors.background }]} edges={['top']}>
-                <Ionicons name="cart-outline" size={64} color={colors.border} />
-                <Text style={{ color: colors.gray, fontSize: 16, marginTop: 15, fontWeight: 'bold' }}>Your cart is empty.</Text>
-                <TouchableOpacity
-                    style={{ marginTop: 20, backgroundColor: COLORS.primary, paddingHorizontal: 25, paddingVertical: 12, borderRadius: 25 }}
-                    onPress={() => navigation.navigate('Main', { screen: 'Home' })}
-                >
-                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>Go Shopping</Text>
-                </TouchableOpacity>
-            </SafeAreaView>
-        );
-    }
+    // Split address into sub-lines
+    const addressLines = selectedAddress.address.split(',').map(s => s.trim());
+    const addressTitle = selectedAddress.label || addressLines[0] || 'My Location';
+    const addressDetails = addressLines.slice(1).join(', ') || 'Within University Grounds';
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={colors.white} />
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="dark-content" backgroundColor="#f2f7f2" />
+            
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={22} color="#056f36" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Checkout</Text>
+                <View style={{ width: 40 }} />
+            </View>
+
             {orderSuccess ? (
-                <View style={[styles.center, { backgroundColor: colors.background }]}>
-                    <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={{ marginTop: 12, color: colors.gray, fontWeight: '600' }}>Confirming order...</Text>
+                <View style={styles.center}>
+                    <ActivityIndicator size="large" color="#056f36" />
+                    <Text style={{ marginTop: 12, color: '#666', fontWeight: '800' }}>Confirming order...</Text>
                 </View>
             ) : (
                 <>
-                    <ScrollView style={styles.scroll}>
-                        {/* Delivery Address */}
-                        <View style={styles.section}>
-                            <Text style={[styles.sectionTitle, { color: colors.black }]}>📍 Delivery Address</Text>
-                            <View style={[styles.addressCard, { backgroundColor: colors.white, borderColor: colors.border }]}>
-                                <Text style={[styles.addressText, { color: colors.black }]}>{selectedAddress.address}</Text>
-                                <Text style={styles.addressLabel}>{selectedAddress.label}</Text>
+                    <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
+                        
+                        {/* Delivery Address Section */}
+                        <View style={styles.sectionHeaderRow}>
+                            <Text style={styles.sectionTitle}>Delivery Address</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('AddressBook')}>
+                                <Text style={styles.editBtnText}>Edit</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.addressCard}>
+                            <View style={styles.addressPinCircle}>
+                                <Ionicons name="location" size={20} color="#fff" />
+                            </View>
+                            <View style={styles.addressTextCol}>
+                                <Text style={styles.addressBlockText}>{addressTitle}</Text>
+                                <Text style={styles.addressSubText} numberOfLines={2}>{addressDetails}</Text>
                             </View>
                         </View>
 
-                        {/* Order Summary */}
-                        <View style={styles.section}>
-                            <Text style={[styles.sectionTitle, { color: colors.black }]}>🛒 Order Summary</Text>
-                            {cart.items.map(item => (
-                                <View key={item.id} style={styles.summaryItem}>
-                                    <Text style={[styles.summaryName, { color: colors.gray }]}>{item.quantity}× {item.name}</Text>
-                                    <Text style={[styles.summaryPrice, { color: colors.black }]}>{CONSTANTS.CURRENCY}{parseFloat((item.price || 0) * (item.quantity || 0)).toFixed(2)}</Text>
+                        {/* Payment Method Section */}
+                        <Text style={styles.sectionTitle}>Payment Method</Text>
+
+                        {/* UPI */}
+                        <TouchableOpacity
+                            style={[styles.paymentCard, paymentMethod === 'online' && styles.paymentCardActive]}
+                            onPress={() => setPaymentMethod('online')}
+                        >
+                            <View style={[styles.paymentIconBox, paymentMethod === 'online' && styles.paymentIconBoxActive]}>
+                                <Ionicons name="card" size={20} color={paymentMethod === 'online' ? '#fff' : '#666'} />
+                            </View>
+                            <View style={styles.paymentDetails}>
+                                <Text style={styles.paymentNameText}>UPI (PhonePe, Google Pay, etc.)</Text>
+                            </View>
+                            <View style={styles.radioButton}>
+                                {paymentMethod === 'online' && <View style={styles.radioButtonSelected} />}
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Laro Coins */}
+                        <TouchableOpacity
+                            style={[
+                                styles.paymentCard, 
+                                paymentMethod === 'laro_coins' && styles.paymentCardActive,
+                                laroCurrency < grandTotal && { opacity: 0.5 }
+                            ]}
+                            onPress={() => {
+                                if (laroCurrency >= grandTotal) {
+                                    setPaymentMethod('laro_coins');
+                                } else {
+                                    setAlertConfig({
+                                        visible: true,
+                                        title: 'Insufficient Balance',
+                                        message: `You need ${grandTotal} Laro Coins, but only have ${laroCurrency}.`,
+                                        onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+                                    });
+                                }
+                            }}
+                        >
+                            <View style={[styles.paymentIconBox, paymentMethod === 'laro_coins' && styles.paymentIconBoxActive]}>
+                                <Ionicons name="logo-bitcoin" size={20} color={paymentMethod === 'laro_coins' ? '#fff' : '#666'} />
+                            </View>
+                            <View style={styles.paymentDetails}>
+                                <Text style={styles.paymentNameText}>Laro Coins</Text>
+                                <Text style={styles.paymentSubtext}>Available Balance: {laroCurrency.toFixed(2)}</Text>
+                            </View>
+                            <View style={styles.radioButton}>
+                                {paymentMethod === 'laro_coins' && <View style={styles.radioButtonSelected} />}
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* COD */}
+                        <TouchableOpacity
+                            style={[styles.paymentCard, paymentMethod === 'cod' && styles.paymentCardActive]}
+                            onPress={() => setPaymentMethod('cod')}
+                        >
+                            <View style={[styles.paymentIconBox, paymentMethod === 'cod' && styles.paymentIconBoxActive]}>
+                                <Ionicons name="cash" size={20} color={paymentMethod === 'cod' ? '#fff' : '#666'} />
+                            </View>
+                            <View style={styles.paymentDetails}>
+                                <Text style={styles.paymentNameText}>Cash on Delivery</Text>
+                                <Text style={styles.paymentSubtext}>Pay when you receive</Text>
+                            </View>
+                            <View style={styles.radioButton}>
+                                {paymentMethod === 'cod' && <View style={styles.radioButtonSelected} />}
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Order Summary Section */}
+                        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Order Summary</Text>
+                        <View style={styles.summaryListCard}>
+                            {cart.items.map((item, idx) => (
+                                <View key={item.id || item._id} style={[styles.summaryRow, idx > 0 && styles.summaryRowBorder]}>
+                                    <Image source={{ uri: item.imageUrl || 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400&q=80' }} style={styles.summaryProductImage} />
+                                    <View style={styles.summaryProductDetails}>
+                                        <Text style={styles.summaryProductName} numberOfLines={1}>{item.name}</Text>
+                                        <Text style={styles.summaryProductQty}>Qty: {item.quantity} • Standard Pack</Text>
+                                    </View>
+                                    <Text style={styles.summaryProductPrice}>
+                                        {CONSTANTS.CURRENCY}{(item.price * item.quantity).toFixed(2)}
+                                    </Text>
                                 </View>
                             ))}
-                            <View style={[styles.billDetailSection, { borderTopColor: colors.border }]}>
-                                <View style={styles.billRow}>
-                                    <Text style={[styles.billLabel, { color: colors.gray }]}>Item Total</Text>
-                                    <Text style={[styles.billValue, { color: colors.black }]}>{CONSTANTS.CURRENCY}{subtotal.toFixed(2)}</Text>
-                                </View>
-                                <View style={styles.billRow}>
-                                    <Text style={[styles.billLabel, { color: colors.gray }]}>Delivery Fee</Text>
-                                    {deliveryFee === 0 ? (
-                                        <Text style={[styles.billValue, { color: COLORS.zippitGreen || '#10b981' }]}>Free</Text>
-                                    ) : (
-                                        <Text style={[styles.billValue, { color: colors.black }]}>{CONSTANTS.CURRENCY}{deliveryFee.toFixed(2)}</Text>
-                                    )}
-                                </View>
-                                <View style={styles.billRow}>
-                                    <Text style={[styles.billLabel, { color: colors.gray }]}>Handling Fee</Text>
-                                    <Text style={[styles.billValue, { color: colors.black }]}>{CONSTANTS.CURRENCY}{handlingFee.toFixed(2)}</Text>
-                                </View>
-                                <View style={styles.billRow}>
-                                    <Text style={[styles.billLabel, { color: colors.gray }]}>Govt Taxes & Charges</Text>
-                                    <Text style={[styles.billValue, { color: colors.black }]}>{CONSTANTS.CURRENCY}{taxes.toFixed(2)}</Text>
-                                </View>
-                                {legendDiscount > 0 && (
-                                    <View style={styles.billRow}>
-                                        <Text style={[styles.billLabel, { color: '#fbbf24', fontWeight: 'bold' }]}>Legend Medicine Discount (5%)</Text>
-                                        <Text style={[styles.billValue, { color: '#fbbf24', fontWeight: 'bold' }]}>-{CONSTANTS.CURRENCY}{legendDiscount.toFixed(2)}</Text>
-                                    </View>
-                                )}
-                                {appliedCoupon && (
-                                    <View style={styles.billRow}>
-                                        <Text style={[styles.billLabel, { color: COLORS.zippitGreen, fontWeight: 'bold' }]}>Coupon Discount ({appliedCoupon.code})</Text>
-                                        <Text style={[styles.billValue, { color: COLORS.zippitGreen, fontWeight: 'bold' }]}>-{CONSTANTS.CURRENCY}{couponDiscount.toFixed(2)}</Text>
-                                    </View>
-                                )}
-                            </View>
-                            <View style={[styles.summaryItem, styles.summaryTotal, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.summaryTotalLabel, { color: colors.black }]}>Grand Total</Text>
-                                <Text style={[styles.summaryTotalAmount, { color: colors.black }]}>{CONSTANTS.CURRENCY}{parseFloat(grandTotal || 0).toFixed(2)}</Text>
-                            </View>
                         </View>
 
-                        {/* Coupons Section */}
-                        <View style={styles.section}>
-                            <Text style={[styles.sectionTitle, { color: colors.black }]}>🎟️ Coupons & Offers</Text>
-                            {!appliedCoupon ? (
-                                <View style={styles.couponInputContainer}>
-                                    <TextInput
-                                        style={[styles.couponInput, { backgroundColor: isDarkMode ? colors.white : '#f8f8f8', borderColor: colors.border, color: colors.black }]}
-                                        placeholder="Enter Promo Code"
-                                        placeholderTextColor={colors.gray}
-                                        value={couponCode}
-                                        onChangeText={(text) => setCouponCode(text.toUpperCase())}
-                                        autoCapitalize="characters"
-                                    />
-                                    <TouchableOpacity
-                                        style={[styles.applyBtn, !couponCode && { opacity: 0.5 }]}
-                                        onPress={handleApplyCoupon}
-                                        disabled={couponLoading || !couponCode}
-                                    >
-                                        {couponLoading ? (
-                                            <ActivityIndicator size="small" color="#fff" />
-                                        ) : (
-                                            <Text style={styles.applyBtnText}>Apply</Text>
-                                        )}
-                                    </TouchableOpacity>
+                        {/* Coupons Box */}
+                        {!appliedCoupon ? (
+                            <View style={styles.couponContainer}>
+                                <TextInput
+                                    style={styles.couponInput}
+                                    placeholder="Enter Promo Code"
+                                    placeholderTextColor="#999"
+                                    value={couponCode}
+                                    onChangeText={(text) => setCouponCode(text.toUpperCase())}
+                                    autoCapitalize="characters"
+                                />
+                                <TouchableOpacity
+                                    style={[styles.couponApplyBtn, !couponCode && { opacity: 0.6 }]}
+                                    onPress={handleApplyCoupon}
+                                    disabled={couponLoading || !couponCode}
+                                >
+                                    {couponLoading ? (
+                                        <ActivityIndicator size="small" color="#fff" />
+                                    ) : (
+                                        <Text style={styles.couponApplyBtnText}>Apply</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <View style={styles.couponActiveCard}>
+                                <View style={styles.couponActiveRow}>
+                                    <Ionicons name="checkmark-circle" size={18} color="#27c96c" style={{ marginRight: 8 }} />
+                                    <Text style={styles.couponActiveText}>{appliedCoupon.code} Applied!</Text>
                                 </View>
-                            ) : (
-                                <View style={[styles.appliedCouponContainer, { backgroundColor: isDarkMode ? '#064e3b' : '#f0fdf4', borderColor: isDarkMode ? '#10b981' : '#22c55e' }]}>
-                                    <View style={styles.appliedCouponInfo}>
-                                        <Ionicons name="checkmark-circle" size={20} color={isDarkMode ? '#10b981' : COLORS.zippitGreen} />
-                                        <Text style={[styles.appliedCouponText, { color: isDarkMode ? '#10b981' : '#166534' }]}>
-                                            <Text style={{ fontWeight: 'bold' }}>{appliedCoupon.code}</Text> Applied!
-                                        </Text>
+                                <TouchableOpacity onPress={removeCoupon}>
+                                    <Ionicons name="close-circle" size={18} color="#ef4444" />
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {/* Bill details */}
+                        <View style={styles.billDetailsCard}>
+                            <View style={styles.billRow}>
+                                <Text style={styles.billLabel}>Item Total</Text>
+                                <Text style={styles.billValue}>{CONSTANTS.CURRENCY}{parseFloat(subtotal || 0).toFixed(2)}</Text>
+                            </View>
+
+                            <View style={styles.billRow}>
+                                <Text style={styles.billLabel}>Delivery Fee</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={styles.freeBadge}>
+                                        <Text style={styles.freeBadgeText}>CAMPUS FREE</Text>
                                     </View>
-                                    <TouchableOpacity onPress={removeCoupon}>
-                                        <Ionicons name="close-circle" size={20} color="#ef4444" />
-                                    </TouchableOpacity>
+                                    <Text style={styles.deliveryFeeStruck}>{CONSTANTS.CURRENCY}25.00</Text>
+                                    <Text style={styles.deliveryFeeFree}>FREE</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.billRow}>
+                                <Text style={styles.billLabel}>Handling Charge</Text>
+                                <Text style={styles.billValue}>{CONSTANTS.CURRENCY}{handlingFee.toFixed(2)}</Text>
+                            </View>
+
+                            {taxes > 0 && (
+                                <View style={styles.billRow}>
+                                    <Text style={styles.billLabel}>Govt Taxes & Charges</Text>
+                                    <Text style={styles.billValue}>{CONSTANTS.CURRENCY}{taxes.toFixed(2)}</Text>
                                 </View>
                             )}
-                        </View>
 
-                        {/* Payment Method */}
-                        <View style={styles.section}>
-                            <Text style={[styles.sectionTitle, { color: colors.black }]}>💳 Payment Method</Text>
-                            <TouchableOpacity
-                                style={[styles.paymentOption, { backgroundColor: colors.white, borderColor: colors.border }, paymentMethod === 'cod' && [styles.paymentOptionActive, { backgroundColor: isDarkMode ? colors.white : COLORS.background }]]}
-                                onPress={() => setPaymentMethod('cod')}
-                            >
-                                <MaterialIcons name="delivery-dining" size={20} color={paymentMethod === 'cod' ? COLORS.primary : colors.gray} style={{ marginRight: 8 }} />
-                                <Text style={[styles.paymentOptionText, paymentMethod === 'cod' && styles.paymentOptionTextActive]}>
-                                    Cash on Delivery
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.paymentOption, { backgroundColor: colors.white, borderColor: colors.border }, paymentMethod === 'online' && [styles.paymentOptionActive, { backgroundColor: isDarkMode ? colors.white : COLORS.background }]]}
-                                onPress={() => setPaymentMethod('online')}
-                            >
-                                <Ionicons name="phone-portrait-outline" size={20} color={paymentMethod === 'online' ? COLORS.primary : colors.gray} style={{ marginRight: 8 }} />
-                                <Text style={[styles.paymentOptionText, { color: colors.gray }, paymentMethod === 'online' && styles.paymentOptionTextActive]}>
-                                    Pay Online (Razorpay)
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[
-                                    styles.paymentOption, { backgroundColor: colors.white, borderColor: colors.border },
-                                    paymentMethod === 'laro_coins' && [styles.paymentOptionActive, { backgroundColor: isDarkMode ? colors.white : COLORS.background }],
-                                    laroCurrency < grandTotal && { opacity: 0.5 }
-                                ]}
-                                onPress={() => {
-                                    if (laroCurrency >= grandTotal) {
-                                        setPaymentMethod('laro_coins');
-                                    } else {
-                                        setAlertConfig({
-                                            visible: true,
-                                            title: 'Insufficient Balance',
-                                            message: `You need ${grandTotal} Laro Coins, but only have ${laroCurrency}. Keep ordering to earn more!`,
-                                            onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
-                                        });
-                                    }
-                                }}
-                            >
-                                <MaterialCommunityIcons name="star-circle" size={20} color={paymentMethod === 'laro_coins' ? COLORS.primary : colors.gray} style={{ marginRight: 8 }} />
-                                <View style={{ flex: 1 }}>
-                                    <Text style={[styles.paymentOptionText, { color: colors.gray }, paymentMethod === 'laro_coins' && styles.paymentOptionTextActive]}>
-                                        Pay with Laro Coins
-                                    </Text>
-                                    <Text style={{ fontSize: 11, color: laroCurrency >= grandTotal ? COLORS.zippitGreen : '#ef4444', fontWeight: 'bold' }}>
-                                        Balance: {laroCurrency} Ł
-                                    </Text>
+                            {couponDiscount > 0 && (
+                                <View style={styles.billRow}>
+                                    <Text style={[styles.billLabel, { color: '#056f36', fontWeight: 'bold' }]}>Coupon Discount</Text>
+                                    <Text style={[styles.billValue, { color: '#056f36', fontWeight: 'bold' }]}>-{CONSTANTS.CURRENCY}{couponDiscount.toFixed(2)}</Text>
                                 </View>
-                            </TouchableOpacity>
+                            )}
+
+                            <View style={styles.billDivider} />
+
+                            <View style={styles.billTotalRow}>
+                                <View>
+                                    <Text style={styles.billTotalLabel}>Total Payable</Text>
+                                    <Text style={styles.billTotalSubLabel}>Inclusive of all taxes</Text>
+                                </View>
+                                <Text style={styles.billTotalValue}>{CONSTANTS.CURRENCY}{parseFloat(grandTotal || 0).toFixed(2)}</Text>
+                            </View>
                         </View>
                     </ScrollView>
 
-                    <View style={[styles.bottomBar, { backgroundColor: colors.white, borderTopColor: colors.border }]}>
+                    {/* Bottom Payment sticky bar */}
+                    <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 10 }]}>
                         <View>
-                            <Text style={[styles.totalLabel, { color: colors.gray }]}>Total to pay</Text>
-                            <Text style={[styles.totalAmount, { color: colors.black }]}>{CONSTANTS.CURRENCY}{parseFloat(grandTotal || 0).toFixed(2)}</Text>
+                            <Text style={styles.bottomBarLabel}>Total to pay</Text>
+                            <Text style={styles.bottomBarAmount}>{CONSTANTS.CURRENCY}{parseFloat(grandTotal || 0).toFixed(2)}</Text>
                         </View>
                         <TouchableOpacity
-                            style={[styles.placeOrderButton, loading && { opacity: 0.7 }]}
+                            style={[styles.placeOrderBtn, loading && { opacity: 0.7 }]}
                             onPress={handlePlaceOrder}
                             disabled={loading}
                         >
@@ -510,43 +501,252 @@ export default function CheckoutScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: '#f2f7f2' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    scroll: { padding: 15 },
-    section: { marginBottom: 22 },
-    sectionTitle: { fontSize: 17, fontWeight: 'bold', color: '#1a1a2e', marginBottom: 10 },
-    addressCard: { backgroundColor: '#fff', padding: 15, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.accent },
-    addressText: { fontSize: 15, color: '#1a1a2e' },
-    addressLabel: { marginTop: 4, fontSize: 12, color: COLORS.primary, fontWeight: '600' },
-    summaryItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-    summaryName: { fontSize: 14, color: '#555', flex: 1 },
-    summaryPrice: { fontSize: 14, fontWeight: '600', color: '#333' },
-    summaryTotal: { borderTopWidth: 1, borderColor: '#eee', marginTop: 12, paddingTop: 12, flexDirection: 'row', justifyContent: 'space-between' },
-    summaryTotalLabel: { fontSize: 18, fontWeight: '900', color: '#1a1a2e' },
-    summaryTotalAmount: { fontSize: 18, fontWeight: '900', color: '#1a1a2e' },
-    billDetailSection: { marginTop: 10 },
-    billRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-    billLabel: { fontSize: 13, color: '#666' },
-    billValue: { fontSize: 13, fontWeight: '600', color: '#333' },
-    paymentOption: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#ddd', padding: 14, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center' },
-    paymentOptionActive: { borderColor: COLORS.primary, backgroundColor: COLORS.background },
-    paymentOptionText: { fontSize: 15, color: '#666', fontWeight: '600' },
-    paymentOptionTextActive: { color: COLORS.primary },
-    bottomBar: {
-        backgroundColor: '#fff', padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.1, shadowRadius: 5, elevation: 10,
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#f2f7f2'
     },
-    totalLabel: { fontSize: 13, color: '#888' },
-    totalAmount: { fontSize: 22, fontWeight: 'bold', color: '#1a1a2e' },
-    placeOrderButton: { backgroundColor: COLORS.primary, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 25, minWidth: 130, alignItems: 'center' },
-    placeOrderText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 18, fontWeight: '900', color: '#056f36' },
 
-    // Coupon Styles
-    couponInputContainer: { flexDirection: 'row', gap: 10 },
-    couponInput: { flex: 1, backgroundColor: '#f8f8f8', borderWidth: 1.5, borderColor: '#eee', borderRadius: 12, paddingHorizontal: 15, height: 50, fontSize: 14, fontWeight: '600' },
-    applyBtn: { backgroundColor: '#1a1a2e', paddingHorizontal: 20, justifyContent: 'center', borderRadius: 12 },
-    applyBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-    appliedCouponContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f0fdf4', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#22c55e' },
-    appliedCouponInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    appliedCouponText: { fontSize: 14, color: '#166534' },
+    scroll: { paddingHorizontal: 20 },
+
+    sectionHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10
+    },
+    sectionTitle: { fontSize: 16, fontWeight: '900', color: '#111', marginVertical: 12 },
+    editBtnText: { fontSize: 13, fontWeight: '850', color: '#056f36' },
+
+    // Address Card
+    addressCard: {
+        backgroundColor: '#fff',
+        borderRadius: 22,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.01,
+        shadowRadius: 5,
+        elevation: 1,
+        marginBottom: 15
+    },
+    addressPinCircle: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#27c96c',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    addressTextCol: {
+        flex: 1,
+        marginLeft: 12
+    },
+    addressBlockText: { fontSize: 15, fontWeight: '900', color: '#111' },
+    addressSubText: { fontSize: 12, color: '#666', marginTop: 2, fontWeight: '600' },
+
+    // Payment Selection Cards
+    paymentCard: {
+        backgroundColor: '#fff',
+        borderWidth: 1.5,
+        borderColor: '#f0f4f0',
+        borderRadius: 22,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.01,
+        shadowRadius: 5,
+        elevation: 1
+    },
+    paymentCardActive: {
+        borderColor: '#27c96c',
+        backgroundColor: '#edf5ed'
+    },
+    paymentIconBox: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: '#f2f7f2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#e6ede6'
+    },
+    paymentIconBoxActive: {
+        backgroundColor: '#27c96c',
+        borderColor: '#27c96c'
+    },
+    paymentDetails: {
+        flex: 1,
+        marginLeft: 12
+    },
+    paymentNameText: { fontSize: 14, fontWeight: '900', color: '#111' },
+    paymentSubtext: { fontSize: 11, color: '#666', marginTop: 2, fontWeight: '600' },
+    radioButton: {
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        borderWidth: 2,
+        borderColor: '#aaa',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    radioButtonSelected: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#056f36'
+    },
+
+    // Order Summary
+    summaryListCard: {
+        backgroundColor: '#fff',
+        borderRadius: 22,
+        paddingHorizontal: 16,
+        paddingVertical: 4,
+        marginBottom: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.01,
+        shadowRadius: 5,
+        elevation: 1
+    },
+    summaryRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14
+    },
+    summaryRowBorder: {
+        borderTopWidth: 1,
+        borderTopColor: '#f7faf7'
+    },
+    summaryProductImage: { width: 44, height: 44, borderRadius: 10 },
+    summaryProductDetails: {
+        flex: 1,
+        marginLeft: 12
+    },
+    summaryProductName: { fontSize: 14, fontWeight: '900', color: '#111' },
+    summaryProductQty: { fontSize: 11, color: '#666', marginTop: 2, fontWeight: '600' },
+    summaryProductPrice: { fontSize: 14, fontWeight: '900', color: '#111' },
+
+    // Coupon
+    couponContainer: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 15
+    },
+    couponInput: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderWidth: 1.5,
+        borderColor: '#f0f4f0',
+        borderRadius: 16,
+        paddingHorizontal: 15,
+        height: 48,
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#111'
+    },
+    couponApplyBtn: {
+        backgroundColor: '#056f36',
+        paddingHorizontal: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 16
+    },
+    couponApplyBtnText: { color: '#fff', fontWeight: '850', fontSize: 13 },
+    couponActiveCard: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#edf5ed',
+        borderWidth: 1,
+        borderColor: '#27c96c',
+        borderRadius: 16,
+        padding: 14,
+        marginBottom: 15
+    },
+    couponActiveRow: { flexDirection: 'row', alignItems: 'center' },
+    couponActiveText: { fontSize: 13, fontWeight: '850', color: '#056f36' },
+
+    // Bill Details Card
+    billDetailsCard: {
+        backgroundColor: '#fff',
+        borderRadius: 22,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.01,
+        shadowRadius: 5,
+        elevation: 1,
+        marginBottom: 20
+    },
+    billRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 6 },
+    billLabel: { fontSize: 13, color: '#666', fontWeight: '750' },
+    billValue: { fontSize: 13, color: '#111', fontWeight: '800' },
+    freeBadge: {
+        backgroundColor: '#d8e5d8',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        marginRight: 6
+    },
+    freeBadgeText: { fontSize: 9, color: '#056f36', fontWeight: '850' },
+    deliveryFeeStruck: { fontSize: 12, color: '#999', textDecorationLine: 'line-through', marginRight: 6, fontWeight: '600' },
+    deliveryFeeFree: { fontSize: 13, color: '#27c96c', fontWeight: '900' },
+    billDivider: { height: 1, backgroundColor: '#edf2ed', marginVertical: 12 },
+    
+    billTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    billTotalLabel: { fontSize: 15, fontWeight: '900', color: '#111' },
+    billTotalSubLabel: { fontSize: 11, color: '#999', fontWeight: '600', marginTop: 1 },
+    billTotalValue: { fontSize: 20, fontWeight: '900', color: '#056f36' },
+
+    // Bottom Sticky Bar
+    bottomBar: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        paddingHorizontal: 20,
+        paddingTop: 15,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderTopWidth: 1,
+        borderTopColor: '#f0f4f0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 10
+    },
+    bottomBarLabel: { fontSize: 10, color: '#999', fontWeight: '800' },
+    bottomBarAmount: { fontSize: 22, fontWeight: '950', color: '#056f36', marginTop: 2 },
+    placeOrderBtn: {
+        backgroundColor: '#056f36', // Deep green checkout placement button
+        borderRadius: 16,
+        height: 48,
+        paddingHorizontal: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 2
+    },
+    placeOrderText: { color: '#fff', fontSize: 14, fontWeight: '850' }
 });

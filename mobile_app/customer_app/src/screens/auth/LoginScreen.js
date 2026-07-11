@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { 
+    View, Text, StyleSheet, TextInput, TouchableOpacity, Image, 
+    KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert 
+} from 'react-native';
 import { useDispatch } from 'react-redux';
 import { signIn } from '../../store/authSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,15 +11,20 @@ import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../../theme';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
-    const { colors, isDarkMode } = useTheme();
+    const { colors } = useTheme();
+    const insets = useSafeAreaInsets();
     const [isLoginMode, setIsLoginMode] = useState(true);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [secureText, setSecureText] = useState(true);
+    const [secureConfirm, setSecureConfirm] = useState(true);
 
     const dispatch = useDispatch();
     const navigation = useNavigation();
@@ -30,13 +38,16 @@ export default function LoginScreen() {
     });
 
     const handleLogin = async () => {
-        // Validation
         if (!email.includes('@')) {
             Alert.alert('Invalid Email', 'Please enter a valid email address');
             return;
         }
         if (password.length < 6) {
             Alert.alert('Weak Password', 'Password must be at least 6 characters');
+            return;
+        }
+        if (!isLoginMode && password !== confirmPassword) {
+            Alert.alert('Password Mismatch', 'Passwords do not match. Please try again.');
             return;
         }
         if (!isLoginMode && !name) {
@@ -49,7 +60,7 @@ export default function LoginScreen() {
             const endpoint = isLoginMode ? '/auth/login' : '/auth/register';
             const payload = isLoginMode
                 ? { email, password }
-                : { email, password, name, phoneNumber: phone };
+                : { email, password, name, role: 'customer' };
 
             console.log(`[AUTH] Calling ${endpoint} for ${email}...`);
             const response = await api.post(endpoint, payload);
@@ -57,27 +68,16 @@ export default function LoginScreen() {
             const { token, id, name: userName, phoneNumber, role } = response.data;
             const userData = { id, name: userName, email, phoneNumber, role };
 
-            // Success! Save session
             await AsyncStorage.setItem('userToken', token);
             await AsyncStorage.setItem('userData', JSON.stringify(userData));
 
-            // Check if user has addresses and phone
-            const addressKey = `@user_addresses_${id}`;
-            const storedAddresses = await AsyncStorage.getItem(addressKey);
-            const addressCount = storedAddresses ? JSON.parse(storedAddresses).length : 0;
-            const hasPhone = !!userData.phoneNumber;
-
-            dispatch(signIn({ user: userData, token }));
+            // Pass setupPending:true for new registrations so App.js routes to LinkWallet
+            dispatch(signIn({ user: userData, token, setupPending: !isLoginMode }));
 
             console.log('[AUTH] Success! Logged in as:', userName);
-
-            setTimeout(() => {
-                if (addressCount === 0) {
-                    navigation.navigate('AddressBook', { isSetup: true });
-                } else if (!hasPhone) {
-                    navigation.navigate('LinkWallet', { isSetup: true });
-                }
-            }, 100);
+            // SetupRedirectScreen handles routing:
+            //   - New registrations (laro_setup_pending=true) → LinkWallet setup flow
+            //   - Normal logins → Main
         } catch (error) {
             console.error('[AUTH ERROR]', error.response?.data || error.message);
             const msg = error.response?.data?.message || 'Something went wrong. Please check your credentials and try again.';
@@ -93,6 +93,10 @@ export default function LoginScreen() {
         }
     };
 
+    const handleGoogleLogin = () => {
+        Alert.alert('Service Unavailable', "Google Sign-In service isn't available right now. Sorry!");
+    };
+
     const handleSkip = async () => {
         const guestData = { id: 'guest', name: 'Guest User', role: 'customer', email: 'guest@laro.app' };
         const guestToken = 'guest_session_token';
@@ -100,136 +104,180 @@ export default function LoginScreen() {
         await AsyncStorage.setItem('userToken', guestToken);
         await AsyncStorage.setItem('userData', JSON.stringify(guestData));
 
-        // Check if guest has addresses
-        const addressKey = `@user_addresses_guest`;
-        const storedAddresses = await AsyncStorage.getItem(addressKey);
-        const addressCount = storedAddresses ? JSON.parse(storedAddresses).length : 0;
-
         dispatch(signIn({ user: guestData, token: guestToken }));
         console.log('[AUTH] Entering as Guest');
-
-        setTimeout(() => {
-            if (addressCount === 0) {
-                navigation.navigate('AddressBook', { isSetup: true });
-            } else {
-                // Guests usually don't link wallets immediately, but we can offer it 
-                // However, for guest, we usually just go to Home if address exists
-            }
-        }, 100);
+        // SetupRedirectScreen will route to Main for guest users
     };
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.container, { backgroundColor: colors.background }]}>
-            <ScrollView contentContainerStyle={styles.scroll} bounces={false} showsVerticalScrollIndicator={false}>
-                {/* Hero section */}
-                <View style={styles.heroContainer}>
-                    <Image
-                        source={{ uri: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1000' }}
-                        style={styles.heroImage}
-                    />
-                    <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-                        <Text style={styles.skipText}>Skip</Text>
-                    </TouchableOpacity>
-                </View>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+                style={{ flex: 1 }}
+            >
+                <ScrollView 
+                    contentContainerStyle={styles.scrollContent} 
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    
+                    {/* Zippit Mascot/Logo header icon */}
+                    <View style={styles.logoContainer}>
+                        <View style={styles.logoBgSquare}>
+                            <Image 
+                                source={{ uri: 'https://img.icons8.com/color/96/lightning-bolt.png' }} 
+                                style={styles.logoImage} 
+                            />
+                        </View>
+                    </View>
 
-                {/* Bottom Card */}
-                <View style={[styles.bottomCard, { backgroundColor: colors.white }]}>
-                    <Text style={[styles.title, { color: colors.black }]}>
-                        {isLoginMode ? 'Welcome Back to Laro' : 'Create Your Account'}
+                    {/* Titles */}
+                    <Text style={styles.welcomeTitle}>
+                        {isLoginMode ? 'Welcome Back' : 'Create Account'}
+                    </Text>
+                    <Text style={styles.welcomeSubtitle}>
+                        {isLoginMode 
+                            ? 'Log in to continue to campus delivery.' 
+                            : 'Sign up to get fast campus deliveries.'
+                        }
                     </Text>
 
+                    {/* Form inputs */}
                     <View style={styles.formContainer}>
+                        
                         {!isLoginMode && (
                             <View style={styles.inputWrapper}>
-                                <Text style={[styles.inputLabel, { color: colors.gray }]}>Full Name</Text>
-                                <TextInput
-                                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.black }]}
-                                    placeholder="Enter your name"
-                                    placeholderTextColor={colors.gray + '80'}
-                                    value={name}
-                                    onChangeText={setName}
-                                />
+                                <Text style={styles.inputLabel}>Full Name</Text>
+                                <View style={styles.inputFieldBox}>
+                                    <Ionicons name="person-outline" size={18} color="#666" style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder="Alex Thompson"
+                                        placeholderTextColor="#999"
+                                        value={name}
+                                        onChangeText={setName}
+                                    />
+                                </View>
                             </View>
                         )}
 
                         <View style={styles.inputWrapper}>
-                            <Text style={[styles.inputLabel, { color: colors.gray }]}>Email Address</Text>
-                            <TextInput
-                                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.black }]}
-                                placeholder="name@example.com"
-                                placeholderTextColor={colors.gray + '80'}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                value={email}
-                                onChangeText={setEmail}
-                            />
-                        </View>
-
-                        {!isLoginMode && (
-                            <View style={styles.inputWrapper}>
-                                <Text style={styles.inputLabel}>Phone Number (Optional)</Text>
+                            <Text style={styles.inputLabel}>Email</Text>
+                            <View style={styles.inputFieldBox}>
+                                <Ionicons name="mail-outline" size={18} color="#666" style={{ marginRight: 10 }} />
                                 <TextInput
-                                    style={styles.input}
-                                    placeholder="10-digit number"
+                                    style={styles.textInput}
+                                    placeholder="student@university.edu"
                                     placeholderTextColor="#999"
-                                    keyboardType="number-pad"
-                                    maxLength={10}
-                                    value={phone}
-                                    onChangeText={setPhone}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    value={email}
+                                    onChangeText={setEmail}
                                 />
+                            </View>
+                        </View>
+
+                        <View style={styles.inputWrapper}>
+                            <View style={styles.passwordHeaderRow}>
+                                <Text style={styles.inputLabel}>Password</Text>
+                                {isLoginMode && (
+                                    <TouchableOpacity>
+                                        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                            <View style={styles.inputFieldBox}>
+                                <Ionicons name="lock-closed-outline" size={18} color="#666" style={{ marginRight: 10 }} />
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="••••••••"
+                                    placeholderTextColor="#999"
+                                    secureTextEntry={secureText}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                />
+                                <TouchableOpacity onPress={() => setSecureText(p => !p)}>
+                                    <Ionicons 
+                                        name={secureText ? "eye-outline" : "eye-off-outline"} 
+                                        size={18} 
+                                        color="#666" 
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {!isLoginMode && (
+                            <View style={styles.inputWrapper}>
+                                <Text style={styles.inputLabel}>Confirm Password</Text>
+                                <View style={styles.inputFieldBox}>
+                                    <Ionicons name="shield-checkmark-outline" size={18} color="#666" style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder="••••••••"
+                                        placeholderTextColor="#999"
+                                        secureTextEntry={secureConfirm}
+                                        value={confirmPassword}
+                                        onChangeText={setConfirmPassword}
+                                    />
+                                    <TouchableOpacity onPress={() => setSecureConfirm(p => !p)}>
+                                        <Ionicons
+                                            name={secureConfirm ? "eye-outline" : "eye-off-outline"}
+                                            size={18}
+                                            color="#666"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         )}
 
-                        <View style={styles.inputWrapper}>
-                            <Text style={[styles.inputLabel, { color: colors.gray }]}>Password</Text>
-                            <TextInput
-                                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.black }]}
-                                placeholder="Minimum 6 characters"
-                                placeholderTextColor={colors.gray + '80'}
-                                secureTextEntry
-                                value={password}
-                                onChangeText={setPassword}
-                            />
-                        </View>
-
-                        <TouchableOpacity
-                            style={[styles.primaryButton, { opacity: loading ? 0.7 : 1 }]}
+                        {/* Login Primary Action Button */}
+                        <TouchableOpacity 
+                            style={styles.loginBtn} 
                             onPress={handleLogin}
                             disabled={loading}
                         >
                             {loading ? (
-                                <ActivityIndicator color="#fff" size="small" />
+                                <ActivityIndicator color="#fff" />
                             ) : (
-                                <Text style={styles.primaryButtonText}>
-                                    {isLoginMode ? 'Sign In' : 'Create Account'}
-                                </Text>
+                                <View style={styles.loginBtnContent}>
+                                    <Text style={styles.loginBtnText}>
+                                        {isLoginMode ? 'Login' : 'Sign Up'}
+                                    </Text>
+                                    <Ionicons name="arrow-forward" size={16} color="#fff" style={{ marginLeft: 8 }} />
+                                </View>
                             )}
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.toggleContainer}
-                            onPress={() => {
-                                if (isLoginMode) {
-                                    navigation.navigate('Register');
-                                } else {
-                                    setIsLoginMode(true);
-                                }
-                            }}
+                        {/* Divider OR */}
+                        <View style={styles.dividerRow}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>OR</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        {/* Google Sign In Button */}
+                        <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleLogin}>
+                            <Ionicons name="logo-google" size={16} color="#056f36" style={{ marginRight: 10 }} />
+                            <Text style={styles.googleBtnText}>Sign in with your Google</Text>
+                        </TouchableOpacity>
+
+                        {/* Toggle login / signup */}
+                        <TouchableOpacity 
+                            style={styles.toggleTextContainer}
+                            onPress={() => setIsLoginMode(p => !p)}
                         >
-                            <Text style={[styles.toggleText, { color: colors.gray }]}>
+                            <Text style={styles.toggleNormalText}>
                                 {isLoginMode ? "Don't have an account? " : "Already have an account? "}
-                                <Text style={styles.toggleHighlight}>
-                                    {isLoginMode ? 'Sign Up' : 'Log In'}
+                                <Text style={styles.toggleHighlightText}>
+                                    {isLoginMode ? 'Sign Up' : 'Login'}
                                 </Text>
                             </Text>
                         </TouchableOpacity>
+
                     </View>
 
-                    <Text style={styles.termsText}>
-                        By continuing, you agree to our <Text style={styles.termsLink}>Terms</Text> and <Text style={styles.termsLink}>Privacy Policy</Text>
-                    </Text>
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             <LaroAlert
                 visible={alertConfig.visible}
@@ -239,36 +287,171 @@ export default function LoginScreen() {
                 onConfirm={alertConfig.onConfirm}
                 onCancel={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
             />
-        </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
-    scroll: { flexGrow: 1, backgroundColor: COLORS.black },
+    container: { flex: 1, backgroundColor: '#f2f7f2' },
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 30,
+        paddingBottom: 40,
+        alignItems: 'center'
+    },
+    
+    // Logo styling
+    logoContainer: {
+        marginBottom: 25,
+        alignItems: 'center'
+    },
+    logoBgSquare: {
+        width: 60,
+        height: 60,
+        backgroundColor: '#fff',
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        elevation: 2
+    },
+    logoImage: {
+        width: 32,
+        height: 32,
+        resizeMode: 'contain'
+    },
 
-    heroContainer: { height: 350, width: '100%', position: 'relative' },
-    heroImage: { width: '100%', height: '100%', resizeMode: 'cover', opacity: 0.9 },
-    skipButton: { position: 'absolute', top: 50, right: 20, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-    skipText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
+    welcomeTitle: {
+        fontSize: 26,
+        fontWeight: '900',
+        color: '#056f36',
+        textAlign: 'center',
+        marginBottom: 8
+    },
+    welcomeSubtitle: {
+        fontSize: 13,
+        color: '#666',
+        textAlign: 'center',
+        fontWeight: '650',
+        marginBottom: 35
+    },
 
-    bottomCard: { flex: 1, backgroundColor: COLORS.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: -30, paddingHorizontal: 25, paddingTop: 35, paddingBottom: 40 },
+    formContainer: {
+        width: '100%'
+    },
+    inputWrapper: {
+        marginBottom: 20
+    },
+    passwordHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8
+    },
+    inputLabel: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#056f36',
+        textTransform: 'uppercase',
+        letterSpacing: 0.3
+    },
+    forgotPasswordText: {
+        fontSize: 11,
+        fontWeight: '850',
+        color: '#056f36'
+    },
+    inputFieldBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderWidth: 1.5,
+        borderColor: '#e6ede6',
+        borderRadius: 16,
+        height: 52,
+        paddingHorizontal: 16
+    },
+    textInput: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#111'
+    },
 
-    title: { fontSize: 24, fontWeight: '900', color: '#1c1c1c', textAlign: 'left', marginBottom: 25, width: '100%' },
+    // Login Action button
+    loginBtn: {
+        backgroundColor: '#056f36',
+        borderRadius: 16,
+        height: 52,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 10,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 2
+    },
+    loginBtnContent: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    loginBtnText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '850'
+    },
 
-    formContainer: { width: '100%' },
-    inputWrapper: { marginBottom: 20 },
-    inputLabel: { fontSize: 13, fontWeight: '700', color: '#666', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-    input: { borderWidth: 1.5, borderColor: '#f0f0f0', borderRadius: 12, paddingHorizontal: 16, height: 54, fontSize: 16, color: '#1c1c1c', fontWeight: '500', backgroundColor: '#fafafa' },
+    // OR Divider
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 25
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#e6ede6'
+    },
+    dividerText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#bbb',
+        marginHorizontal: 15
+    },
 
-    primaryButton: { backgroundColor: COLORS.primary, height: 56, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginTop: 10, marginBottom: 20, width: '100%', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
-    primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    // Google Login button
+    googleBtn: {
+        backgroundColor: '#fff',
+        borderWidth: 1.5,
+        borderColor: '#e6ede6',
+        borderRadius: 16,
+        height: 52,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 25
+    },
+    googleBtnText: {
+        color: '#056f36',
+        fontSize: 14,
+        fontWeight: '850'
+    },
 
-    toggleContainer: { alignItems: 'center', paddingVertical: 10 },
-    toggleText: { fontSize: 14, color: '#666' },
-    toggleHighlight: { color: COLORS.primary, fontWeight: 'bold' },
-
-    termsText: { fontSize: 11, color: '#888', textAlign: 'center', lineHeight: 18, marginTop: 25, paddingHorizontal: 10 },
-    termsLink: { color: COLORS.primary, fontWeight: '600' }
+    // Toggle row
+    toggleTextContainer: {
+        alignItems: 'center',
+        paddingVertical: 10
+    },
+    toggleNormalText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#555'
+    },
+    toggleHighlightText: {
+        color: '#056f36',
+        fontWeight: '900'
+    }
 });
-

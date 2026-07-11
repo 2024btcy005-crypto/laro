@@ -9,7 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { restoreToken } from './src/store/authSlice';
 import { setStoreCart } from './src/store/cartSlice';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from './src/theme';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -45,83 +45,73 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabNavigator() {
-    const { colors } = useTheme();
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
-                tabBarIcon: ({ focused, color, size }) => {
+                headerShown: false,
+                tabBarShowLabel: false,
+                tabBarStyle: {
+                    backgroundColor: '#ffffff',
+                    borderTopWidth: 1,
+                    borderTopColor: '#ececec',
+                    height: 64,
+                    elevation: 8,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: -2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 6,
+                    paddingBottom: 8,
+                    paddingTop: 6,
+                },
+                tabBarIcon: ({ focused }) => {
                     let iconName;
-                    if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
-                    else if (route.name === 'Orders') iconName = focused ? 'receipt' : 'receipt-outline';
-                    else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
+                    let label;
+
+                    if (route.name === 'Home') {
+                        iconName = focused ? 'home' : 'home-outline';
+                        label = 'Home';
+                    } else if (route.name === 'Orders') {
+                        iconName = focused ? 'receipt' : 'receipt-outline';
+                        label = 'Orders';
+                    } else if (route.name === 'Profile') {
+                        iconName = focused ? 'person' : 'person-outline';
+                        label = 'Profile';
+                    }
 
                     return (
-                        <View style={{
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            top: 0
-                        }}>
-                            <View style={{
-                                width: 45,
-                                height: 45,
-                                borderRadius: 22.5,
-                                backgroundColor: focused ? `${colors.primary}15` : 'transparent',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginBottom: 4
+                        <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                            <Ionicons
+                                name={iconName}
+                                size={22}
+                                color={focused ? '#056f36' : '#aaaaaa'}
+                            />
+                            <Text style={{
+                                fontSize: 10,
+                                fontWeight: focused ? '700' : '500',
+                                color: focused ? '#056f36' : '#aaaaaa',
+                                marginTop: 3,
                             }}>
-                                <Ionicons name={iconName || 'help-circle-outline'} size={size} color={color} />
-                            </View>
+                                {label}
+                            </Text>
                         </View>
                     );
                 },
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.gray,
-                headerShown: false,
-                tabBarShowLabel: true,
-                tabBarStyle: {
-                    position: 'absolute',
-                    bottom: 20,
-                    left: 20,
-                    right: 20,
-                    height: 65,
-                    elevation: 10,
-                    borderRadius: 30,
-                    backgroundColor: colors.white,
-                    borderTopWidth: 0,
-                    paddingTop: 12,
-                    paddingBottom: 25,
-                    shadowColor: colors.primary,
-                    shadowOffset: { width: 0, height: 10 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 15,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                },
-                tabBarLabelStyle: {
-                    fontSize: 11,
-                    fontWeight: '900',
-                    marginTop: -5,
-                    letterSpacing: 0.3
-                }
             })}
         >
+
             <Tab.Screen
                 name="Home"
                 component={HomeScreen}
-                options={{ title: 'Laro' }}
                 listeners={{ tabPress: () => Haptics.selectionAsync() }}
             />
             <Tab.Screen
                 name="Orders"
                 component={OrdersScreen}
-                options={{ title: 'Your Orders' }}
                 listeners={{ tabPress: () => Haptics.selectionAsync() }}
             />
             <Tab.Screen
                 name="Profile"
                 component={ProfileScreen}
-                options={{ title: 'Profile' }}
                 listeners={{ tabPress: () => Haptics.selectionAsync() }}
             />
         </Tab.Navigator>
@@ -130,7 +120,7 @@ function TabNavigator() {
 
 // Component to handle Auth state logic
 function RootNavigator() {
-    const { isAuthenticated, isLoading, selectedUniversity } = useSelector(state => state.auth);
+    const { isAuthenticated, isLoading, setupPending } = useSelector(state => state.auth);
     const { items } = useSelector(state => state.cart);
     const dispatch = useDispatch();
     const [hasOnboarded, setHasOnboarded] = React.useState(false);
@@ -229,10 +219,22 @@ function RootNavigator() {
         >
             {isAuthenticated ? (
                 <>
-                    {/* Screens always available when logged in */}
-                    <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
+                    {setupPending ? (
+                        // Fresh registration: start at step 1 (LinkWallet) with setup params
+                        <Stack.Screen
+                            name="LinkWallet"
+                            component={LinkWalletScreen}
+                            options={{ headerShown: false }}
+                            initialParams={{ isSetup: true }}
+                        />
+                    ) : (
+                        // Returning user: go straight to Main
+                        <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
+                    )}
+                    {/* Always register all authenticated screens */}
+                    {setupPending && <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />}
+                    {!setupPending && <Stack.Screen name="LinkWallet" component={LinkWalletScreen} options={{ headerShown: false }} />}
                     <Stack.Screen name="AddressBook" component={AddressBookScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="LinkWallet" component={LinkWalletScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="UniversitySelection" component={UniversitySelectionScreen} options={{ headerShown: false }} />
 
                     <Stack.Screen name="ShopDetails" component={ShopDetailsScreen} options={{ headerShown: false }} />

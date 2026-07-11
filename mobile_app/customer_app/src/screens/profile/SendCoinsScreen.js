@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, TextInput,
     ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
-    Animated, Dimensions, Modal, StatusBar
+    Animated, Dimensions, Modal, StatusBar, Image
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../theme';
-import { walletAPI } from '../../services/api';
+import { walletAPI, orderAPI } from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
 import Confetti from '../../components/Confetti';
 import { Audio } from 'expo-av';
@@ -17,19 +17,17 @@ import { useSelector } from 'react-redux';
 import { useTheme } from '../../context/ThemeContext';
 import LaroScannerOverlay from '../../components/LaroScannerOverlay';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-// ─── Premium Success Screen ───────────────────────────────────────────────
-function SuccessScreen({ successState, recipientInitial, onBack, colors, isDarkMode }) {
+// ─── Success Screen ───────────────────────────────────────────────
+function SuccessScreen({ successState, recipientInitial, onBack }) {
     const pulse1 = useRef(new Animated.Value(1)).current;
     const pulse2 = useRef(new Animated.Value(1)).current;
     const fadeIn = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        // Fade in content
         Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }).start();
 
-        // Infinite pulse rings
         const createPulse = (anim, delay) =>
             Animated.loop(
                 Animated.sequence([
@@ -46,14 +44,10 @@ function SuccessScreen({ successState, recipientInitial, onBack, colors, isDarkM
     return (
         <View style={ss.root}>
             <Confetti />
-
-            {/* Dark background layers */}
             <View style={ss.bgCircle1} />
             <View style={ss.bgCircle2} />
 
             <Animated.View style={[ss.content, { opacity: fadeIn }]}>
-
-                {/* Pulse rings + coin icon */}
                 <View style={ss.iconWrapper}>
                     <Animated.View style={[ss.pulseRing, ss.pulseRing1, { transform: [{ scale: pulse1 }] }]} />
                     <Animated.View style={[ss.pulseRing, ss.pulseRing2, { transform: [{ scale: pulse2 }] }]} />
@@ -62,18 +56,15 @@ function SuccessScreen({ successState, recipientInitial, onBack, colors, isDarkM
                     </View>
                 </View>
 
-                {/* Title */}
                 <Text style={ss.heading}>Sent!</Text>
                 <Text style={ss.amountLabel}>{successState.amount} Laro Coins</Text>
 
-                {/* Arrow divider */}
                 <View style={ss.arrowRow}>
                     <View style={ss.arrowLine} />
                     <MaterialCommunityIcons name="arrow-right-circle" size={28} color="rgba(255,255,255,0.3)" />
                     <View style={ss.arrowLine} />
                 </View>
 
-                {/* Recipient chip */}
                 <View style={ss.recipientRow}>
                     <View style={ss.recipientBubble}>
                         <Text style={ss.recipientInitial}>{recipientInitial}</Text>
@@ -84,14 +75,12 @@ function SuccessScreen({ successState, recipientInitial, onBack, colors, isDarkM
                     </View>
                 </View>
 
-                {/* Subtext */}
                 <Text style={ss.note}>Coins delivered instantly ✦</Text>
             </Animated.View>
 
-            {/* Bottom CTA */}
             <View style={ss.bottomBar}>
                 <TouchableOpacity style={ss.backBtn} onPress={onBack} activeOpacity={0.85}>
-                    <Ionicons name="arrow-back" size={18} color="#1a1a2e" />
+                    <Ionicons name="arrow-back" size={18} color="#056f36" />
                     <Text style={ss.backBtnText}>Back to Wallet</Text>
                 </TouchableOpacity>
             </View>
@@ -100,14 +89,14 @@ function SuccessScreen({ successState, recipientInitial, onBack, colors, isDarkM
 }
 
 const ss = StyleSheet.create({
-    root: { flex: 1, backgroundColor: '#0a0a14' },
+    root: { flex: 1, backgroundColor: '#056f36', justifyContent: 'center' },
     bgCircle1: {
         position: 'absolute', width: 400, height: 400, borderRadius: 200,
-        backgroundColor: '#1e1b4b', top: -120, right: -120, opacity: 0.6
+        backgroundColor: 'rgba(255,255,255,0.05)', top: -120, right: -120
     },
     bgCircle2: {
         position: 'absolute', width: 300, height: 300, borderRadius: 150,
-        backgroundColor: '#14532d', bottom: 80, left: -100, opacity: 0.4
+        backgroundColor: 'rgba(255,255,255,0.05)', bottom: 80, left: -100
     },
     content: {
         flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30,
@@ -117,56 +106,57 @@ const ss = StyleSheet.create({
         position: 'absolute', width: 150, height: 150, borderRadius: 75,
         borderWidth: 2
     },
-    pulseRing1: { borderColor: 'rgba(74, 222, 128, 0.3)' },
-    pulseRing2: { borderColor: 'rgba(74, 222, 128, 0.15)' },
+    pulseRing1: { borderColor: 'rgba(255, 255, 255, 0.3)' },
+    pulseRing2: { borderColor: 'rgba(255, 255, 255, 0.15)' },
     coinCircle: {
         width: 110, height: 110, borderRadius: 55,
-        backgroundColor: '#15803d',
+        backgroundColor: '#fff',
         alignItems: 'center', justifyContent: 'center',
-        shadowColor: '#4ade80', shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.5, shadowRadius: 20, elevation: 20,
+        shadowColor: '#fff', shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3, shadowRadius: 20, elevation: 20,
     },
-    coinSymbol: { fontSize: 48, fontWeight: '900', color: '#fff' },
+    coinSymbol: { fontSize: 48, fontWeight: '900', color: '#056f36' },
 
     heading: { fontSize: 48, fontWeight: '900', color: '#fff', letterSpacing: -1.5 },
-    amountLabel: { fontSize: 18, color: '#4ade80', fontWeight: '800', marginTop: 4, marginBottom: 24 },
+    amountLabel: { fontSize: 18, color: '#fff', fontWeight: '850', marginTop: 4, marginBottom: 24, opacity: 0.9 },
 
     arrowRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24, width: '80%' },
-    arrowLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' },
+    arrowLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.2)' },
 
     recipientRow: {
         flexDirection: 'row', alignItems: 'center', gap: 16,
-        backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 24,
+        backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 24,
         paddingHorizontal: 20, paddingVertical: 14,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
         marginBottom: 24, width: '100%'
     },
     recipientBubble: {
         width: 48, height: 48, borderRadius: 24,
-        backgroundColor: '#818cf8', alignItems: 'center', justifyContent: 'center'
+        backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center'
     },
-    recipientInitial: { color: '#fff', fontSize: 22, fontWeight: '900' },
-    recipientTo: { color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+    recipientInitial: { color: '#056f36', fontSize: 22, fontWeight: '900' },
+    recipientTo: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
     recipientName: { color: '#fff', fontSize: 18, fontWeight: '900', marginTop: 2 },
 
-    note: { color: 'rgba(255,255,255,0.25)', fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
+    note: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
 
     bottomBar: {
-        paddingHorizontal: 24, paddingBottom: 40, paddingTop: 16,
-        borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)'
+        paddingHorizontal: 24, paddingBottom: 40, paddingTop: 16
     },
     backBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
         backgroundColor: '#ffffff', paddingVertical: 16, borderRadius: 50,
     },
-    backBtnText: { color: '#1a1a2e', fontSize: 16, fontWeight: '900' },
+    backBtnText: { color: '#056f36', fontSize: 16, fontWeight: '900' },
 });
-// ──────────────────────────────────────────────────────────────────────────────
 
 export default function SendCoinsScreen({ navigation, route }) {
     const { colors, isDarkMode } = useTheme();
     const { user } = useSelector(state => state.auth);
-    const currentBalance = route.params?.balance || 0;
+    const insets = useSafeAreaInsets();
+    
+    // Live Balance State
+    const [balance, setBalance] = useState(route.params?.balance || 0);
 
     const [phone, setPhone] = useState('');
     const [amount, setAmount] = useState('');
@@ -180,9 +170,7 @@ export default function SendCoinsScreen({ navigation, route }) {
     const [cameraPermission, requestCameraPermission] = useCameraPermissions();
     const scanned = useRef(false);
     const [recentRecipients, setRecentRecipients] = useState([]);
-    const [recentLoading, setRecentLoading] = useState(false);
     const [torch, setTorch] = useState(false);
-
 
     const playSuccessSound = async () => {
         try {
@@ -199,22 +187,27 @@ export default function SendCoinsScreen({ navigation, route }) {
         }
     };
 
+    // Load Live Balance and Recipient stats
     useEffect(() => {
-        fetchRecentRecipients();
+        const loadInitialData = async () => {
+            try {
+                // Fetch stats/balance
+                const statsRes = await orderAPI.getUserSummary();
+                if (statsRes.data && statsRes.data.laroCurrency !== undefined) {
+                    setBalance(statsRes.data.laroCurrency);
+                }
+
+                // Fetch recent recipients
+                const res = await walletAPI.getRecentRecipients();
+                if (res.data) {
+                    setRecentRecipients(res.data);
+                }
+            } catch (err) {
+                console.error('[SendCoins] Failed to load data:', err.message);
+            }
+        };
+        loadInitialData();
     }, []);
-
-    const fetchRecentRecipients = async () => {
-        try {
-            setRecentLoading(true);
-            const res = await walletAPI.getRecentRecipients();
-            setRecentRecipients(res.data);
-        } catch (err) {
-            console.error('[RECENT] Error fetching:', err);
-        } finally {
-            setRecentLoading(false);
-        }
-    };
-
 
     const handleBarcodeScanned = (scanningResult) => {
         if (scanned.current || !scanningResult.data) return;
@@ -222,7 +215,6 @@ export default function SendCoinsScreen({ navigation, route }) {
 
         try {
             const { data } = scanningResult;
-            // QR contains the 10-digit phone number
             const scannedPhone = String(data).replace(/[^0-9]/g, '').slice(-10);
 
             if (scannedPhone.length === 10) {
@@ -230,7 +222,6 @@ export default function SendCoinsScreen({ navigation, route }) {
                 setPhone(scannedPhone);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } else {
-                // If scanned something else, reset and allow another scan
                 scanned.current = false;
             }
         } catch (error) {
@@ -251,7 +242,7 @@ export default function SendCoinsScreen({ navigation, route }) {
         setScannerVisible(true);
     };
 
-    // Auto-fetch when 10 digits are entered
+    // Auto-fetch recipient
     useEffect(() => {
         if (phone.trim().length !== 10) {
             setRecipient(null);
@@ -260,7 +251,7 @@ export default function SendCoinsScreen({ navigation, route }) {
         }
         const timer = setTimeout(() => {
             handleFindUser();
-        }, 600); // 600ms debounce
+        }, 600);
         return () => clearTimeout(timer);
     }, [phone]);
 
@@ -277,7 +268,7 @@ export default function SendCoinsScreen({ navigation, route }) {
             setRecipient(res.data);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (err) {
-            setFindError(err.response?.data?.message || 'User not found');
+            setFindError('User not found in system');
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         } finally {
             setFindLoading(false);
@@ -289,15 +280,10 @@ export default function SendCoinsScreen({ navigation, route }) {
         setSending(true);
         try {
             const res = await walletAPI.transfer({ recipientPhone: phone.trim(), amount: parseInt(amount) });
-            // 1. Haptic immediately
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            // 2. Sound starts playing
             await playSuccessSound();
-            // 3. Short pause so the chime is heard before confetti bursts
             await new Promise(r => setTimeout(r, 400));
-            // 4. Now show success + confetti
             setSuccessState({ name: recipient.name, amount: parseInt(amount), newBalance: res.data.newBalance });
-            fetchRecentRecipients(); // Refresh list after successful send
         } catch (err) {
             setFindError(err.response?.data?.message || 'Transfer failed. Please try again.');
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -307,32 +293,29 @@ export default function SendCoinsScreen({ navigation, route }) {
     };
 
     const amountNum = parseInt(amount) || 0;
-    const canSend = recipient && amountNum >= 1 && amountNum <= currentBalance;
+    const canSend = recipient && amountNum >= 1 && amountNum <= balance;
 
-    // --- Success Screen ---
     if (successState) {
         return (
             <SuccessScreen
                 successState={successState}
                 recipientInitial={successState.name.charAt(0).toUpperCase()}
                 onBack={() => navigation.goBack()}
-                colors={colors}
-                isDarkMode={isDarkMode}
             />
         );
     }
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={colors.white} />
-            <View style={[styles.header, { backgroundColor: colors.white }]}>
-                <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={24} color={colors.black} />
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="dark-content" backgroundColor="#f2f7f2" />
+            
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <Ionicons name="chevron-back" size={22} color="#056f36" />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.black }]}>Send Coins</Text>
-                <TouchableOpacity style={[styles.scanHeaderBtn, { backgroundColor: isDarkMode ? colors.background : '#f1f5f9' }]} onPress={openScanner}>
-                    <MaterialCommunityIcons name="qrcode-scan" size={22} color={colors.black} />
-                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Send Coins</Text>
+                <View style={{ width: 28 }} />
             </View>
 
             {/* QR Scanner Modal */}
@@ -350,7 +333,7 @@ export default function SendCoinsScreen({ navigation, route }) {
                         isTorchOn={torch}
                         onTorchToggle={() => setTorch(prev => !prev)}
                         recentRecipients={recentRecipients}
-                        currentBalance={currentBalance}
+                        currentBalance={balance}
                         userPhone={user?.phoneNumber}
                         onRecipientPress={(item) => {
                             setPhone(item.phoneNumber);
@@ -362,142 +345,135 @@ export default function SendCoinsScreen({ navigation, route }) {
             </Modal>
 
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-                <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-
-                    {/* Balance Chip */}
-                    <View style={[styles.balanceChip, { backgroundColor: isDarkMode ? colors.white : COLORS.background, borderColor: isDarkMode ? colors.border : COLORS.secondary }]}>
-                        <MaterialCommunityIcons name="wallet-outline" size={18} color={COLORS.primary} />
-                        <Text style={[styles.balanceChipText, { color: colors.black }]}>Balance: <Text style={{ color: COLORS.primary, fontWeight: '900' }}>Ł {currentBalance}</Text></Text>
+                <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+                    
+                    {/* Big Balance Card on Top */}
+                    <View style={styles.balanceBigCard}>
+                        <View style={styles.balanceCardTopRow}>
+                            <Ionicons name="wallet" size={18} color="rgba(255, 255, 255, 0.8)" style={{ marginRight: 6 }} />
+                            <Text style={styles.balanceCardLabelText}>AVAILABLE LARO BALANCE</Text>
+                        </View>
+                        <Text style={styles.balanceCardAmtText}>{balance} Ł</Text>
+                        <Text style={styles.balanceCardFooterText}>Use these coins to pay instantly for any food or Xerox order!</Text>
                     </View>
 
-                    {/* Recent Recipients */}
-                    {!recipient && recentRecipients.length > 0 && (
-                        <View style={{ marginBottom: 25 }}>
-                            <Text style={[styles.sectionLabel, { color: colors.gray }]}>RECENT CONTACTS</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentScroll}>
-                                {recentRecipients.map((item) => (
-                                    <TouchableOpacity
-                                        key={item.id}
-                                        style={styles.recentItem}
-                                        onPress={() => setPhone(item.phoneNumber)}
-                                    >
-                                        <View style={[styles.recentAvatar, { backgroundColor: colors.white, borderColor: colors.border }]}>
-                                            <Text style={styles.recentAvatarText}>{item.name.charAt(0).toUpperCase()}</Text>
-                                        </View>
-                                        <Text style={[styles.recentName, { color: colors.black }]} numberOfLines={1}>{item.name.split(' ')[0]}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        </View>
-                    )}
-
-
-                    {/* Phone Lookup */}
-                    <Text style={[styles.sectionLabel, { color: colors.gray }]}>RECIPIENT PHONE NUMBER</Text>
-                    <View style={styles.phoneRow}>
-                        <View style={[styles.prefixBox, { backgroundColor: isDarkMode ? colors.white : '#f1f5f9', borderColor: colors.border }]}>
-                            <Text style={[styles.prefixText, { color: colors.gray }]}>+91</Text>
-                        </View>
+                    {/* Search Field */}
+                    <View style={styles.searchContainer}>
                         <TextInput
-                            style={[styles.phoneInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.black }]}
-                            placeholder="Enter phone number"
-                            placeholderTextColor={colors.gray}
+                            style={styles.searchInput}
+                            placeholder="Search by name, ID or phone number"
+                            placeholderTextColor="#999"
                             keyboardType="phone-pad"
                             maxLength={10}
                             value={phone}
                             onChangeText={t => setPhone(t.replace(/[^0-9]/g, ''))}
                         />
-                        {/* Auto-fetch status indicator */}
-                        <View style={styles.findBtn}>
-                            {findLoading
-                                ? <ActivityIndicator color="#fff" size="small" />
-                                : recipient
-                                    ? <Ionicons name="checkmark" size={20} color="#fff" />
-                                    : <Ionicons name="search" size={18} color="rgba(255,255,255,0.6)" />
-                            }
-                        </View>
                     </View>
 
-                    {/* Recipient Card */}
+                    {/* Scan QR Button */}
+                    <TouchableOpacity style={styles.scanCtaBtn} onPress={openScanner}>
+                        <Ionicons name="qr-code-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+                        <Text style={styles.scanCtaText}>Scan QR Code</Text>
+                    </TouchableOpacity>
+
+                    {/* Recent Contacts List */}
+                    {recentRecipients.length > 0 && (
+                        <>
+                            <View style={styles.sectionHeaderRow}>
+                                <Text style={styles.sectionTitle}>Recent</Text>
+                                <TouchableOpacity>
+                                    <Text style={styles.viewAllText}>View All</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentScroll}>
+                                {recentRecipients.map((item) => (
+                                    <TouchableOpacity
+                                        key={item.id || item._id}
+                                        style={styles.recentItem}
+                                        onPress={() => setPhone(item.phoneNumber)}
+                                    >
+                                        <View style={styles.recentAvatarCircle}>
+                                            {item.avatarUrl || item.avatar ? (
+                                                <Image source={{ uri: item.avatarUrl || item.avatar }} style={styles.recentAvatarImg} />
+                                            ) : (
+                                                <View style={styles.recentAvatarFallback}>
+                                                    <Text style={styles.recentAvatarFallbackText}>
+                                                        {item.name ? item.name.charAt(0).toUpperCase() : '?'}
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                        <Text style={styles.recentNameText} numberOfLines={1}>{item.name}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </>
+                    )}
+
+                    {/* Recipient Details display if matches */}
                     {recipient && (
-                        <View style={styles.recipientCard}>
-                            <View style={styles.recipientAvatar}>
-                                <Text style={styles.recipientAvatarText}>{recipient.name.charAt(0).toUpperCase()}</Text>
+                        <View style={styles.recipientFoundCard}>
+                            <Image source={{ uri: recipient.avatarUrl || recipient.avatar || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&q=80' }} style={styles.foundAvatar} />
+                            <View style={styles.foundDetails}>
+                                <Text style={styles.foundName}>{recipient.name}</Text>
+                                <Text style={styles.foundPhone}>+91 {phone}</Text>
                             </View>
-                            <View>
-                                <Text style={styles.recipientName}>{recipient.name}</Text>
-                                <Text style={styles.recipientPhone}>+91 {phone}</Text>
+                            
+                            {/* Amount entry block overlay */}
+                            <View style={styles.amountLookupCol}>
+                                <TextInput
+                                    style={styles.amountInputInline}
+                                    placeholder="Amount"
+                                    placeholderTextColor="#bbb"
+                                    keyboardType="numeric"
+                                    value={amount}
+                                    onChangeText={t => setAmount(t.replace(/[^0-9]/g, ''))}
+                                    autoFocus={true}
+                                />
                             </View>
-                            <Ionicons name="checkmark-circle" size={22} color="#15803d" style={{ marginLeft: 'auto' }} />
                         </View>
                     )}
 
-                    {/* Error */}
                     {findError ? (
-                        <View style={styles.errorBanner}>
-                            <Ionicons name="alert-circle-outline" size={16} color="#dc2626" />
+                        <View style={styles.errorCard}>
+                            <Ionicons name="alert-circle" size={16} color="#ef4444" style={{ marginRight: 6 }} />
                             <Text style={styles.errorText}>{findError}</Text>
                         </View>
                     ) : null}
 
-                    {/* Amount Input */}
-                    {recipient && (
-                        <>
-                            <Text style={[styles.sectionLabel, { marginTop: 24, color: colors.gray }]}>AMOUNT TO SEND</Text>
-                            <View style={[styles.amountRow, { backgroundColor: colors.white, borderColor: isDarkMode ? colors.border : COLORS.secondary }]}>
-                                <Text style={styles.amountSymbol}>Ł</Text>
-                                <TextInput
-                                    style={[styles.amountInput, { color: colors.black }]}
-                                    placeholder="0"
-                                    placeholderTextColor={colors.gray}
-                                    keyboardType="numeric"
-                                    value={amount}
-                                    onChangeText={t => setAmount(t.replace(/[^0-9]/g, ''))}
-                                />
-                            </View>
+                    {/* Promotion Box */}
+                    <View style={styles.promoContainer}>
+                        <Text style={styles.promoTitle}>More student features coming soon</Text>
+                        <Text style={styles.promoDesc}>
+                            We're working on new ways to help you connect with your campus community. Stay tuned for updates!
+                        </Text>
+                    </View>
 
-                            {/* Quick amount chips */}
-                            <View style={styles.quickAmounts}>
-                                {[5, 10, 25, 50].map(v => (
-                                    <TouchableOpacity
-                                        key={v}
-                                        style={[styles.quickChip, { backgroundColor: isDarkMode ? colors.white : '#f1f5f9', borderColor: colors.border }, amount === String(v) && [styles.quickChipActive, { backgroundColor: isDarkMode ? '#1e1b4b' : COLORS.background, borderColor: COLORS.primary }]]}
-                                        onPress={() => setAmount(String(v))}
-                                    >
-                                        <Text style={[styles.quickChipText, { color: colors.gray }, amount === String(v) && styles.quickChipTextActive]}>Ł {v}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            {amountNum > currentBalance && (
-                                <Text style={styles.insufficientText}>⚠️  Insufficient balance</Text>
-                            )}
-                        </>
-                    )}
-
-                    {/* Send Button */}
-                    <TouchableOpacity
-                        style={[styles.sendBtn, !canSend && styles.sendBtnDisabled]}
-                        disabled={!canSend || sending}
-                        onPress={() => setAlertVisible(true)}
-                    >
-                        {sending
-                            ? <ActivityIndicator color="#fff" />
-                            : <>
-                                <Ionicons name="paper-plane-outline" size={20} color="#fff" />
-                                <Text style={styles.sendBtnText}>Send {amountNum > 0 ? `Ł ${amountNum}` : 'Coins'}</Text>
-                            </>
-                        }
-                    </TouchableOpacity>
-
-                    <Text style={[styles.noteText, { color: colors.gray }]}>Transfers are instant and cannot be reversed.</Text>
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Inline Confirm Send button if canSend */}
+            {canSend && (
+                <View style={[styles.bottomStickySendBar, { paddingBottom: insets.bottom + 10 }]}>
+                    <TouchableOpacity 
+                        style={styles.sendCtaBtn}
+                        onPress={() => setAlertVisible(true)}
+                        disabled={sending}
+                    >
+                        {sending ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.sendCtaText}>Confirm Transfer of {amount} Laro</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            )}
 
             <LaroAlert
                 visible={alertVisible}
                 title="Confirm Transfer"
-                message={`Send Ł ${amountNum} to ${recipient?.name}?`}
+                message={`Send ${amountNum} Laro to ${recipient?.name}?`}
                 type="default"
                 confirmText="Send"
                 onConfirm={handleSend}
@@ -508,143 +484,224 @@ export default function SendCoinsScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fcfcfc' },
+    container: { flex: 1, backgroundColor: '#f2f7f2' },
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#fff'
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        backgroundColor: '#f2f7f2'
     },
-    backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f8f9fa', justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: 20, fontWeight: '900', color: '#1a1a2e', letterSpacing: -0.5 },
+    backBtn: { padding: 4 },
+    headerTitle: { fontSize: 18, fontWeight: '900', color: '#056f36' },
 
-    content: { padding: 20, paddingBottom: 100 },
+    scrollContent: { paddingHorizontal: 20, paddingTop: 10 },
 
-    balanceChip: {
-        flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: COLORS.background, paddingHorizontal: 16, paddingVertical: 10,
-        borderRadius: 20, alignSelf: 'flex-start', marginBottom: 30,
-        borderWidth: 1, borderColor: COLORS.secondary
+    // Big Balance Card on Top
+    balanceBigCard: {
+        backgroundColor: '#056f36',
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 20,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+        elevation: 8
     },
-    balanceChipText: { fontSize: 14, fontWeight: '700', color: '#1a1a2e' },
-
-    sectionLabel: { fontSize: 11, fontWeight: '900', color: '#94a3b8', letterSpacing: 1, marginBottom: 10 },
-
-    phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 15 },
-    prefixBox: {
-        paddingHorizontal: 14, paddingVertical: 15, backgroundColor: '#f1f5f9',
-        borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0'
-    },
-    prefixText: { fontSize: 15, fontWeight: '800', color: '#475569' },
-    phoneInput: {
-        flex: 1, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1,
-        borderColor: '#e2e8f0', paddingHorizontal: 16, paddingVertical: 15,
-        fontSize: 16, fontWeight: '700', color: '#1a1a2e'
-    },
-    scanHeaderBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center'
-    },
-    // QR Scanner
-    scannerRoot: { flex: 1, backgroundColor: '#000' },
-    scanOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'space-between', paddingVertical: 60 },
-    scanTopBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20 },
-    scanCloseBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-    scanTitle: { color: '#fff', fontSize: 18, fontWeight: '900' },
-    scanFrame: {
-        width: 240, height: 240, borderRadius: 20,
-        borderWidth: 0, position: 'relative', alignItems: 'center', justifyContent: 'center'
-    },
-    corner: { position: 'absolute', width: 30, height: 30, borderColor: '#fff', borderWidth: 3 },
-    cornerTL: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 8 },
-    cornerTR: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 8 },
-    cornerBL: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 8 },
-    cornerBR: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 8 },
-    scanHint: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '700', textAlign: 'center', paddingHorizontal: 40 },
-
-    findBtn: {
-        backgroundColor: COLORS.primary, paddingHorizontal: 18, paddingVertical: 15,
-        borderRadius: 16, minWidth: 50, alignItems: 'center', justifyContent: 'center'
-    },
-    findBtnText: { color: '#fff', fontWeight: '900', fontSize: 14 },
-
-    recipientCard: {
-        flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#f0fdf4',
-        borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#bbf7d0', marginBottom: 5
-    },
-    recipientAvatar: {
-        width: 44, height: 44, borderRadius: 22,
-        backgroundColor: '#15803d', justifyContent: 'center', alignItems: 'center'
-    },
-    recipientAvatarText: { color: '#fff', fontWeight: '900', fontSize: 18 },
-    recipientName: { fontSize: 15, fontWeight: '900', color: '#14532d' },
-    recipientPhone: { fontSize: 12, color: '#4ade80', fontWeight: '600', marginTop: 2 },
-
-    errorBanner: {
-        flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fef2f2',
-        padding: 12, borderRadius: 14, borderWidth: 1, borderColor: '#fecaca'
-    },
-    errorText: { color: '#dc2626', fontWeight: '700', fontSize: 13 },
-
-    amountRow: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
-        borderRadius: 20, borderWidth: 2, borderColor: COLORS.secondary,
-        paddingHorizontal: 20, paddingVertical: 8, marginBottom: 15
-    },
-    amountSymbol: { fontSize: 28, fontWeight: '900', color: COLORS.primary, marginRight: 10 },
-    amountInput: { flex: 1, fontSize: 40, fontWeight: '900', color: '#1a1a2e' },
-
-    quickAmounts: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-    quickChip: {
-        paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-        backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0'
-    },
-    quickChipActive: { backgroundColor: COLORS.background, borderColor: COLORS.primary },
-    quickChipText: { fontSize: 13, fontWeight: '800', color: '#64748b' },
-    quickChipTextActive: { color: COLORS.primary },
-
-    insufficientText: { color: '#dc2626', fontSize: 13, fontWeight: '700', marginBottom: 10 },
-
-    sendBtn: {
-        backgroundColor: COLORS.primary, flexDirection: 'row', alignItems: 'center',
-        justifyContent: 'center', gap: 10, paddingVertical: 18, borderRadius: 24,
-        marginTop: 30, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3, shadowRadius: 15, elevation: 10
-    },
-    sendBtnDisabled: { backgroundColor: '#e2e8f0', shadowOpacity: 0 },
-    sendBtnText: { color: '#fff', fontSize: 16, fontWeight: '900' },
-
-    noteText: { textAlign: 'center', color: '#94a3b8', fontSize: 11, fontWeight: '600', marginTop: 15 },
-
-    // Success state
-    successContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
-    successIconBg: {
-        width: 120, height: 120, borderRadius: 60, backgroundColor: '#f0fdf4',
-        alignItems: 'center', justifyContent: 'center', marginBottom: 24
-    },
-    successTitle: { fontSize: 28, fontWeight: '900', color: '#1a1a2e', marginBottom: 10 },
-    successSub: { fontSize: 15, color: '#64748b', textAlign: 'center', fontWeight: '600', lineHeight: 22 },
-    successAccent: { color: '#15803d', fontWeight: '900' },
-    newBalanceCard: {
-        backgroundColor: '#1a1a2e', borderRadius: 24, padding: 24, width: '100%',
-        alignItems: 'center', marginVertical: 30
-    },
-    newBalanceLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-    newBalanceValue: { color: '#fff', fontSize: 40, fontWeight: '900', marginTop: 8 },
-    doneBtn: {
-        backgroundColor: COLORS.primary, paddingVertical: 16, paddingHorizontal: 50,
-        borderRadius: 50, width: '100%', alignItems: 'center'
-    },
-    doneBtnText: { color: '#fff', fontSize: 16, fontWeight: '900' },
-
-    recentScroll: { gap: 15, paddingRight: 20 },
-    recentItem: { alignItems: 'center', width: 65 },
-    recentAvatar: {
-        width: 52, height: 52, borderRadius: 26,
-        backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1.5, borderColor: '#f1f5f9',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+    balanceCardTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
         marginBottom: 8
     },
-    recentAvatarText: { fontSize: 18, fontWeight: '900', color: COLORS.primary },
-    recentName: { fontSize: 12, fontWeight: '700', color: '#475569', textAlign: 'center' }
+    balanceCardLabelText: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: 'rgba(255, 255, 255, 0.7)',
+        letterSpacing: 0.8
+    },
+    balanceCardAmtText: {
+        fontSize: 38,
+        fontWeight: '950',
+        color: '#fff',
+        marginBottom: 10
+    },
+    balanceCardFooterText: {
+        fontSize: 11,
+        color: 'rgba(255, 255, 255, 0.75)',
+        fontWeight: '700',
+        lineHeight: 16
+    },
+
+    // Search Box Input
+    searchContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: '#e6ede6',
+        paddingHorizontal: 16,
+        height: 52,
+        justifyContent: 'center',
+        marginBottom: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.01,
+        shadowRadius: 5,
+        elevation: 1
+    },
+    searchInput: { fontSize: 14, fontWeight: '750', color: '#111' },
+
+    // Scan QR Button
+    scanCtaBtn: {
+        backgroundColor: '#27c96c',
+        borderRadius: 16,
+        height: 52,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 25,
+        shadowColor: '#27c96c',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 2
+    },
+    scanCtaText: { color: '#fff', fontSize: 14, fontWeight: '850' },
+
+    // Sections Header
+    sectionHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15
+    },
+    sectionTitle: { fontSize: 16, fontWeight: '950', color: '#111' },
+    viewAllText: { fontSize: 13, fontWeight: '900', color: '#056f36' },
+
+    // Recent horizontal contacts
+    recentScroll: { paddingBottom: 15 },
+    recentItem: {
+        alignItems: 'center',
+        marginRight: 20,
+        width: 65
+    },
+    recentAvatarCircle: {
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        borderWidth: 2,
+        borderColor: '#27c96c',
+        padding: 2,
+        backgroundColor: '#fff'
+    },
+    recentAvatarImg: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 27
+    },
+    recentAvatarFallback: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 27,
+        backgroundColor: '#f2f7f2',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    recentAvatarFallbackText: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#056f36'
+    },
+    recentNameText: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#666',
+        marginTop: 6,
+        textAlign: 'center'
+    },
+
+    // Found User Card
+    recipientFoundCard: {
+        backgroundColor: '#fff',
+        borderRadius: 22,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.01,
+        shadowRadius: 5,
+        elevation: 1,
+        marginBottom: 20
+    },
+    foundAvatar: { width: 44, height: 44, borderRadius: 22 },
+    foundDetails: { flex: 1, marginLeft: 12 },
+    foundName: { fontSize: 14, fontWeight: '900', color: '#111' },
+    foundPhone: { fontSize: 11, color: '#666', fontWeight: '650', marginTop: 2 },
+    amountLookupCol: { width: 80 },
+    amountInputInline: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#056f36',
+        borderBottomWidth: 1.5,
+        borderColor: '#056f36',
+        textAlign: 'center',
+        paddingVertical: 4
+    },
+
+    errorCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fdf2f2',
+        borderRadius: 12,
+        padding: 10,
+        marginBottom: 15
+    },
+    errorText: { fontSize: 12, color: '#ef4444', fontWeight: '750' },
+
+    // Promotion box
+    promoContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 22,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.01,
+        shadowRadius: 5,
+        elevation: 1,
+        marginTop: 10,
+        marginBottom: 40
+    },
+    promoTitle: { fontSize: 15, fontWeight: '900', color: '#111', marginBottom: 8 },
+    promoDesc: { fontSize: 13, color: '#666', lineHeight: 20, fontWeight: '650' },
+
+    // QR scanner
+    scannerRoot: { flex: 1, backgroundColor: '#000' },
+
+    // Sticky Bottom confirmation
+    bottomStickySendBar: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        paddingHorizontal: 20,
+        paddingTop: 15,
+        borderTopWidth: 1,
+        borderTopColor: '#f0f4f0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 10
+    },
+    sendCtaBtn: {
+        backgroundColor: '#056f36',
+        borderRadius: 16,
+        height: 48,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    sendCtaText: { color: '#fff', fontSize: 14, fontWeight: '850' }
 });

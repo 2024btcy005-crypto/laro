@@ -1,41 +1,98 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, StatusBar } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, StatusBar, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { signOut, updateCredentials } from '../../store/authSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons, MaterialIcons, Feather, AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, CONSTANTS } from '../../theme';
 import LaroAlert from '../../components/LaroAlert';
 import { orderAPI } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { FavouriteService } from '../../services/FavouriteService';
+import { useFocusEffect } from '@react-navigation/native';
+
+const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
     const dispatch = useDispatch();
     const { colors, isDarkMode } = useTheme();
     const user = useSelector(state => state.auth.user);
-    const [alertVisible, setAlertVisible] = React.useState(false);
-    const [stats, setStats] = React.useState({ orderCount: 0, totalSpent: 0, rating: 0, loyaltyPoints: 0, laroCurrency: 0, loyaltyLevel: 'Learner' });
-    const [loading, setLoading] = React.useState(true);
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [stats, setStats] = useState({ orderCount: 0, laroCurrency: 0, loyaltyLevel: 'Learner' });
+    const [recentOrder, setRecentOrder] = useState(null);
+    const [favorites, setFavorites] = useState([]);
+    const [addresses, setAddresses] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
 
-    React.useEffect(() => {
-        fetchUserStats();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchProfileData();
 
-    const fetchUserStats = async () => {
+            const pollInterval = setInterval(() => {
+                fetchProfileData();
+            }, 8000); // Dynamic update every 8 seconds
+
+            return () => clearInterval(pollInterval);
+        }, [user, initialLoading])
+    );
+
+    const fetchProfileData = async () => {
+        if (!user) return;
         try {
-            setLoading(true);
-            const response = await orderAPI.getUserSummary();
-            setStats(response.data);
-
-            // Sync backend user data to Redux for address/profile consistency
-            if (response.data.user) {
-                dispatch(updateCredentials({ user: response.data.user }));
+            if (initialLoading) {
+                setLoading(true);
             }
+            
+            // 1. Fetch Stats & sync details
+            const statsRes = await orderAPI.getUserSummary();
+            setStats(statsRes.data);
+
+            if (statsRes.data.user) {
+                dispatch(updateCredentials({ user: statsRes.data.user }));
+            }
+
+            // 2. Fetch Recent Orders for Recent Activity
+            const ordersRes = await orderAPI.getMyOrders();
+            if (ordersRes.data && ordersRes.data.length > 0) {
+                const latest = ordersRes.data[0];
+                setRecentOrder({
+                    id: latest.id,
+                    store: latest.shop?.name || 'Campus Cafe',
+                    price: `${CONSTANTS.CURRENCY}${parseFloat(latest.totalAmount || 0).toFixed(2)}`,
+                    itemsCount: latest.items?.length || 1,
+                    status: latest.status || 'placed',
+                    statusLabel: formatStatus(latest.status || 'placed')
+                });
+            } else {
+                setRecentOrder(null);
+            }
+
+            // 3. Fetch actual Favorites
+            const favs = await FavouriteService.getFavourites(user.id, 'product');
+            setFavorites(favs || []);
+
+            // 4. Fetch actual Saved Locations
+            const addressKey = `@user_addresses_${user.id}`;
+            const storedAddresses = await AsyncStorage.getItem(addressKey);
+            setAddresses(storedAddresses ? JSON.parse(storedAddresses) : []);
+
         } catch (error) {
-            console.error('[Profile] Error fetching summary:', error);
+            console.error('[Profile] Error fetching details:', error);
         } finally {
             setLoading(false);
+            setInitialLoading(false);
+        }
+    };
+
+    const formatStatus = (status) => {
+        switch (status) {
+            case 'placed': return 'PLACED';
+            case 'accepted': return 'PREPARING';
+            case 'out_for_delivery': return 'IN TRANSIT';
+            case 'delivered': return 'DELIVERED';
+            default: return status.toUpperCase();
         }
     };
 
@@ -49,95 +106,215 @@ export default function ProfileScreen({ navigation }) {
         dispatch(signOut());
     };
 
-    const renderMenuItem = (IconComponent, iconName, title, subtitle = '', isLast = false, color = colors.black, route = null) => (
-        <TouchableOpacity
-            style={[styles.menuItem, !isLast && { borderBottomColor: colors.lightGray, borderBottomWidth: 1 }]}
-            onPress={() => route ? navigation.navigate(route) : null}
-            activeOpacity={0.7}
-        >
-            <View style={[styles.menuIconContainer, { backgroundColor: colors.background }]}>
-                <IconComponent name={iconName} size={22} color={color} />
-            </View>
-            <View style={styles.menuTextContainer}>
-                <Text style={[styles.menuTitle, { color: colors.black }]}>{title}</Text>
-                {subtitle ? <Text style={[styles.menuSubtitle, { color: colors.gray }]}>{subtitle}</Text> : null}
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.gray} />
-        </TouchableOpacity>
-    );
-
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-            <View style={[styles.header, { backgroundColor: colors.white }]}>
-                <Text style={[styles.headerTitle, { color: colors.black }]}>My Profile</Text>
-                <TouchableOpacity
-                    style={[styles.settingsIcon, { backgroundColor: colors.background }]}
-                    onPress={() => navigation.navigate('Settings')}
-                >
-                    <Ionicons name="settings-outline" size={22} color={colors.black} />
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="dark-content" backgroundColor="#f2f7f2" />
+
+            {/* Custom Header */}
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Laro</Text>
+                <TouchableOpacity style={styles.cartIcon} onPress={() => navigation.navigate('Cart')}>
+                    <Ionicons name="cart-outline" size={26} color="#056f36" />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {/* User Card */}
-                <View style={[styles.userCard, { backgroundColor: colors.white, borderColor: colors.border }]}>
-                    <View style={styles.userCardMain}>
-                        <View style={styles.avatarContainer}>
-                            <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
-                            <View style={styles.editBadge}>
-                                <Ionicons name="camera" size={12} color="#fff" />
+            {loading ? (
+                <View style={styles.centerContainer}>
+                    <ActivityIndicator size="large" color="#056f36" />
+                </View>
+            ) : (
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    
+                    {/* Profile Avatar (No Mock Image - Clean Person Vector Icon) */}
+                    <View style={styles.avatarSection}>
+                        <View style={styles.avatarBorder}>
+                            <View style={styles.avatarIconBg}>
+                                <Ionicons name="person" size={54} color="#056f36" />
                             </View>
+                            <TouchableOpacity style={styles.editBadge} onPress={() => navigation.navigate('Settings')}>
+                                <Ionicons name="pencil" size={14} color="#fff" />
+                            </TouchableOpacity>
                         </View>
-                        <View style={styles.userInfo}>
-                            <View style={styles.nameRow}>
-                                <Text style={[styles.userName, { color: colors.black }]}>{user?.name || 'Guest User'}</Text>
-                                <Ionicons name="checkmark-circle" size={18} color={colors.primary} style={{ marginLeft: 6 }} />
-                            </View>
-                            <Text style={styles.pointsText}>{stats.laroCurrency || 0} Ł</Text>
+                        <Text style={styles.userName}>{user?.name || 'Guest User'}</Text>
+                    </View>
+
+                    {/* Stats Boxes */}
+                    <View style={styles.statsRow}>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statGreenValue}>{stats.orderCount || 0}</Text>
+                            <Text style={styles.statLabel}>Total Orders</Text>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statBlackValue}>{stats.laroCurrency || 0}</Text>
+                            <Text style={styles.statLabel}>Laro Coins</Text>
                         </View>
                     </View>
-                    <View style={[styles.userStats, { borderTopColor: colors.lightGray }]}>
-                        <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: colors.black }]}>{stats.orderCount}</Text>
-                            <Text style={[styles.statLabel, { color: colors.gray }]}>Orders</Text>
+
+                    {/* Wallet Card */}
+                    <TouchableOpacity style={styles.walletCard} onPress={() => navigation.navigate('LaroCurrency')}>
+                        <View style={styles.walletHeader}>
+                            <View style={styles.walletTitleRow}>
+                                <Ionicons name="radio" size={20} color="#fff" style={{ marginRight: 6 }} />
+                                <Text style={styles.walletTitle}>LARO WALLET</Text>
+                            </View>
+                            <Ionicons name="school" size={24} color="#fff" />
                         </View>
-                        <View style={[styles.statDivider, { backgroundColor: colors.lightGray }]} />
-                        <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: colors.black }]}>₹{parseFloat(stats.totalSpent || 0).toFixed(2)}</Text>
-                            <Text style={[styles.statLabel, { color: colors.gray }]}>Spent</Text>
+                        
+                        <View style={styles.walletFooter}>
+                            <View>
+                                <Text style={styles.walletUserName}>{user?.name || 'Guest User'}</Text>
+                                <Text style={styles.walletUserPhone}>{user?.phoneNumber || user?.phone || 'No phone number'}</Text>
+                            </View>
+                            <View style={styles.tapPayContainer}>
+                                <Ionicons name="finger-print" size={22} color="#fff" />
+                                <Text style={styles.tapPayText}>Tap to pay</Text>
+                            </View>
                         </View>
-                        <View style={[styles.statDivider, { backgroundColor: colors.lightGray }]} />
-                        <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: colors.black }]}>{stats.rating} ★</Text>
-                            <Text style={[styles.statLabel, { color: colors.gray }]}>Rating</Text>
-                        </View>
+                    </TouchableOpacity>
+
+                    {/* Favorite Items Section (Render only if favorites exist or display clean helper) */}
+                    <View style={styles.sectionHeaderRow}>
+                        <Text style={styles.sectionTitle}>Favorite Items</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('Favorites')}>
+                            <Text style={styles.viewAllText}>View All</Text>
+                        </TouchableOpacity>
                     </View>
-                </View>
+                    {favorites.length > 0 ? (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.favoritesScroll}>
+                            {favorites.map((item, idx) => (
+                                <TouchableOpacity key={idx} style={styles.favoriteItemCard} onPress={() => navigation.navigate('ProductDetail', { product: item })}>
+                                    <View style={[styles.favoriteImageWrapper, idx === 0 && styles.favoriteActiveBorder]}>
+                                        {item.imageUrl ? (
+                                            <Image source={{ uri: item.imageUrl }} style={styles.favoriteImage} />
+                                        ) : (
+                                            <View style={styles.favoritePlaceholderImage}>
+                                                <Ionicons name="fast-food" size={24} color="#056f36" />
+                                            </View>
+                                        )}
+                                    </View>
+                                    <Text style={styles.favoriteItemName} numberOfLines={1}>{item.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    ) : (
+                        <View style={styles.emptyItemsWrapper}>
+                            <Text style={styles.emptySectionText}>No favorite items added yet.</Text>
+                        </View>
+                    )}
 
+                    {/* Saved Locations Section (Render user's actual addresses) */}
+                    <View style={styles.sectionHeaderRow}>
+                        <Text style={styles.sectionTitle}>Saved Locations</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('AddressBook')}>
+                            <Text style={styles.viewAllText}>+ Add New</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.locationsContainer}>
+                        {addresses.length > 0 ? (
+                            addresses.slice(0, 3).map((item, index) => (
+                                <TouchableOpacity 
+                                    key={index} 
+                                    style={[styles.locationItem, index === addresses.length - 1 && { borderBottomWidth: 0 }]} 
+                                    onPress={() => navigation.navigate('AddressBook')}
+                                >
+                                    <View style={styles.locationIconBg}>
+                                        <Ionicons 
+                                            name={item.type === 'Office' ? 'briefcase-outline' : (item.type === 'Home' ? 'home-outline' : 'location-outline')} 
+                                            size={20} 
+                                            color="#056f36" 
+                                        />
+                                    </View>
+                                    <View style={styles.locationTextContainer}>
+                                        <Text style={styles.locationName}>{item.name || 'Saved Address'}</Text>
+                                        <Text style={styles.locationDetail}>{item.address || `${item.hostel}, Room ${item.room}`}</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={18} color="#bbb" />
+                                </TouchableOpacity>
+                            ))
+                        ) : (
+                            <View style={styles.emptyLocationsWrapper}>
+                                <Text style={styles.emptySectionText}>No saved locations yet.</Text>
+                            </View>
+                        )}
+                    </View>
 
+                    {/* Recent Activity (Render only if user has recent orders) */}
+                    {recentOrder && (
+                        <View>
+                            <Text style={[styles.sectionTitle, { marginVertical: 15 }]}>Recent Activity</Text>
+                            <View style={styles.recentActivityCard}>
+                                <View style={styles.recentActivityHeader}>
+                                    <View style={styles.recentIconWrapper}>
+                                        <Ionicons name="receipt-outline" size={24} color="#056f36" />
+                                    </View>
+                                    <View style={styles.recentActivityText}>
+                                        <Text style={styles.recentStoreName}>{recentOrder.store}</Text>
+                                        <Text style={styles.recentOrderDetails}>{recentOrder.itemsCount} {recentOrder.itemsCount === 1 ? 'Item' : 'Items'} • {recentOrder.price}</Text>
+                                    </View>
+                                    <View style={styles.transitBadge}>
+                                        <Text style={styles.transitBadgeText}>{recentOrder.statusLabel}</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity 
+                                    style={styles.recentTrackButton}
+                                    onPress={() => navigation.navigate('OrderDetail', { orderId: recentOrder.id })}
+                                >
+                                    <Ionicons name="location-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
+                                    <Text style={styles.recentTrackText}>Track Order</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
 
-                {/* Main Menu Links */}
-                <Text style={[styles.sectionLabel, { color: colors.gray }]}>ACCOUNT SETTINGS</Text>
-                <View style={[styles.sectionContainer, { backgroundColor: colors.white, borderColor: colors.border }]}>
-                    {renderMenuItem(MaterialCommunityIcons, 'wallet-outline', 'Laro Wallet', 'Manage your Laro Coins', false, colors.black, 'LaroCurrency')}
-                    {renderMenuItem(Feather, 'package', 'My Orders', 'Track and manage orders', false, colors.black, 'Orders')}
-                    {renderMenuItem(Ionicons, 'heart-outline', 'Favorites', 'Your saved items', false, colors.black, 'Favorites')}
-                    {renderMenuItem(Ionicons, 'book-outline', 'Address Book', 'Manage delivery addresses', true, colors.black, 'AddressBook')}
-                </View>
+                    {/* Navigation Menu Links */}
+                    <View style={styles.menuLinksContainer}>
+                        <TouchableOpacity style={styles.menuLinkItem} onPress={() => navigation.navigate('LaroCurrency')}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="card-outline" size={22} color="#333" style={{ marginRight: 15 }} />
+                                <Text style={styles.menuLinkLabel}>Payment Methods</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+                        </TouchableOpacity>
 
-                <Text style={[styles.sectionLabel, { color: colors.gray }]}>SUPPORT & INFO</Text>
-                <View style={[styles.sectionContainer, { backgroundColor: colors.white, borderColor: colors.border }]}>
-                    {renderMenuItem(Ionicons, 'help-circle-outline', 'Help Support', 'FAQs and live chat', false, colors.black)}
-                    {renderMenuItem(Ionicons, 'information-circle-outline', 'About Laro', 'Version, terms and privacy', true, colors.black, 'About')}
-                </View>
+                        <TouchableOpacity style={styles.menuLinkItem} onPress={() => navigation.navigate('Settings')}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="shield-checkmark-outline" size={22} color="#333" style={{ marginRight: 15 }} />
+                                <Text style={styles.menuLinkLabel}>Security & Privacy</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+                        </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.logoutAction, { backgroundColor: colors.white, borderColor: colors.border }]} onPress={handleLogout} activeOpacity={0.7}>
-                    <Ionicons name="log-out-outline" size={22} color={colors.primary} />
-                    <Text style={[styles.logoutActionText, { color: colors.primary }]}>Log out from Laro</Text>
-                </TouchableOpacity>
+                        <TouchableOpacity style={styles.menuLinkItem} onPress={() => navigation.navigate('About')}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="help-circle-outline" size={22} color="#333" style={{ marginRight: 15 }} />
+                                <Text style={styles.menuLinkLabel}>Help & Support</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+                        </TouchableOpacity>
 
-                <Text style={[styles.versionText, { color: colors.gray }]}>Laro v1.2.0 • Build 2447</Text>
-            </ScrollView>
+                        <TouchableOpacity style={styles.menuLinkItem} onPress={() => navigation.navigate('Settings')}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="settings-outline" size={22} color="#333" style={{ marginRight: 15 }} />
+                                <Text style={styles.menuLinkLabel}>Settings</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.menuLinkItem, { borderBottomWidth: 0 }]} onPress={handleLogout}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="log-out-outline" size={22} color="#ef4444" style={{ marginRight: 15 }} />
+                                <Text style={[styles.menuLinkLabel, { color: '#ef4444' }]}>Sign Out</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Footer Copyright */}
+                    <Text style={styles.footerVersion}>Laro Version 2.4.0 (Build 882)</Text>
+                    <Text style={styles.footerCopyright}>copyright 2026 laro technologies private ltd</Text>
+
+                </ScrollView>
+            )}
 
             <LaroAlert
                 visible={alertVisible}
@@ -148,49 +325,236 @@ export default function ProfileScreen({ navigation }) {
                 onConfirm={confirmLogout}
                 onCancel={() => setAlertVisible(false)}
             />
-        </SafeAreaView >
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fcfcfc' },
+    container: { flex: 1, backgroundColor: '#f2f7f2' }, // Soft white-green tint
+    centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 24,
+        paddingVertical: 15,
+        backgroundColor: '#f2f7f2'
+    },
+    headerTitle: { fontSize: 24, fontWeight: '900', color: '#056f36' },
+    cartIcon: { padding: 4 },
 
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#fff' },
-    headerTitle: { fontSize: 24, fontWeight: '900', color: '#1a1a2e', letterSpacing: -0.8 },
-    settingsIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f8f9fa', justifyContent: 'center', alignItems: 'center' },
+    scrollContent: { paddingHorizontal: 24, paddingBottom: 110 },
 
-    scrollContent: { padding: 20, paddingBottom: 100 },
+    avatarSection: { alignItems: 'center', marginTop: 10, marginBottom: 20 },
+    avatarBorder: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        borderWidth: 3,
+        borderColor: '#27c96c',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative'
+    },
+    avatarIconBg: {
+        width: 106,
+        height: 106,
+        borderRadius: 53,
+        backgroundColor: '#e6efe6',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    editBadge: {
+        position: 'absolute',
+        bottom: 4,
+        right: 4,
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: '#056f36',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#f2f7f2'
+    },
+    userName: { fontSize: 22, fontWeight: '900', color: '#111', marginTop: 12 },
 
-    userCard: { backgroundColor: '#fff', borderRadius: 28, padding: 20, marginBottom: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.05, shadowRadius: 20, elevation: 5, borderWidth: 1, borderColor: '#f0f0f0' },
-    userCardMain: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-    avatarContainer: { width: 70, height: 70, borderRadius: 35, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', marginRight: 18, position: 'relative' },
-    avatarText: { fontSize: 32, fontWeight: 'bold', color: COLORS.primary },
-    editBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#1a1a2e', width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
-    userInfo: { flex: 1 },
-    nameRow: { flexDirection: 'row', alignItems: 'center' },
-    userName: { fontSize: 22, fontWeight: '900', color: '#1a1a2e', letterSpacing: -0.5 },
-    userPhone: { fontSize: 13, color: '#64748b', fontWeight: '600', marginTop: 2 },
+    statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+    statCard: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderRadius: 18,
+        paddingVertical: 18,
+        alignItems: 'center',
+        marginHorizontal: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 5,
+        elevation: 1
+    },
+    statGreenValue: { fontSize: 24, fontWeight: '900', color: '#056f36' },
+    statBlackValue: { fontSize: 24, fontWeight: '900', color: '#111' },
+    statLabel: { fontSize: 13, color: '#666', fontWeight: '700', marginTop: 4 },
 
-    userStats: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingTop: 15, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
-    statItem: { alignItems: 'center' },
-    statValue: { fontSize: 16, fontWeight: '900', color: '#1a1a2e' },
-    statLabel: { fontSize: 11, color: '#64748b', fontWeight: 'bold', marginTop: 2, textTransform: 'uppercase' },
-    statDivider: { width: 1, height: 20, backgroundColor: '#f1f5f9' },
+    walletCard: {
+        backgroundColor: '#0c633a',
+        borderRadius: 22,
+        padding: 20,
+        height: 170,
+        justifyContent: 'space-between',
+        shadowColor: '#0c633a',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 15,
+        elevation: 4,
+        marginBottom: 25
+    },
+    walletHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    walletTitleRow: { flexDirection: 'row', alignItems: 'center' },
+    walletTitle: { color: '#fff', fontSize: 13, fontWeight: '900', letterSpacing: 1.5 },
+    walletFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+    walletUserName: { color: '#fff', fontSize: 16, fontWeight: '900' },
+    walletUserPhone: { color: '#a3d8b8', fontSize: 12, fontWeight: '700', marginTop: 2 },
+    tapPayContainer: { alignItems: 'center' },
+    tapPayText: { color: '#fff', fontSize: 10, fontWeight: '700', marginTop: 4 },
 
-    loyaltLevelRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 10 },
-    pointsText: { fontSize: 13, fontWeight: '700', color: COLORS.primary, marginTop: 4 },
+    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 10 },
+    sectionTitle: { fontSize: 18, fontWeight: '900', color: '#111' },
+    viewAllText: { fontSize: 14, color: '#056f36', fontWeight: '800' },
 
-    sectionLabel: { fontSize: 12, fontWeight: '900', color: '#94a3b8', marginBottom: 12, marginLeft: 5, letterSpacing: 1 },
-    sectionContainer: { backgroundColor: '#fff', borderRadius: 24, marginBottom: 25, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 10, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9' },
-    menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, paddingHorizontal: 20 },
-    menuItemBorder: { borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-    menuIconContainer: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#f8f9fa', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    menuTextContainer: { flex: 1 },
-    menuTitle: { fontSize: 15, color: '#1a1a2e', fontWeight: '800' },
-    menuSubtitle: { fontSize: 12, color: '#94a3b8', marginTop: 2, fontWeight: '600' },
+    favoritesScroll: { paddingBottom: 10, gap: 14 },
+    favoriteItemCard: { alignItems: 'center', width: 75 },
+    favoriteImageWrapper: {
+        width: 66,
+        height: 66,
+        borderRadius: 33,
+        overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: 'transparent'
+    },
+    favoriteActiveBorder: { borderColor: '#27c96c' },
+    favoriteImage: { width: '100%', height: '100%' },
+    favoritePlaceholderImage: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#edf5ed',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    favoriteItemName: { fontSize: 11, fontWeight: '700', color: '#333', marginTop: 6, textAlign: 'center' },
+    
+    emptyItemsWrapper: {
+        paddingVertical: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 15,
+        marginBottom: 10
+    },
+    emptySectionText: { fontSize: 13, color: '#999', fontWeight: '600' },
 
-    logoutAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, backgroundColor: COLORS.background, borderRadius: 20, gap: 10, marginTop: 10, borderWidth: 1, borderColor: COLORS.secondary },
-    logoutActionText: { color: COLORS.primary, fontSize: 16, fontWeight: '900' },
+    locationsContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 5,
+        elevation: 1,
+        marginBottom: 20
+    },
+    emptyLocationsWrapper: {
+        paddingVertical: 20,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    locationItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#edf2ed'
+    },
+    locationIconBg: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#edf5ed',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15
+    },
+    locationTextContainer: { flex: 1 },
+    locationName: { fontSize: 14, fontWeight: '800', color: '#111' },
+    locationDetail: { fontSize: 12, color: '#666', marginTop: 1 },
 
-    versionText: { textAlign: 'center', color: '#94a3b8', fontSize: 11, marginTop: 25, fontWeight: '700' }
+    recentActivityCard: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 5,
+        elevation: 1,
+        marginBottom: 25
+    },
+    recentActivityHeader: { flexDirection: 'row', alignItems: 'center' },
+    recentIconWrapper: {
+        width: 50,
+        height: 50,
+        borderRadius: 12,
+        backgroundColor: '#edf5ed',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    recentActivityText: { flex: 1, marginLeft: 12 },
+    recentStoreName: { fontSize: 15, fontWeight: '800', color: '#111' },
+    recentOrderDetails: { fontSize: 12, color: '#666', marginTop: 2 },
+    transitBadge: {
+        backgroundColor: '#ffebe3',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6
+    },
+    transitBadgeText: { fontSize: 10, fontWeight: '900', color: '#ff6633' },
+    recentTrackButton: {
+        backgroundColor: '#056f36',
+        borderRadius: 12,
+        height: 40,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 15
+    },
+    recentTrackText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+
+    menuLinksContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 5,
+        elevation: 1,
+        marginBottom: 25
+    },
+    menuLinkItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#edf2ed'
+    },
+    menuLinkLabel: { fontSize: 14, fontWeight: '800', color: '#111' },
+
+    footerVersion: { textAlign: 'center', fontSize: 12, fontWeight: '700', color: '#999' },
+    footerCopyright: { textAlign: 'center', fontSize: 11, fontWeight: '600', color: '#bbb', marginTop: 4, marginBottom: 10 }
 });

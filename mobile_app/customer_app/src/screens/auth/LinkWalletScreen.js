@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
-    Image, Dimensions
+    Dimensions, StatusBar
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateCredentials } from '../../store/authSlice';
@@ -19,7 +19,7 @@ export default function LinkWalletScreen({ navigation, route }) {
     const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
-    const { user, token } = useSelector(state => state.auth);
+    const { user } = useSelector(state => state.auth);
 
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
@@ -42,7 +42,7 @@ export default function LinkWalletScreen({ navigation, route }) {
             // Update AsyncStorage
             await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
 
-            // Update Redux - assuming authSlice has an update handler
+            // Update Redux state
             dispatch(updateCredentials({ user: updatedUser }));
 
             setAlertConfig({
@@ -53,6 +53,8 @@ export default function LinkWalletScreen({ navigation, route }) {
                 onConfirm: () => {
                     setAlertConfig(prev => ({ ...prev, visible: false }));
                     if (isSetup) {
+                        navigation.replace('UniversitySelection', { isSetup: true });
+                    } else {
                         navigation.navigate('Main');
                     }
                 }
@@ -74,57 +76,106 @@ export default function LinkWalletScreen({ navigation, route }) {
 
     return (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
-
-                <View style={styles.header}>
-                    <View style={styles.iconContainer}>
-                        <MaterialCommunityIcons name="wallet-plus" size={40} color={COLORS.primary} />
+            <StatusBar barStyle="dark-content" backgroundColor="#f2f7f2" />
+            <ScrollView contentContainerStyle={styles.scroll} bounces={false} showsVerticalScrollIndicator={false}>
+                
+                {/* Step indicator during setup */}
+                {isSetup && (
+                    <View style={{ alignSelf: 'flex-start', backgroundColor: '#e6ede6', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, marginBottom: 10 }}>
+                        <Text style={{ fontSize: 12, color: '#056f36', fontWeight: '800' }}>Step 1 of 3 — Link Wallet</Text>
                     </View>
-                    <Text style={styles.title}>Activate Your Laro Wallet</Text>
-                    <Text style={styles.subtitle}>
-                        Link your mobile number to send and receive Laro Coins instantly.
-                    </Text>
+                )}
+
+                {/* Center Top Illustration Area */}
+                <View style={styles.illustrationWrapper}>
+                    {/* Floating Secure Tag */}
+                    <View style={styles.secureTag}>
+                        <Ionicons name="flash" size={12} color="#ff6633" />
+                        <Text style={styles.secureTagText}>Secure</Text>
+                    </View>
+
+                    {/* Dotted Green Tag */}
+                    <View style={styles.instantTag}>
+                        <Ionicons name="leaf" size={12} color="#056f36" />
+                        <Text style={styles.instantTagText}>Instant</Text>
+                    </View>
+
+                    {/* White Rounded Square Box */}
+                    <View style={styles.whiteWalletIconBox}>
+                        <MaterialCommunityIcons name="wallet" size={54} color="#056f36" />
+                        <View style={styles.plusOverlayCircle}>
+                            <Ionicons name="add" size={16} color="#fff" />
+                        </View>
+                    </View>
                 </View>
 
-                <View style={styles.form}>
-                    <View style={styles.inputContainer}>
-                        <View style={styles.prefixBox}>
-                            <Text style={styles.prefixText}>+91</Text>
+                {/* Text Labels Section */}
+                <Text style={styles.titleText}>Link Your Laro Wallet</Text>
+                <Text style={styles.descText}>
+                    Connect your student credential to enable one-tap campus payments and exclusive student rewards.
+                </Text>
+
+                {/* Card input panel */}
+                <View style={styles.cardInputPanel}>
+                    <Text style={styles.mobileNumberLabel}>Mobile Number</Text>
+                    
+                    <View style={styles.inputsRow}>
+                        {/* Dropdown element */}
+                        <View style={styles.dropdownInput}>
+                            <Text style={styles.dropdownText}>IN +91</Text>
+                            <Ionicons name="chevron-down" size={14} color="#555" style={{ marginLeft: 4 }} />
                         </View>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter Mobile Number"
-                            placeholderTextColor="#999"
-                            keyboardType="number-pad"
-                            maxLength={10}
-                            value={phone}
-                            onChangeText={setPhone}
-                            autoFocus
-                        />
+
+                        {/* Phone Input element */}
+                        <View style={styles.textInputBox}>
+                            <Ionicons name="call-outline" size={18} color="#666" style={{ marginRight: 8 }} />
+                            <TextInput
+                                style={styles.phoneTextInput}
+                                placeholder="(555) 000-0000"
+                                placeholderTextColor="#999"
+                                keyboardType="phone-pad"
+                                maxLength={10}
+                                value={phone}
+                                onChangeText={setPhone}
+                            />
+                        </View>
                     </View>
 
-                    <Text style={styles.infoText}>
-                        <Ionicons name="shield-checkmark-outline" size={14} color="#666" /> This number will be used for your secure transactions.
-                    </Text>
-
+                    {/* Link Wallet Action Button */}
                     <TouchableOpacity
-                        style={[styles.primaryButton, phone.length === 10 && styles.primaryButtonActive]}
+                        style={[styles.linkWalletBtn, phone.length === 10 && styles.linkWalletBtnActive, loading && { opacity: 0.7 }]}
                         onPress={handleLinkWallet}
                         disabled={phone.length < 10 || loading}
                     >
                         {loading ? (
                             <ActivityIndicator color="#fff" size="small" />
                         ) : (
-                            <Text style={styles.primaryButtonText}>Create Wallet</Text>
+                            <View style={styles.btnRow}>
+                                <Ionicons name="link-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+                                <Text style={styles.linkWalletBtnText}>Link Wallet</Text>
+                            </View>
                         )}
                     </TouchableOpacity>
+                </View>
 
-                    <TouchableOpacity
-                        style={styles.skipLink}
-                        onPress={() => navigation.navigate(isSetup ? 'Main' : 'Home')}
-                    >
-                        <Text style={styles.skipLinkText}>{isSetup ? 'Step over for now' : 'Maybe Later'}</Text>
-                    </TouchableOpacity>
+                {/* Bottom Skip Link */}
+                <TouchableOpacity
+                    style={styles.skipBtn}
+                    onPress={() => {
+                        if (isSetup) {
+                            navigation.replace('UniversitySelection', { isSetup: true });
+                        } else {
+                            navigation.navigate('Main');
+                        }
+                    }}
+                >
+                    <Text style={styles.skipBtnText}>Skip for now</Text>
+                </TouchableOpacity>
+
+                {/* Footer details */}
+                <View style={styles.footerDetails}>
+                    <Ionicons name="shield-checkmark" size={14} color="#27c96c" style={{ marginRight: 4 }} />
+                    <Text style={styles.footerDetailsText}>Secured by Campus Network</Text>
                 </View>
 
             </ScrollView>
@@ -142,82 +193,152 @@ export default function LinkWalletScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
-    scroll: { flexGrow: 1, paddingHorizontal: 30, paddingTop: 60, alignItems: 'center' },
+    container: { flex: 1, backgroundColor: '#f2f7f2' }, // Soft green-beige background matching wallet theme
+    scroll: { flexGrow: 1, paddingHorizontal: 25, paddingTop: 50, alignItems: 'center', justifyContent: 'center' },
 
-    header: { alignItems: 'center', marginBottom: 40 },
-    iconContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: COLORS.background,
+    // Illustration styles
+    illustrationWrapper: {
+        width: 220,
+        height: 200,
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+        marginBottom: 20
+    },
+    whiteWalletIconBox: {
+        width: 140,
+        height: 140,
+        borderRadius: 36,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.05,
+        shadowRadius: 15,
+        elevation: 3
+    },
+    plusOverlayCircle: {
+        position: 'absolute',
+        top: 24,
+        right: 24,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#27c96c',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff'
+    },
+    secureTag: {
+        position: 'absolute',
+        top: 15,
+        right: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ffebe3', // Light orange
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        gap: 4
+    },
+    secureTagText: { color: '#ff6633', fontSize: 11, fontWeight: '850' },
+    instantTag: {
+        position: 'absolute',
+        bottom: 25,
+        left: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#e6ede6', // Light green
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        gap: 4
+    },
+    instantTagText: { color: '#056f36', fontSize: 11, fontWeight: '850' },
+
+    // Titles
+    titleText: { fontSize: 22, fontWeight: '950', color: '#111', textAlign: 'center', marginBottom: 10 },
+    descText: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 22, paddingHorizontal: 15, marginBottom: 25 },
+
+    // Card Input Styles
+    cardInputPanel: {
+        width: '100%',
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.02,
+        shadowRadius: 10,
+        elevation: 2,
+        marginBottom: 20
+    },
+    mobileNumberLabel: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#666',
+        marginBottom: 10,
+        letterSpacing: 0.5
+    },
+    inputsRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 20
+    },
+    dropdownInput: {
+        backgroundColor: '#f2f7f2',
+        borderRadius: 14,
+        width: 85,
+        height: 50,
+        flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: COLORS.secondary,
-        marginBottom: 24
+        borderColor: '#e6ede6'
     },
-    title: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: '#1c1c1c',
-        textAlign: 'center',
-        marginBottom: 12,
-        letterSpacing: -0.5
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#666',
-        textAlign: 'center',
-        lineHeight: 24,
-        paddingHorizontal: 20
-    },
-
-    form: { width: '100%' },
-    inputContainer: {
+    dropdownText: { fontSize: 14, fontWeight: '800', color: '#111' },
+    textInputBox: {
+        flex: 1,
+        backgroundColor: '#f2f7f2',
+        borderRadius: 14,
+        height: 50,
+        paddingHorizontal: 15,
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1.5,
-        borderColor: '#e0e0e0',
-        borderRadius: 16,
-        paddingHorizontal: 16,
-        height: 64,
-        marginBottom: 12,
-        backgroundColor: '#fcfcfc'
+        borderWidth: 1,
+        borderColor: '#e6ede6'
     },
-    prefixBox: {
-        paddingRight: 12,
-        borderRightWidth: 1,
-        borderRightColor: '#eee',
-        marginRight: 16
-    },
-    prefixText: { fontSize: 18, fontWeight: 'bold', color: '#1c1c1c' },
-    input: { flex: 1, fontSize: 18, color: '#1c1c1c', fontWeight: '600' },
+    phoneTextInput: { flex: 1, fontSize: 14, color: '#111', fontWeight: '800' },
 
-    infoText: {
-        fontSize: 13,
-        color: '#888',
-        marginBottom: 35,
-        textAlign: 'center'
-    },
-
-    primaryButton: {
-        backgroundColor: '#e0e0e0',
-        height: 64,
+    linkWalletBtn: {
+        backgroundColor: '#ccd6cc', // Inactive light green
+        height: 52,
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 20,
-        width: '100%',
-        shadowColor: COLORS.primary,
+        shadowColor: '#056f36',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 2
     },
-    primaryButtonActive: { backgroundColor: COLORS.primary },
-    primaryButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+    linkWalletBtnActive: { backgroundColor: '#056f36' },
+    btnRow: { flexDirection: 'row', alignItems: 'center' },
+    linkWalletBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 
-    skipLink: { padding: 15, alignItems: 'center' },
-    skipLinkText: { color: '#888', fontSize: 14, fontWeight: '600' }
+    // Bottom action link
+    skipBtn: { padding: 12, alignItems: 'center', marginBottom: 25 },
+    skipBtnText: { fontSize: 14, fontWeight: '800', color: '#056f36' },
+
+    // Footer details
+    footerDetails: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: 0.8,
+        marginBottom: 20
+    },
+    footerDetailsText: { fontSize: 12, color: '#666', fontWeight: '600' }
 });

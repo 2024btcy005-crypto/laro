@@ -118,6 +118,50 @@ async function seedJoyUniversityData() {
             ]
         );
 
+        // 5. THE GRADUATE CAFÉ
+        await createShopWithProducts(
+            {
+                name: 'The Graduate Café',
+                description: 'Freshly brewed coffees, teas, and delicious pastries.',
+                category: 'Cafe',
+                imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&q=80',
+                isOpen: true,
+                isActive: true,
+                latitude: '0.00000000',
+                longitude: '0.00000000',
+                serviceRadius: 9999,
+                isWarehouse: false
+            },
+            [
+                { name: 'The Academic Roast', price: 150, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400&q=80' },
+                { name: 'Iced Latte', price: 120, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400&q=80' },
+                { name: 'Glazed Donut', price: 80, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=400&q=80' },
+                { name: 'Croissant', price: 90, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&q=80' }
+            ]
+        );
+
+        // 6. CAMPUS GRILL & DELI
+        await createShopWithProducts(
+            {
+                name: 'Campus Grill & Deli',
+                description: 'Delicious sandwiches, burgers, wraps, and fast food.',
+                category: 'Restaurant',
+                imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80',
+                isOpen: true,
+                isActive: true,
+                latitude: '0.00000000',
+                longitude: '0.00000000',
+                serviceRadius: 9999,
+                isWarehouse: false
+            },
+            [
+                { name: 'Classic Burger', price: 180, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80' },
+                { name: 'Chicken Wrap', price: 160, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1626700051175-6518c4793f4f?w=400&q=80' },
+                { name: 'Club Sandwich', price: 150, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=400&q=80' },
+                { name: 'French Fries', price: 90, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&q=80' }
+            ]
+        );
+
         console.log('\n✅ All data seeded specifically for JOY UNIVERSITY!');
     } catch (error) {
         console.error('❌ Seeding failed:', error);

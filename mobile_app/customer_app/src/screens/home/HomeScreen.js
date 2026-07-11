@@ -50,25 +50,20 @@ export default function HomeScreen({ navigation }) {
     const { user, selectedUniversity } = useSelector(state => state.auth);
     const cartItemCount = cart.items.reduce((total, item) => total + item.quantity, 0);
 
-    const FOOD_CATEGORIES = [
+    const ALL_CATEGORIES = [
         { name: 'All', icon: 'apps', color: '#FFF5F5' },
         { name: 'Fresh', icon: 'leaf', color: '#FFF5F5' },
         { name: 'Dairy', icon: 'cheese', color: '#FFF5F5' },
         { name: 'Grocery', icon: 'shopping', color: '#FFF5F5' },
-        { name: 'Summer', icon: 'weather-sunny', color: '#FFF5F5' },
-        { name: 'Laro Care', icon: 'heart-pulse', color: '#FFF5F5' },
-    ];
-
-    const STATIONERY_CATEGORIES = [
-        { name: 'All', icon: 'apps', color: '#FFF5F5' },
-        { name: 'Books', icon: 'book-open-variant', color: '#FFF5F5' },
-        { name: 'A4 Sheets', icon: 'file-document', color: '#FFF5F5' },
+        { name: 'Snacks & drinks', icon: 'cookie', color: '#FFF5F5' },
+        { name: 'Stationery', icon: 'pencil', color: '#FFF5F5' },
         { name: 'Xerox', icon: 'printer', color: '#FFF5F5' },
+        { name: 'Laro Care', icon: 'heart-pulse', color: '#FFF5F5' },
     ];
 
     const STATIONERY_SHOP_MODES = ['Stationery', 'Books', 'Xerox', 'Printing', 'Stationary'];
 
-    const categoriesList = mode === 'food' ? FOOD_CATEGORIES : STATIONERY_CATEGORIES;
+    const categoriesList = ALL_CATEGORIES;
 
     useFocusEffect(
         useCallback(() => {
@@ -117,8 +112,22 @@ export default function HomeScreen({ navigation }) {
         try {
             const key = `@user_addresses_${user?.id || 'guest'}`;
             const storedAddresses = await AsyncStorage.getItem(key);
-            if (storedAddresses) {
-                const addresses = JSON.parse(storedAddresses);
+            const addresses = storedAddresses ? JSON.parse(storedAddresses) : [];
+            
+            // Auto-redirect checks for authenticated (non-guest) users
+            if (user && user.id !== 'guest') {
+                if (addresses.length === 0) {
+                    console.log('[HomeScreen] Redirecting to AddressBook setup flow...');
+                    navigation.navigate('AddressBook', { isSetup: true });
+                    return;
+                } else if (!user.phoneNumber) {
+                    console.log('[HomeScreen] Redirecting to LinkWallet activation flow...');
+                    navigation.navigate('LinkWallet', { isSetup: true });
+                    return;
+                }
+            }
+
+            if (addresses.length > 0) {
                 const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
                 if (defaultAddr) {
                     setDefaultAddress({
@@ -291,25 +300,7 @@ export default function HomeScreen({ navigation }) {
 
     // Grouping logic for sections with Search Filtering
     const sections = useMemo(() => {
-        // First filter products by search query
         let allProducts = products;
-
-        // Filter by mode using both product and shop categories
-        if (mode === 'stationery') {
-            allProducts = products.filter(p =>
-                STATIONERY_SHOP_MODES.some(m =>
-                    (p.category || '').toLowerCase().includes(m.toLowerCase()) ||
-                    (p.shopCategory || '').toLowerCase().includes(m.toLowerCase())
-                )
-            );
-        } else {
-            allProducts = products.filter(p =>
-                !STATIONERY_SHOP_MODES.some(m =>
-                    (p.category || '').toLowerCase().includes(m.toLowerCase()) ||
-                    (p.shopCategory || '').toLowerCase().includes(m.toLowerCase())
-                )
-            );
-        }
 
         const filteredProducts = allProducts.filter(p =>
             p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -338,19 +329,20 @@ export default function HomeScreen({ navigation }) {
                     data: filteredProducts.filter(p => p.category === 'Snacks & drinks' || p.category === 'Munchies')
                 },
                 {
+                    title: 'Stationery & Study',
+                    data: filteredProducts.filter(p => STATIONERY_SHOP_MODES.some(m => (p.category || '').toLowerCase().includes(m.toLowerCase()) || (p.shopCategory || '').toLowerCase().includes(m.toLowerCase())))
+                },
+                {
                     title: 'Explore More',
-                    data: filteredProducts.filter(p => !['Fresh', 'Vegetables', 'Fruits', 'Dairy', 'Grocery', 'Grocery & kitchen', 'Dairy & Bread', 'Organic', 'Snacks & drinks', 'Munchies'].includes(p.category))
+                    data: filteredProducts.filter(p => !['Fresh', 'Vegetables', 'Fruits', 'Dairy', 'Grocery', 'Grocery & kitchen', 'Dairy & Bread', 'Organic', 'Snacks & drinks', 'Munchies', 'Stationery', 'Xerox', 'Printing', 'Books', 'Study'].includes(p.category) && !STATIONERY_SHOP_MODES.some(m => (p.category || '').toLowerCase().includes(m.toLowerCase()) || (p.shopCategory || '').toLowerCase().includes(m.toLowerCase())))
                 }
             ];
-            // Filter out empty sections
             const filtered = rawSections.filter(s => s.data.length > 0);
 
-            // If search is active and no standard sections match, but we have products, show them in a generic search result section
             if (searchQuery && filtered.length === 0 && filteredProducts.length > 0) {
                 return [{ title: 'Search Results', data: filteredProducts }];
             }
 
-            // Inject Buy it Again if we have recent products and no search query
             if (!searchQuery && recentProducts.length > 0) {
                 filtered.unshift({
                     title: 'Buy it Again',
@@ -372,7 +364,7 @@ export default function HomeScreen({ navigation }) {
             const isXerox = selectedCategory === 'Xerox';
             return (filteredData.length > 0 || isXerox) ? [{ title: selectedCategory, data: filteredData }] : [];
         }
-    }, [products, selectedCategory, searchQuery, mode, recentProducts]);
+    }, [products, selectedCategory, searchQuery, recentProducts]);
 
     const cartOpacity = useRef(new Animated.Value(0)).current;
 
@@ -398,124 +390,90 @@ export default function HomeScreen({ navigation }) {
         { id: 'b2', image: 'https://img.freepik.com/free-vector/healthy-food-banner-template_23-2148496494.jpg' },
     ];
 
-    const renderHeader = () => (
-        <View style={[styles.headerContainer, { paddingTop: (insets?.top || 0) + 10, backgroundColor: colors.background }]}>
-            {/* Top Logo & Mode Toggle */}
-            <View style={styles.topSection}>
-                <Text style={[styles.laroLogo, { color: colors.primary }]}>Laro</Text>
-                <View style={[styles.modeTogglePillSmall, { backgroundColor: colors.white, borderColor: colors.border }]}>
-                    <TouchableOpacity
-                        style={[styles.modeToggleBtnSmall, mode === 'food' && { backgroundColor: colors.primary }]}
-                        onPress={() => { setMode('food'); setSelectedCategory('All'); }}
-                    >
-                        <MaterialCommunityIcons name="food" size={14} color={mode === 'food' ? '#fff' : colors.gray} />
-                        <Text style={[styles.modeToggleBtnText, { color: colors.gray }, mode === 'food' && { color: '#fff' }]}>Food</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.modeToggleBtnSmall, mode === 'stationery' && { backgroundColor: colors.primary }]}
-                        onPress={() => { setMode('stationery'); setSelectedCategory('All'); }}
-                    >
-                        <MaterialCommunityIcons name="book-open-variant" size={14} color={mode === 'stationery' ? '#fff' : colors.gray} />
-                        <Text style={[styles.modeToggleBtnText, { color: colors.gray }, mode === 'stationery' && { color: '#fff' }]}>Study</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+    const renderHeader = () => {
+        return (
+            <View style={[styles.headerWrapper, { paddingTop: (insets?.top || 0) + 10 }]}>
+                <View style={styles.locationHeader}>
+                    <View style={styles.locationContainer}>
+                        <TouchableOpacity style={styles.addressSelector} onPress={() => navigation.navigate('ChangeUniversity')}>
+                            <View>
+                                <Text style={styles.deliverToText}>DELIVER TO</Text>
+                                <View style={styles.addressRow}>
+                                    <Text style={styles.addressMainText} numberOfLines={1}>
+                                        {selectedUniversity?.name || 'Engineering Block C'}
+                                    </Text>
+                                    <Ionicons name="chevron-down" size={16} color="#056f36" style={styles.chevronIcon} />
+                                </View>
+                            </View>
+                        </TouchableOpacity>
 
-            {/* University / Campus Selector */}
-            <TouchableOpacity
-                style={[styles.locationBar, { backgroundColor: isDarkMode ? colors.white : '#fff', borderColor: colors.border }]}
-                onPress={() => navigation.navigate('ChangeUniversity')}
-            >
-                <View style={styles.locationLeft}>
-                    <View style={[styles.uniIconCircle, { backgroundColor: colors.primary + '15' }]}>
-                        <MaterialCommunityIcons name="school" size={20} color={colors.primary} />
-                    </View>
-                    <View style={styles.locationTextGroup}>
-                        <Text style={[styles.locationAddressText, { color: colors.black }]} numberOfLines={1}>
-                            {selectedUniversity?.name || 'Select Campus'}
-                        </Text>
-                        <Text style={[styles.locationSubtitleText, { color: colors.gray }]} numberOfLines={1}>
-                            {defaultAddress.title === 'Set up delivery address' ? 'Tap to change campus' : `${defaultAddress.title}, ${defaultAddress.subtitle}`}
-                        </Text>
-                    </View>
-                </View>
-                <Ionicons name="swap-horizontal" size={18} color={colors.primary} />
-            </TouchableOpacity>
-
-            {shops.length > 0 && shops[0].distance && (
-                <View style={styles.nearestStoreBar}>
-                    <View style={styles.nearestStoreMain}>
-                        <MaterialCommunityIcons name="lightning-bolt" size={14} color="#fbbf24" />
-                        <Text style={[styles.nearestStoreText, { color: colors.gray }]}>
-                            Serving from <Text style={{ color: colors.black, fontWeight: '700' }}>{shops[0].name}</Text> • {shops[0].distance} km
-                        </Text>
-                    </View>
-                    <View style={styles.nearestStoreMeta}>
-                        <View style={styles.metaBadge}>
-                            <Ionicons name="time-outline" size={12} color={colors.primary} />
-                            <Text style={styles.metaBadgeText}>{shops[0].estimatedDeliveryTime || '25 min'}</Text>
+                        <View style={styles.estDeliveryContainer}>
+                            <Text style={styles.estDeliveryTime}>
+                                {shops[0]?.estimatedDeliveryTime || '12-15 min'}
+                            </Text>
+                            <Text style={styles.estDeliveryLabel}>Est. Delivery</Text>
                         </View>
-                        <View style={styles.metaBadge}>
-                            <MaterialCommunityIcons name="moped" size={12} color={colors.primary} />
-                            <Text style={styles.metaBadgeText}>₹{shops[0].deliveryFee || 0}</Text>
-                        </View>
+
+                        <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={[styles.profileAvatarWrapper, { backgroundColor: '#f3fbf4', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#dcecdc' }]}>
+                            <Ionicons name="person" size={20} color="#056f36" />
+                        </TouchableOpacity>
                     </View>
                 </View>
-            )}
 
-            {/* Improved Search Bar matching original theme colors */}
-            <View style={[styles.searchBarContainer, { backgroundColor: isDarkMode ? colors.white : '#fff', borderColor: colors.border }]}>
-                <View style={styles.searchLeft}>
-                    <Ionicons name="search" size={22} color={colors.primary} />
+                <View style={styles.customSearchBar}>
+                    <Ionicons name="search" size={20} color="#666" style={styles.customSearchIcon} />
                     <TextInput
-                        placeholder="Search for 'biscuits'"
-                        placeholderTextColor={isDarkMode ? colors.gray : '#999'}
-                        style={[styles.headerSearchInput, { color: colors.black }]}
+                        placeholder="Search for snacks, stationery, and more"
+                        placeholderTextColor="#999"
+                        style={styles.customSearchInput}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                     />
-                </View>
-                <View style={styles.searchRight}>
-                    <TouchableOpacity style={styles.searchIconBtn}>
-                        <Ionicons name="mic-outline" size={20} color={colors.gray} />
-                    </TouchableOpacity>
-                    <View style={[styles.searchDivider, { backgroundColor: colors.border }]} />
-                    <TouchableOpacity style={styles.searchIconBtn}>
-                        <MaterialCommunityIcons name="note-edit-outline" size={20} color={colors.black} />
+                    <TouchableOpacity style={styles.micButton}>
+                        <Ionicons name="mic" size={20} color="#056f36" />
                     </TouchableOpacity>
                 </View>
-            </View>
 
 
-            <View style={styles.categoriesContainer}>
-                {/* Horizontal Categories Scroll */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.categoryScrollContent}
-                    style={styles.categoryScrollView}
-                >
-                    {categoriesList.map((cat, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            style={[styles.categoryPill, selectedCategory === cat.name && styles.categoryPillActive]}
-                            onPress={() => setSelectedCategory(cat.name)}
-                        >
-                            <View style={styles.categoryIconBox}>
+                <View style={{ marginBottom: 15 }}>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 20, gap: 12 }}
+                    >
+                        {categoriesList.map((cat, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={[{
+                                    alignItems: 'center',
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 8,
+                                    borderRadius: 12,
+                                    backgroundColor: selectedCategory === cat.name ? '#edf5ed' : '#f8fafc',
+                                    borderWidth: 1,
+                                    borderColor: selectedCategory === cat.name ? '#d5edd5' : '#e2e8f0',
+                                    flexDirection: 'row',
+                                    gap: 6
+                                }]}
+                                onPress={() => setSelectedCategory(cat.name)}
+                            >
                                 <MaterialCommunityIcons
                                     name={cat.icon}
-                                    size={28}
-                                    color={selectedCategory === cat.name ? colors.primary : colors.black}
+                                    size={16}
+                                    color={selectedCategory === cat.name ? '#056f36' : '#666'}
                                 />
-                            </View>
-                            <Text style={[styles.categoryPillText, { color: colors.black }, selectedCategory === cat.name && { color: colors.primary }]}>{cat.name}</Text>
-                            {selectedCategory === cat.name && <View style={[styles.activeDot, { backgroundColor: colors.primary }]} />}
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                                <Text style={{
+                                    fontSize: 13,
+                                    fontWeight: '700',
+                                    color: selectedCategory === cat.name ? '#056f36' : '#666'
+                                }}>{cat.name}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
             </View>
-        </View>
-    );
+        );
+    };
 
     const renderBanner = () => (
         <ScrollView
@@ -594,7 +552,7 @@ export default function HomeScreen({ navigation }) {
 
         if (item.title === 'Buy it Again') {
             return (
-                <View style={[styles.gridSectionCapsule, { backgroundColor: isDarkMode ? colors.white + '10' : '#FFF0F5' }]}>
+                <View style={[styles.gridSectionCapsule, { backgroundColor: isDarkMode ? colors.white + '10' : '#ffffff' }]}>
                     <View style={styles.capsuleHeader}>
                         <Text style={[styles.capsuleHeaderText, { color: colors.primary }]}>{item.title} ⚡</Text>
                     </View>
@@ -791,6 +749,7 @@ export default function HomeScreen({ navigation }) {
                 styles.smartCartContainer,
                 {
                     opacity: cartOpacity,
+                    bottom: 12,
                     transform: [{
                         translateY: cartOpacity.interpolate({
                             inputRange: [0, 1],
@@ -822,26 +781,6 @@ export default function HomeScreen({ navigation }) {
                     </View>
                 </TouchableOpacity>
             </Animated.View>
-
-            {/* Modern Bottom Tab Bar Emulation */}
-
-
-            <View style={[styles.bottomTabBar, { backgroundColor: isDarkMode ? colors.white : '#fff', borderTopColor: colors.border }]}>
-                <TouchableOpacity style={styles.tabItem}>
-                    <View style={[styles.activeTabBg, { backgroundColor: isDarkMode ? colors.primary + '30' : colors.primary + '15' }]}>
-                        <Ionicons name="home" size={22} color={colors.primary} />
-                        <Text style={[styles.activeTabText, { color: colors.primary }]}>Home</Text>
-                    </View>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate('Orders')}>
-                    <Ionicons name="clipboard-outline" size={22} color={isDarkMode ? colors.gray : '#666'} />
-                    <Text style={[styles.tabText, { color: isDarkMode ? colors.gray : '#666' }]}>Orders</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate('Profile')}>
-                    <Ionicons name="person-outline" size={22} color={isDarkMode ? colors.gray : '#666'} />
-                    <Text style={[styles.tabText, { color: isDarkMode ? colors.gray : '#666' }]}>Profile</Text>
-                </TouchableOpacity>
-            </View>
 
             {/* Advertisement Popup Modal */}
             <Modal
@@ -1061,8 +1000,8 @@ const styles = StyleSheet.create({
         fontSize: 9,
         fontWeight: 'bold'
     },
-    smartCartContainer: { position: 'absolute', bottom: 100, left: 20, right: 20, zIndex: 1000 },
-    smartCartBtn: { backgroundColor: COLORS.zippitGreen || '#27994B', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 20, elevation: 10 },
+    smartCartContainer: { position: 'absolute', left: 16, right: 16, zIndex: 1000 },
+    smartCartBtn: { backgroundColor: '#056f36', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 18, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 },
     cartInfo: { flexDirection: 'row', alignItems: 'center' },
     cartIconBadge: { position: 'relative', marginRight: 15 },
     countBadge: { position: 'absolute', top: -5, right: -10, backgroundColor: COLORS.accent, borderRadius: 10, width: 18, height: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: COLORS.zippitGreen || '#27994B' },
@@ -1327,5 +1266,287 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    headerWrapper: {
+        paddingHorizontal: 20,
+        backgroundColor: '#fff',
+        paddingTop: 10,
+    },
+    locationHeader: {
+        marginBottom: 15,
+    },
+    locationContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    addressSelector: {
+        flex: 1,
+    },
+    deliverToText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#888',
+        letterSpacing: 0.5,
+    },
+    addressRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+    },
+    addressMainText: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#111',
+    },
+    chevronIcon: {
+        marginLeft: 4,
+    },
+    estDeliveryContainer: {
+        alignItems: 'flex-end',
+        marginRight: 15,
+    },
+    estDeliveryTime: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#111',
+    },
+    estDeliveryLabel: {
+        fontSize: 10,
+        color: '#888',
+        marginTop: 2,
+    },
+    profileAvatarWrapper: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
+    profileAvatar: {
+        width: '100%',
+        height: '100%',
+    },
+    customSearchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f3fbf4',
+        borderRadius: 16,
+        paddingHorizontal: 15,
+        height: 52,
+        marginBottom: 20,
+    },
+    customSearchIcon: {
+        marginRight: 10,
+    },
+    customSearchInput: {
+        flex: 1,
+        fontSize: 14,
+        color: '#333',
+        height: '100%',
+    },
+    micButton: {
+        padding: 5,
+    },
+    categorySection: {
+        marginBottom: 25,
+    },
+    sectionHeading: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#111',
+        marginBottom: 15,
+    },
+    categoryGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    gridCategoryItem: {
+        width: (width - 76) / 4,
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    categoryImgWrapper: {
+        width: '100%',
+        aspectRatio: 1,
+        borderRadius: 16,
+        backgroundColor: '#f3fbf4',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    seeAllWrapper: {
+        backgroundColor: '#e6ede6',
+    },
+    categoryImg: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    gridCategoryLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#333',
+        textAlign: 'center',
+        marginTop: 6,
+        lineHeight: 14,
+    },
+    promoCarousel: {
+        marginBottom: 25,
+    },
+    promoCardGreen: {
+        backgroundColor: '#056f36',
+        borderRadius: 20,
+        width: width - 50,
+        height: 140,
+        flexDirection: 'row',
+        padding: 20,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    promoLeft: {
+        flex: 1.2,
+    },
+    promoTitle: {
+        fontSize: 22,
+        fontWeight: '950',
+        color: '#fff',
+        lineHeight: 24,
+    },
+    promoTitleSecond: {
+        fontSize: 22,
+        fontWeight: '950',
+        color: '#fff',
+        lineHeight: 24,
+        marginBottom: 4,
+    },
+    promoSubtitle: {
+        fontSize: 12,
+        color: 'rgba(255, 255, 255, 0.8)',
+        marginBottom: 12,
+    },
+    promoButton: {
+        backgroundColor: '#fff',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 30,
+        alignSelf: 'flex-start',
+    },
+    promoButtonText: {
+        color: '#056f36',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    promoImage: {
+        flex: 1,
+        height: '100%',
+        resizeMode: 'cover',
+        borderRadius: 14,
+    },
+    promoCardBrown: {
+        backgroundColor: '#8b4513',
+        borderRadius: 20,
+        width: 25,
+        height: 140,
+    },
+    trendingSection: {
+        marginBottom: 25,
+    },
+    trendingScrollContent: {
+        paddingRight: 20,
+        gap: 15,
+    },
+    trendingItemCard: {
+        width: 170,
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#eef5ee',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.03,
+        shadowRadius: 8,
+        elevation: 1,
+    },
+    trendingImgBg: {
+        width: '100%',
+        height: 110,
+        backgroundColor: '#f3fbf4',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 10,
+        overflow: 'hidden',
+    },
+    trendingProductImg: {
+        width: '90%',
+        height: '90%',
+        resizeMode: 'contain',
+    },
+    trendingTitle: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#222',
+        marginBottom: 2,
+    },
+    trendingSubText: {
+        fontSize: 11,
+        color: '#888',
+        marginBottom: 10,
+    },
+    trendingFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    trendingPrice: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#111',
+    },
+    trendingAddButton: {
+        borderWidth: 1.5,
+        borderColor: '#056f36',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        backgroundColor: '#fff',
+    },
+    trendingAddText: {
+        color: '#056f36',
+        fontSize: 11,
+        fontWeight: 'bold',
+    },
+    guaranteeBanner: {
+        backgroundColor: '#edf5ed',
+        borderRadius: 20,
+        padding: 20,
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    guaranteeIconCircle: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#34d399',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    guaranteeTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#056f36',
+        marginBottom: 6,
+    },
+    guaranteeSubtitle: {
+        fontSize: 12,
+        color: '#556655',
+        textAlign: 'center',
+        lineHeight: 18,
+        paddingHorizontal: 15,
     },
 });

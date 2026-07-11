@@ -2,7 +2,7 @@ export const LIGHT_COLORS = {
     primary: '#9D174D',   // Dark Pink
     secondary: '#F472B6', // Medium Pink
     accent: '#DB2777',    // Deep Pink
-    background: '#FFF0F6', // Light Pink
+    background: '#FFFFFF', // White
     zippitGreen: '#27994B',
     white: '#FFFFFF',
     black: '#1c1c1c',

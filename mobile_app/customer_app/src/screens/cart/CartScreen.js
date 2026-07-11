@@ -1,21 +1,30 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
+import { 
+    View, Text, StyleSheet, FlatList, TouchableOpacity, Image, 
+    ScrollView, StatusBar, ActivityIndicator, TextInput, Dimensions 
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import { addToCart, removeFromCart, clearCart } from '../../store/cartSlice';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, CONSTANTS } from '../../theme';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const { width } = Dimensions.get('window');
 
 export default function CartScreen({ navigation }) {
     const { colors, isDarkMode } = useTheme();
     const cart = useSelector((state) => state.cart);
+    const { user } = useSelector((state) => state.auth);
     const dispatch = useDispatch();
     const flatListRef = useRef(null);
     const insets = useSafeAreaInsets();
 
-    // Dynamic Configs State
+    // Local States
+    const [defaultAddress, setDefaultAddress] = useState('Setup Campus Block');
+    const [instructions, setInstructions] = useState('');
     const [config, setConfig] = useState({
         taxRate: 5.0,
         handlingCharge: 2.00,
@@ -24,8 +33,9 @@ export default function CartScreen({ navigation }) {
     const [loadingConfig, setLoadingConfig] = useState(true);
 
     useEffect(() => {
-        const fetchConfig = async () => {
+        const fetchConfigAndAddress = async () => {
             try {
+                // Fetch config
                 const response = await api.get('/config');
                 if (response.data) {
                     setConfig({
@@ -34,73 +44,51 @@ export default function CartScreen({ navigation }) {
                         defaultDeliveryFee: response.data.defaultDeliveryFee || 0.00
                     });
                 }
+
+                // Fetch default address
+                const key = `@user_addresses_${user?.id || 'guest'}`;
+                const storedAddresses = await AsyncStorage.getItem(key);
+                if (storedAddresses) {
+                    const addresses = JSON.parse(storedAddresses);
+                    const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+                    if (defaultAddr) {
+                        setDefaultAddress(defaultAddr.hostel || `${defaultAddr.room}, ${defaultAddr.universityName}`);
+                    }
+                }
             } catch (error) {
-                console.log('Failed to fetch config, using defaults:', error.message);
+                console.log('Failed to fetch config or address:', error.message);
             } finally {
                 setLoadingConfig(false);
             }
         };
-        fetchConfig();
-    }, []);
+        fetchConfigAndAddress();
+    }, [user]);
 
     const handleIncrement = (item) => dispatch(addToCart(item));
     const handleDecrement = (item) => dispatch(removeFromCart(item.id || item._id));
-    // Dynamic Billing Calculations
+
+    // Billing Calculations
     const subtotal = cart.totalAmount || 0;
     const taxes = Math.round(subtotal * (config.taxRate / 100));
     const handlingFee = parseFloat(config.handlingCharge);
     const deliveryFee = parseFloat(config.defaultDeliveryFee);
     const grandTotal = subtotal + taxes + handlingFee + deliveryFee;
 
+    const itemCount = cart.items.reduce((total, item) => total + item.quantity, 0);
+
     if (loadingConfig && cart.items.length > 0) {
         return (
-            <SafeAreaView style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
+            <SafeAreaView style={[styles.emptyContainer, { backgroundColor: '#f2f7f2' }]}>
+                <ActivityIndicator size="large" color="#056f36" />
             </SafeAreaView>
         );
     }
 
-    const scrollToBill = () => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-    };
-
-    const renderCartItem = ({ item }) => (
-        <View style={[styles.cartItem, { backgroundColor: colors.white, borderColor: colors.border }]}>
-            <Image source={{ uri: item.imageUrl }} style={[styles.itemImage, { backgroundColor: isDarkMode ? colors.background : '#f9f9f9' }]} />
-            <View style={styles.itemInfo}>
-                <Text style={[styles.itemName, { color: colors.black }]} numberOfLines={1}>{item.name}</Text>
-                {item.metadata && (
-                    <View style={styles.xeroxBadgeContainer}>
-                        <View style={[styles.xeroxBadge, { backgroundColor: isDarkMode ? colors.background : '#f1f5f9' }]}>
-                            <Text style={[styles.xeroxBadgeText, { color: colors.gray }]}>{item.metadata.pageCount} Pages</Text>
-                        </View>
-                        <View style={[styles.xeroxBadge, { backgroundColor: isDarkMode ? '#831843' : '#fdf2f8' }]}>
-                            <Text style={[styles.xeroxBadgeText, { color: COLORS.primary }]}>{item.metadata.options?.colorMode}</Text>
-                        </View>
-                        <View style={[styles.xeroxBadge, { backgroundColor: isDarkMode ? '#064e3b' : '#f0fdf4' }]}>
-                            <Text style={[styles.xeroxBadgeText, { color: isDarkMode ? '#6ee7b7' : '#166534' }]}>{item.metadata.options?.sides}</Text>
-                        </View>
-                    </View>
-                )}
-                <Text style={styles.itemPrice}>{CONSTANTS.CURRENCY}{parseFloat(item.price || 0).toFixed(2)}</Text>
-            </View>
-            <View style={[styles.quantityContainer, { backgroundColor: isDarkMode ? colors.background : '#f5f5f5' }]}>
-                <TouchableOpacity style={[styles.qtyButton, { backgroundColor: colors.white }]} onPress={() => handleDecrement(item)}>
-                    <Ionicons name="remove" size={18} color={COLORS.primary} />
-                </TouchableOpacity>
-                <Text style={[styles.qtyValue, { color: colors.black }]}>{item.quantity}</Text>
-                <TouchableOpacity style={[styles.qtyButton, { backgroundColor: colors.white }]} onPress={() => handleIncrement(item)}>
-                    <Ionicons name="add" size={18} color={COLORS.primary} />
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
-
     if (cart.items.length === 0) {
         return (
-            <SafeAreaView style={[styles.emptyContainer, { backgroundColor: colors.white }]}>
-                <Ionicons name="cart-outline" size={100} color={COLORS.primary} style={{ opacity: 0.2 }} />
-                <Text style={[styles.emptyText, { color: colors.black }]}>Your cart is empty.</Text>
+            <SafeAreaView style={[styles.emptyContainer, { backgroundColor: '#ffffff' }]}>
+                <Ionicons name="cart-outline" size={100} color="#056f36" style={{ opacity: 0.2 }} />
+                <Text style={styles.emptyText}>Your cart is empty.</Text>
                 <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Main', { screen: 'Home' })}>
                     <Text style={styles.browseButtonText}>Start Shopping</Text>
                 </TouchableOpacity>
@@ -109,123 +97,443 @@ export default function CartScreen({ navigation }) {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={colors.white} />
-            <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: colors.white, borderBottomColor: colors.border }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: isDarkMode ? colors.background : '#f8f8f8' }]}>
-                    <Ionicons name="arrow-back" size={24} color={colors.black} />
+        <View style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor="#f2f7f2" />
+            
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={22} color="#056f36" />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.black }]}>My Cart ({cart.items.length})</Text>
+                <Text style={styles.headerTitle}>My Cart</Text>
+                <View style={{ width: 22 }} />
             </View>
 
-            <FlatList
-                ref={flatListRef}
-                data={cart.items}
-                keyExtractor={(item) => (item.id || item._id).toString()}
-                renderItem={renderCartItem}
-                contentContainerStyle={styles.listContainer}
-                ListFooterComponent={() => (
-                    <View style={[styles.billContainer, { backgroundColor: colors.white, borderColor: colors.border }]}>
-                        <Text style={[styles.billTitle, { color: colors.black }]}>Bill Details</Text>
-                        <View style={styles.billRow}>
-                            <View style={styles.billLabelGroup}>
-                                <Ionicons name="bag-check-outline" size={16} color={colors.gray} />
-                                <Text style={[styles.billLabel, { color: colors.gray }]}>Item Total</Text>
+            <ScrollView 
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 110 }]} 
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Delivering To Card */}
+                <View style={styles.deliveryCard}>
+                    <View style={styles.deliveryIconCircle}>
+                        <Ionicons name="location" size={20} color="#fff" />
+                    </View>
+                    <View style={styles.deliveryTextCol}>
+                        <Text style={styles.deliveryLabel}>DELIVERING TO</Text>
+                        <Text style={styles.deliveryBlockText} numberOfLines={1}>{defaultAddress}</Text>
+                        
+                        <View style={styles.timeBadgeRow}>
+                            <View style={styles.timeBadge}>
+                                <Ionicons name="time-outline" size={12} color="#056f36" style={{ marginRight: 4 }} />
+                                <Text style={styles.timeBadgeText}>Arriving in 12-15 mins</Text>
                             </View>
-                            <Text style={[styles.billValue, { color: colors.black }]}>{CONSTANTS.CURRENCY}{parseFloat(subtotal || 0).toFixed(2)}</Text>
-                        </View>
-                        <View style={styles.billRow}>
-                            <View style={styles.billLabelGroup}>
-                                <Ionicons name="bicycle-outline" size={16} color={colors.gray} />
-                                <Text style={[styles.billLabel, { color: colors.gray }]}>Delivery Fee</Text>
-                            </View>
-                            {deliveryFee === 0 ? (
-                                <Text style={[styles.billValue, { color: COLORS.primary }]}>FREE</Text>
-                            ) : (
-                                <Text style={[styles.billValue, { color: colors.black }]}>{CONSTANTS.CURRENCY}{deliveryFee.toFixed(2)}</Text>
-                            )}
-                        </View>
-                        <View style={styles.billRow}>
-                            <View style={styles.billLabelGroup}>
-                                <Ionicons name="shield-checkmark-outline" size={16} color={colors.gray} />
-                                <Text style={[styles.billLabel, { color: colors.gray }]}>Handling Charge</Text>
-                            </View>
-                            <Text style={[styles.billValue, { color: colors.black }]}>{CONSTANTS.CURRENCY}{handlingFee.toFixed(2)}</Text>
-                        </View>
-                        <View style={styles.billRow}>
-                            <View style={styles.billLabelGroup}>
-                                <Ionicons name="receipt-outline" size={16} color={colors.gray} />
-                                <Text style={[styles.billLabel, { color: colors.gray }]}>Govt Taxes & Charges</Text>
-                            </View>
-                            <Text style={[styles.billValue, { color: colors.black }]}>{CONSTANTS.CURRENCY}{parseFloat(taxes || 0).toFixed(2)}</Text>
-                        </View>
-                        <View style={[styles.billRow, styles.billRowTotal, { borderTopColor: colors.border }]}>
-                            <Text style={[styles.billTotalLabel, { color: colors.black }]}>Grand Total</Text>
-                            <Text style={[styles.billTotalValue, { color: colors.black }]}>{CONSTANTS.CURRENCY}{parseFloat(grandTotal || 0).toFixed(2)}</Text>
                         </View>
                     </View>
-                )}
-            />
+                    <TouchableOpacity 
+                        style={styles.deliveryEditBtn}
+                        onPress={() => navigation.navigate('AddressBook')}
+                    >
+                        <Ionicons name="pencil-sharp" size={14} color="#056f36" style={{ marginRight: 4 }} />
+                        <Text style={styles.deliveryEditText}>Edit</Text>
+                    </TouchableOpacity>
+                </View>
 
-            <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 15, backgroundColor: colors.white, borderTopColor: colors.border }]}>
-                <TouchableOpacity style={styles.bottomBarTextContainer} onPress={scrollToBill}>
-                    <Text style={[styles.grandTotalAmount, { color: colors.black }]}>{CONSTANTS.CURRENCY}{parseFloat(grandTotal || 0).toFixed(2)}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={styles.grandTotalText}>VIEW DETAIL BILL</Text>
-                        <Ionicons name="chevron-up" size={14} color={COLORS.primary} />
+                {/* Items Section Title */}
+                <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitle}>Your Items</Text>
+                    <Text style={styles.itemsCountLabel}>{itemCount} {itemCount === 1 ? 'item' : 'items'}</Text>
+                </View>
+
+                {/* Cart Items List */}
+                {cart.items.map((item, idx) => (
+                    <View key={item.id || item._id} style={styles.cartCard}>
+                        <Image source={{ uri: item.imageUrl || 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400&q=80' }} style={styles.cartItemImage} />
+                        <View style={styles.cartItemDetails}>
+                            <Text style={styles.cartItemShopName} numberOfLines={1}>{item.category || 'Store Item'}</Text>
+                            <Text style={styles.cartItemName} numberOfLines={1}>{item.name}</Text>
+                            {item.metadata?.options ? (
+                                <Text style={styles.cartItemVariant}>{item.metadata.options.colorMode} • {item.metadata.options.sides}</Text>
+                            ) : (
+                                <Text style={styles.cartItemVariant}>Standard</Text>
+                            )}
+                            <Text style={styles.cartItemPrice}>{CONSTANTS.CURRENCY}{parseFloat(item.price || 0).toFixed(2)}</Text>
+                        </View>
+                        
+                        {/* Quantity controls */}
+                        <View style={styles.quantityPill}>
+                            <TouchableOpacity style={styles.qtyPillAction} onPress={() => handleDecrement(item)}>
+                                <Ionicons name="remove" size={14} color="#fff" />
+                            </TouchableOpacity>
+                            <Text style={styles.qtyPillValue}>{item.quantity}</Text>
+                            <TouchableOpacity style={styles.qtyPillAction} onPress={() => handleIncrement(item)}>
+                                <Ionicons name="add" size={14} color="#fff" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
+                ))}
+
+                {/* Add More Items Button */}
+                <TouchableOpacity 
+                    style={styles.addMoreDashedBtn} 
+                    onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+                >
+                    <Ionicons name="add-circle" size={20} color="#056f36" style={{ marginRight: 6 }} />
+                    <Text style={styles.addMoreBtnText}>Add more items</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
+
+                {/* Rider Instructions */}
+                <View style={styles.instructionsContainer}>
+                    <View style={styles.instructionsHeaderRow}>
+                        <Ionicons name="document-text-outline" size={18} color="#056f36" style={{ marginRight: 6 }} />
+                        <Text style={styles.instructionsHeaderLabel}>Rider Instructions</Text>
+                    </View>
+                    <TextInput
+                        style={styles.instructionsInput}
+                        placeholder="Leave at the reception or call upon arrival..."
+                        placeholderTextColor="#999"
+                        multiline={true}
+                        value={instructions}
+                        onChangeText={setInstructions}
+                    />
+                </View>
+
+                {/* Bill Details */}
+                <View style={styles.billDetailsCard}>
+                    <Text style={styles.billCardTitle}>Bill Details</Text>
+                    
+                    <View style={styles.billRow}>
+                        <Text style={styles.billLabel}>Item Total</Text>
+                        <Text style={styles.billValue}>{CONSTANTS.CURRENCY}{parseFloat(subtotal || 0).toFixed(2)}</Text>
+                    </View>
+
+                    <View style={styles.billRow}>
+                        <Text style={styles.billLabel}>Delivery Fee</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={styles.billDeliveryStruck}>{CONSTANTS.CURRENCY}1.50</Text>
+                            <Text style={styles.billDeliveryFree}>FREE</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.billRow}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={styles.billLabel}>Campus Handling Fee</Text>
+                            <Ionicons name="information-circle-outline" size={14} color="#888" style={{ marginLeft: 4 }} />
+                        </View>
+                        <Text style={styles.billValue}>{CONSTANTS.CURRENCY}{handlingFee.toFixed(2)}</Text>
+                    </View>
+
+                    {taxes > 0 && (
+                        <View style={styles.billRow}>
+                            <Text style={styles.billLabel}>Govt Taxes & Charges</Text>
+                            <Text style={styles.billValue}>{CONSTANTS.CURRENCY}{parseFloat(taxes || 0).toFixed(2)}</Text>
+                        </View>
+                    )}
+
+                    <View style={styles.billDivider} />
+
+                    <View style={styles.billRow}>
+                        <Text style={styles.billTotalLabel}>Total Payable</Text>
+                        <Text style={styles.billTotalValue}>{CONSTANTS.CURRENCY}{parseFloat(grandTotal || 0).toFixed(2)}</Text>
+                    </View>
+                </View>
+
+                {/* Savings Banner */}
+                <View style={styles.savingsBanner}>
+                    <Text style={styles.savingsBannerText}>You're saving {CONSTANTS.CURRENCY}1.50 on this order!</Text>
+                </View>
+            </ScrollView>
+
+            {/* Bottom Checkout Bar */}
+            <View style={[styles.checkoutStickyBar, { paddingBottom: insets.bottom + 10 }]}>
+                <View style={styles.checkoutPricingCol}>
+                    <Text style={styles.checkoutItemCountText}>{itemCount} {itemCount === 1 ? 'ITEM' : 'ITEMS'}</Text>
+                    <Text style={styles.checkoutPriceTotalText}>{CONSTANTS.CURRENCY}{parseFloat(grandTotal || 0).toFixed(2)}</Text>
+                </View>
+                
+                <TouchableOpacity 
                     style={styles.checkoutButton}
                     onPress={() => navigation.navigate('Checkout')}
                 >
-                    <Text style={styles.checkoutButtonText}>Proceed to Pay</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
+                    <Text style={styles.checkoutBtnLabel}>Proceed to Checkout</Text>
+                    <Ionicons name="chevron-forward" size={18} color="#fff" style={{ marginLeft: 4 }} />
                 </TouchableOpacity>
+
+                {/* Secure footer text */}
+                <View style={styles.secureBadgeFooter}>
+                    <Ionicons name="lock-closed" size={10} color="#999" style={{ marginRight: 4 }} />
+                    <Text style={styles.secureBadgeText}>SAFE & SECURE CHECKOUT</Text>
+                </View>
             </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fcfcfc' },
-    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingBottom: 15, backgroundColor: '#fff', elevation: 0, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
-    backButton: { width: 45, height: 45, borderRadius: 23, backgroundColor: '#f8f8f8', justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: 22, fontWeight: '900', color: '#1a1a1a', marginLeft: 12 },
+    container: { flex: 1, backgroundColor: '#f2f7f2' },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingBottom: 15,
+        backgroundColor: '#f2f7f2'
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 18, fontWeight: '900', color: '#056f36' },
+    moreButton: { padding: 4 },
+
+    scrollContent: { paddingHorizontal: 20, paddingTop: 10 },
 
     emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', padding: 20 },
-    emptyText: { fontSize: 20, color: '#333', marginVertical: 20, fontWeight: '900' },
-    browseButton: { backgroundColor: COLORS.primary, paddingHorizontal: 40, paddingVertical: 18, borderRadius: 20, elevation: 8, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12 },
+    emptyText: { fontSize: 20, color: '#333', marginVertical: 20, fontWeight: '950' },
+    browseButton: { backgroundColor: '#056f36', paddingHorizontal: 40, paddingVertical: 18, borderRadius: 20 },
     browseButtonText: { color: '#fff', fontWeight: '900', fontSize: 16 },
 
-    listContainer: { padding: 20, paddingBottom: 140 },
-    cartItem: { flexDirection: 'row', backgroundColor: '#fff', padding: 15, borderRadius: 24, marginBottom: 15, alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10, borderWidth: 1, borderColor: '#f0f0f0' },
-    itemImage: { width: 80, height: 80, borderRadius: 16, backgroundColor: '#f9f9f9', resizeMode: 'contain' },
-    itemInfo: { flex: 1, marginLeft: 15 },
-    itemName: { fontSize: 17, fontWeight: '800', color: '#1a1a1a' },
-    itemPrice: { fontSize: 16, color: COLORS.primary, marginTop: 4, fontWeight: '900' },
+    // Delivery Address Card
+    deliveryCard: {
+        backgroundColor: '#e6ede6', // Dotted banner tint
+        borderRadius: 20,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 25,
+        borderWidth: 1.5,
+        borderColor: '#d0dcd0'
+    },
+    deliveryIconCircle: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#056f36',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    deliveryTextCol: {
+        flex: 1,
+        marginLeft: 12,
+        justifyContent: 'center'
+    },
+    deliveryLabel: {
+        fontSize: 9,
+        fontWeight: '800',
+        color: '#666',
+        letterSpacing: 1
+    },
+    deliveryBlockText: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#111',
+        marginTop: 2
+    },
+    timeBadgeRow: { flexDirection: 'row', marginTop: 4 },
+    timeBadge: {
+        backgroundColor: '#d8e5d8',
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    timeBadgeText: { fontSize: 10, color: '#056f36', fontWeight: '800' },
+    deliveryEditBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#d0dcd0'
+    },
+    deliveryEditText: { fontSize: 12, fontWeight: '800', color: '#056f36' },
 
-    quantityContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 14, padding: 4 },
-    qtyButton: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
-    qtyValue: { marginHorizontal: 15, fontSize: 16, fontWeight: '900', color: '#1a1a1a' },
+    // Sections Header
+    sectionHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12
+    },
+    sectionTitle: { fontSize: 16, fontWeight: '900', color: '#111' },
+    itemsCountLabel: { fontSize: 13, color: '#666', fontWeight: '800' },
 
-    billContainer: { backgroundColor: '#fff', borderRadius: 24, padding: 20, marginTop: 15, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.08, shadowRadius: 15, borderWidth: 1, borderColor: '#f0f0f0' },
-    billTitle: { fontSize: 18, fontWeight: '900', color: '#1a1a1a', marginBottom: 20 },
-    billRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
-    billLabelGroup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    billLabel: { fontSize: 14, color: '#666', fontWeight: '600' },
-    billValue: { fontSize: 15, color: '#1a1a1a', fontWeight: '900' },
-    billRowTotal: { borderTopWidth: 1.5, borderTopColor: '#f0f0f0', paddingTop: 20, marginTop: 8 },
-    billTotalLabel: { fontSize: 20, fontWeight: '900', color: '#1a1a1a' },
-    billTotalValue: { fontSize: 22, fontWeight: '900', color: '#1a1a1a' },
+    // Cart Items
+    cartCard: {
+        backgroundColor: '#fff',
+        borderRadius: 22,
+        padding: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.01,
+        shadowRadius: 5,
+        elevation: 1
+    },
+    cartItemImage: { width: 68, height: 68, borderRadius: 14 },
+    cartItemDetails: {
+        flex: 1,
+        marginLeft: 12,
+        justifyContent: 'center'
+    },
+    cartItemShopName: { fontSize: 11, color: '#999', fontWeight: '700' },
+    cartItemName: { fontSize: 14, fontWeight: '900', color: '#111', marginTop: 2 },
+    cartItemVariant: { fontSize: 11, color: '#666', marginTop: 1, fontWeight: '600' },
+    cartItemPrice: { fontSize: 14, fontWeight: '800', color: '#056f36', marginTop: 3 },
 
-    bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.08, shadowRadius: 20, elevation: 25, borderTopWidth: 1, borderTopColor: '#f5f5f5' },
-    bottomBarTextContainer: { flex: 1 },
-    grandTotalText: { fontSize: 12, color: COLORS.primary, fontWeight: '900', marginTop: 4, letterSpacing: 0.8 },
-    grandTotalAmount: { fontSize: 28, fontWeight: '900', color: '#1a1a1a' },
-    checkoutButton: { backgroundColor: COLORS.primary, paddingVertical: 18, paddingHorizontal: 40, borderRadius: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.35, shadowRadius: 15, elevation: 12 },
-    checkoutButtonText: { color: '#fff', fontSize: 18, fontWeight: '900' },
-    xeroxBadgeContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6, marginBottom: 4 },
-    xeroxBadge: { backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
-    xeroxBadgeText: { fontSize: 10, fontWeight: '900', color: '#64748b', textTransform: 'uppercase' },
+    quantityPill: {
+        backgroundColor: '#27c96c', // Green controller background
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 4,
+        gap: 6
+    },
+    qtyPillAction: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    qtyPillValue: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '900',
+        width: 14,
+        textAlign: 'center'
+    },
+
+    // Add More button
+    addMoreDashedBtn: {
+        borderWidth: 1.5,
+        borderColor: '#056f36',
+        borderStyle: 'dashed',
+        borderRadius: 16,
+        height: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'row',
+        backgroundColor: 'rgba(5, 111, 54, 0.03)',
+        marginTop: 10,
+        marginBottom: 20
+    },
+    addMoreBtnText: { color: '#056f36', fontSize: 13, fontWeight: '800' },
+
+    // Instructions
+    instructionsContainer: {
+        backgroundColor: '#e6ede6',
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#d0dcd0'
+    },
+    instructionsHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10
+    },
+    instructionsHeaderLabel: { fontSize: 13, fontWeight: '800', color: '#056f36' },
+    instructionsInput: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#d0dcd0',
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        height: 60,
+        fontSize: 13,
+        color: '#111',
+        textAlignVertical: 'top',
+        fontWeight: '700'
+    },
+
+    // Bill Details Card
+    billDetailsCard: {
+        backgroundColor: '#fff',
+        borderRadius: 22,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.01,
+        shadowRadius: 5,
+        elevation: 1,
+        marginBottom: 12
+    },
+    billCardTitle: { fontSize: 15, fontWeight: '900', color: '#111', marginBottom: 15 },
+    billRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 6 },
+    billLabel: { fontSize: 13, color: '#666', fontWeight: '750' },
+    billValue: { fontSize: 13, color: '#111', fontWeight: '800' },
+    billDeliveryStruck: { fontSize: 12, color: '#999', textDecorationLine: 'line-through', marginRight: 6, fontWeight: '600' },
+    billDeliveryFree: { fontSize: 13, color: '#056f36', fontWeight: '900' },
+    billDivider: { height: 1, backgroundColor: '#edf2ed', marginVertical: 12 },
+    billTotalLabel: { fontSize: 15, fontWeight: '900', color: '#111' },
+    billTotalValue: { fontSize: 18, fontWeight: '900', color: '#056f36' },
+
+    // Savings banner
+    savingsBanner: {
+        backgroundColor: '#d8e5d8',
+        borderRadius: 12,
+        paddingVertical: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 30
+    },
+    savingsBannerText: { fontSize: 12, color: '#056f36', fontWeight: '900' },
+
+    // Sticky Checkout Bar
+    checkoutStickyBar: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        paddingHorizontal: 20,
+        paddingTop: 15,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderTopWidth: 1,
+        borderTopColor: '#f0f4f0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 10
+    },
+    checkoutPricingCol: {
+        justifyContent: 'center'
+    },
+    checkoutItemCountText: { fontSize: 9, fontWeight: '850', color: '#999', letterSpacing: 0.5 },
+    checkoutPriceTotalText: { fontSize: 22, fontWeight: '950', color: '#056f36', marginTop: 2 },
+    checkoutButton: {
+        backgroundColor: '#27c96c', // Green checkout button
+        borderRadius: 16,
+        height: 48,
+        paddingHorizontal: 18,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#27c96c',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 2
+    },
+    checkoutBtnLabel: { color: '#fff', fontSize: 14, fontWeight: '850' },
+    
+    secureBadgeFooter: {
+        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 10,
+        paddingTop: 6,
+        borderTopWidth: 1,
+        borderTopColor: '#f7faf7'
+    },
+    secureBadgeText: { fontSize: 9, color: '#999', fontWeight: '800', letterSpacing: 0.5 }
 });

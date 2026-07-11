@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, FlatList, StatusBar, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authAPI } from '../../services/api';
 import { useDispatch, useSelector } from 'react-redux';
-import { updateCredentials } from '../../store/authSlice';
+import { updateCredentials, clearSetupPending } from '../../store/authSlice';
 import { COLORS } from '../../theme';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
-import { StatusBar } from 'react-native';
 import api from '../../services/api';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 export default function AddressBookScreen({ navigation, route }) {
     const { colors, isDarkMode } = useTheme();
@@ -35,112 +34,66 @@ export default function AddressBookScreen({ navigation, route }) {
         onConfirm: () => { }
     });
 
-    React.useEffect(() => {
+    useEffect(() => {
         loadAddresses();
         fetchUniversities();
-        if (isSetup) {
-            handleAddOrEdit();
-        }
-    }, [isSetup, user?.address]);
+    }, [user?.address]);
 
     const fetchUniversities = async () => {
         try {
             const response = await api.get('/universities');
             if (Array.isArray(response.data)) {
                 setUniversities(response.data);
-            } else {
-                console.warn('[AddressBook] Universities response is not an array:', response.data);
-                setUniversities([]);
             }
         } catch (err) {
             console.error('Failed to fetch universities:', err);
-            setUniversities([]);
         }
     };
 
     const loadAddresses = async () => {
         try {
             const storedAddresses = await AsyncStorage.getItem(addressKey);
-            let currentAddresses = [];
-
-            try {
-                currentAddresses = storedAddresses ? JSON.parse(storedAddresses) : [];
-                if (!Array.isArray(currentAddresses)) currentAddresses = [];
-            } catch (e) {
-                console.error('[AddressBook] Failed to parse stored addresses:', e);
-                currentAddresses = [];
-            }
-
+            let currentAddresses = storedAddresses ? JSON.parse(storedAddresses) : [];
+            
+            // Sync with backend address if present
             if (user?.address && typeof user.address === 'string' && user.address.trim() !== '') {
-                const fullAddress = user.address;
-                const parts = fullAddress.split(',').map(p => p.trim());
-
-                // If local is empty OR backend address is not in our local list, add/update it
-                const match = currentAddresses.find(a => a && a.address === fullAddress);
-
+                const match = currentAddresses.find(a => a && a.address === user.address);
                 if (!match) {
-                    console.log('[AddressBook] Syncing backend address to local:', fullAddress);
+                    const parts = user.address.split(',').map(p => p.trim());
                     const cloudAddr = {
                         id: 'cloud_' + Date.now().toString(),
                         type: 'Home',
                         name: user.name || 'Student',
                         phone: user.phoneNumber || '',
-                        hostel: parts[0] || '',
-                        room: parts[1] || '',
-                        address: fullAddress,
-                        isDefault: currentAddresses.length === 0 // Make default if nothing else exists
+                        hostel: parts[0] || 'Main Dormitory',
+                        room: parts[1] || 'Room 402',
+                        address: user.address,
+                        isDefault: currentAddresses.length === 0
                     };
-
-                    // Add to list and deduplicate
                     currentAddresses = [cloudAddr, ...currentAddresses];
-
-                    const uniqueAddresses = [];
-                    const seen = new Set();
-                    for (const item of currentAddresses) {
-                        if (item && item.address && !seen.has(item.address)) {
-                            seen.add(item.address);
-                            uniqueAddresses.push(item);
-                        }
-                    }
-
-                    setAddresses(uniqueAddresses);
-                    await AsyncStorage.setItem(addressKey, JSON.stringify(uniqueAddresses));
-                } else {
-                    setAddresses(currentAddresses);
+                    await AsyncStorage.setItem(addressKey, JSON.stringify(currentAddresses));
                 }
-            } else {
-                setAddresses(currentAddresses);
             }
-        } catch (error) {
-            console.error('Failed to load addresses:', error);
-            setAddresses([]);
-        }
-    };
-
-    const syncAddressToBackend = async (addrObj) => {
-        const fullAddress = `${addrObj.hostel}, ${addrObj.room}, ${addrObj.universityName || 'Campus'}`;
-        if (user?.address === fullAddress) return;
-
-        try {
-            await authAPI.updateProfile({ address: fullAddress });
-            dispatch(updateCredentials({ user: { address: fullAddress } }));
-        } catch (error) {
-            console.error('[AddressBook] Failed to sync address to backend:', error);
+            setAddresses(currentAddresses);
+        } catch (e) {
+            console.error('[AddressBook] Failed to load addresses:', e);
         }
     };
 
     const saveAddressesAndSetState = async (newAddresses) => {
-        setAddresses(newAddresses);
         try {
             await AsyncStorage.setItem(addressKey, JSON.stringify(newAddresses));
+            setAddresses(newAddresses);
 
-            // Sync default to backend
+            // Sync default address to backend profile
             const defaultAddress = newAddresses.find(a => a.isDefault);
             if (defaultAddress) {
-                syncAddressToBackend(defaultAddress);
+                const backendAddressFormat = `${defaultAddress.hostel}, ${defaultAddress.room}, ${defaultAddress.universityName}`;
+                await api.put('/auth/profile', { address: backendAddressFormat });
+                dispatch(updateCredentials({ user: { ...user, address: backendAddressFormat } }));
             }
-        } catch (error) {
-            console.error('Failed to save addresses:', error);
+        } catch (e) {
+            console.error('[AddressBook] Failed to save addresses:', e);
         }
     };
 
@@ -183,8 +136,8 @@ export default function AddressBookScreen({ navigation, route }) {
             });
         } else {
             setFormData({
-                name: '',
-                phone: '',
+                name: user?.name || '',
+                phone: user?.phoneNumber || '',
                 hostel: '',
                 room: '',
                 type: 'Home',
@@ -213,138 +166,217 @@ export default function AddressBookScreen({ navigation, route }) {
             isDefault: editingItem ? editingItem.isDefault : addresses.length === 0
         };
 
+        let newAddresses = [];
         if (editingItem) {
-            saveAddressesAndSetState(addresses.map(a => a.id === editingItem.id ? updatedItem : a));
+            newAddresses = addresses.map(a => a.id === editingItem.id ? updatedItem : a);
         } else {
-            saveAddressesAndSetState([...addresses, updatedItem]);
+            newAddresses = [...addresses, updatedItem];
         }
 
+        saveAddressesAndSetState(newAddresses);
         setModalVisible(false);
-
-        if (isSetup) {
-            const hasPhone = !!user?.phoneNumber;
-            const nextScreen = hasPhone ? 'Main' : 'LinkWallet';
-
-            Alert.alert(
-                'Address Saved',
-                hasPhone ? 'Your delivery address has been set successfully!' : 'Address saved! Next: Activate your Laro Wallet.',
-                [
-                    {
-                        text: 'Continue',
-                        onPress: () => navigation.navigate(nextScreen, { isSetup: true })
-                    }
-                ]
-            );
-        }
     };
 
     const renderAddress = (item) => {
         if (!item || !item.id) return null;
+        
+        let iconName = "home";
+        let iconBg = "#e8f5e9";
+        let iconColor = "#2e7d32";
+        
+        if (item.type === 'Work') {
+            iconName = "book";
+            iconBg = "#ffebee";
+            iconColor = "#c62828";
+        } else if (item.type === 'Other') {
+            iconName = "people";
+            iconBg = "#e8f0fe";
+            iconColor = "#1a73e8";
+        }
+
         return (
-            <View key={item.id} style={[styles.addressCard, { backgroundColor: colors.white, borderColor: colors.border }]}>
-                <View style={styles.addressTypeHeader}>
-                    <Ionicons name={item.type === 'Home' ? 'home-outline' : 'business-outline'} size={20} color={colors.black} />
-                    <Text style={[styles.addressType, { color: colors.black }]}>{item.type}</Text>
+            <View 
+                key={item.id} 
+                style={[
+                    styles.addressCard, 
+                    item.isDefault ? styles.defaultCardBorder : styles.regularCardBorder
+                ]}
+            >
+                {/* Top header row of card */}
+                <View style={styles.cardHeaderRow}>
+                    <View style={[styles.cardIconWrapper, { backgroundColor: iconBg }]}>
+                        <Ionicons name={iconName} size={20} color={iconColor} />
+                    </View>
+                    {item.isDefault && (
+                        <View style={styles.defaultBadge}>
+                            <Text style={styles.defaultBadgeText}>Default</Text>
+                        </View>
+                    )}
                 </View>
-                {item.name ? <Text style={[styles.addressName, { color: colors.black }]}>{item.name} • {item.phone}</Text> : null}
-                <Text style={[styles.addressText, { color: colors.gray }]}>{item.address}</Text>
-                <View style={[styles.addressActions, { borderTopColor: colors.border }]}>
-                    {item.isDefault ? (
-                        <Text style={styles.defaultText}>Default Address</Text>
-                    ) : (
-                        <TouchableOpacity onPress={() => handleSetDefault(item.id)}>
-                            <Text style={styles.actionText}>Set as Default</Text>
+
+                {/* Body Content */}
+                <Text style={styles.addressTitleText}>{item.hostel}</Text>
+                <Text style={styles.addressDetailText}>{item.room}</Text>
+                <Text style={styles.addressSubDetailText}>{item.name} • {item.phone}</Text>
+
+                {/* Bottom Actions Row */}
+                <View style={styles.cardActionsRow}>
+                    <TouchableOpacity style={styles.editBtn} onPress={() => handleAddOrEdit(item)}>
+                        <Text style={styles.editBtnText}>Edit</Text>
+                    </TouchableOpacity>
+                    
+                    {!item.isDefault && (
+                        <TouchableOpacity style={styles.setDefaultBtn} onPress={() => handleSetDefault(item.id)}>
+                            <Text style={styles.setDefaultBtnText}>Set Default</Text>
                         </TouchableOpacity>
                     )}
-                    <View style={styles.editDeleteActions}>
-                        <TouchableOpacity style={styles.actionButton} onPress={() => handleAddOrEdit(item)}>
-                            <Text style={styles.actionText}>Edit</Text>
-                        </TouchableOpacity>
-                        <Text style={[styles.actionDivider, { color: colors.border }]}>|</Text>
-                        <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id)}>
-                            <Text style={[styles.actionTextDelete, { color: colors.gray }]}>Delete</Text>
-                        </TouchableOpacity>
-                    </View>
+
+                    <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
+                        <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                    </TouchableOpacity>
                 </View>
             </View>
         );
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={colors.white} />
-            <View style={[styles.header, { backgroundColor: colors.white, borderBottomColor: colors.border }]}>
-                <TouchableOpacity 
-                    style={styles.backButton} 
-                    onPress={() => {
-                        if (navigation.canGoBack()) {
-                            navigation.goBack();
-                        } else {
-                            navigation.navigate('Main');
-                        }
-                    }}
-                >
-                    <Ionicons name="arrow-back" size={26} color={colors.black} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.black }]}>Address Book</Text>
-                <View style={{ width: 40 }} />
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="dark-content" backgroundColor="#f2f7f2" />
+            
+            {/* Header */}
+            <View style={styles.header}>
+                {!isSetup ? (
+                    <TouchableOpacity 
+                        style={styles.backButton} 
+                        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Main')}
+                    >
+                        <Ionicons name="chevron-back" size={24} color="#056f36" />
+                    </TouchableOpacity>
+                ) : (
+                    <View style={{ width: 40 }} />
+                )}
+                <Text style={styles.headerTitle}>{isSetup ? 'Add Address' : 'Address Book'}</Text>
+                {isSetup ? (
+                    <View style={{ paddingHorizontal: 4 }}>
+                        <Text style={{ fontSize: 11, color: '#888', fontWeight: '700' }}>3 / 3</Text>
+                    </View>
+                ) : (
+                    <View style={{ width: 40 }} />
+                )}
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <TouchableOpacity style={[styles.addAddressContainer, { backgroundColor: colors.white, borderColor: isDarkMode ? colors.border : '#fff0f6' }]} onPress={() => handleAddOrEdit()}>
-                    <Ionicons name="add" size={24} color={COLORS.primary} />
+            <ScrollView contentContainerStyle={[styles.scrollContent, isSetup && { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+                {/* Title Section */}
+                <Text style={styles.mainTitle}>{isSetup ? 'Your Campus Address' : 'My Locations'}</Text>
+                <Text style={styles.subTitle}>{isSetup ? 'Add your dorm or hostel address for fast delivery. You can always edit it later.' : 'Manage your campus delivery drop-off points.'}</Text>
+
+                {/* List of locations */}
+                {addresses.length > 0 ? (
+                    addresses.map(renderAddress)
+                ) : (
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="location-outline" size={60} color="#bbb" />
+                        <Text style={styles.emptyText}>No saved locations found.</Text>
+                    </View>
+                )}
+
+                {/* Add New Address Button */}
+                <TouchableOpacity style={styles.addAddressBtn} onPress={() => handleAddOrEdit()}>
+                    <Ionicons name="location" size={20} color="#fff" style={{ marginRight: 8 }} />
                     <Text style={styles.addAddressText}>Add New Address</Text>
                 </TouchableOpacity>
 
-                <Text style={[styles.savedAddressesTitle, { color: colors.gray }]}>SAVED ADDRESSES</Text>
-                {addresses.map(renderAddress)}
+                {/* Tip footer */}
+                <Text style={styles.tipText}>Tip: You can add up to 10 saved campus locations.</Text>
             </ScrollView>
 
+            {/* Address Form Modal */}
             <Modal visible={modalVisible} transparent={true} animationType="fade" onRequestClose={() => setModalVisible(false)}>
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-                    <View style={[styles.modalContainer, { backgroundColor: colors.white }]}>
-                        <Text style={[styles.modalTitle, { color: colors.black }]}>{editingItem ? 'Edit Address' : 'New Address'}</Text>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>{editingItem ? 'Edit Location' : 'New Location'}</Text>
                         <ScrollView showsVerticalScrollIndicator={false}>
-                            <TextInput style={[styles.modalInputSingle, { backgroundColor: colors.background, color: colors.black, borderColor: colors.border }]} placeholder="Full Name" placeholderTextColor={colors.gray} value={formData.name} onChangeText={(text) => setFormData({ ...formData, name: text })} />
-                            <TextInput style={[styles.modalInputSingle, { backgroundColor: colors.background, color: colors.black, borderColor: colors.border }]} placeholder="Mobile Number" placeholderTextColor={colors.gray} keyboardType="phone-pad" maxLength={10} value={formData.phone} onChangeText={(text) => setFormData({ ...formData, phone: text })} />
+                            
+                            <TextInput 
+                                style={styles.modalInput} 
+                                placeholder="Full Name" 
+                                placeholderTextColor="#999" 
+                                value={formData.name} 
+                                onChangeText={(text) => setFormData({ ...formData, name: text })} 
+                            />
+                            
+                            <TextInput 
+                                style={styles.modalInput} 
+                                placeholder="Mobile Number" 
+                                placeholderTextColor="#999" 
+                                keyboardType="phone-pad" 
+                                maxLength={10} 
+                                value={formData.phone} 
+                                onChangeText={(text) => setFormData({ ...formData, phone: text })} 
+                            />
 
-                            <Text style={[styles.optionLabel, { color: colors.gray, marginTop: 5, marginBottom: 10 }]}>Campus / University</Text>
+                            <Text style={styles.optionLabel}>Campus / University</Text>
                             <TouchableOpacity
-                                style={[styles.modalInputSingle, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.background, borderColor: colors.border }]}
+                                style={styles.selectUniButton}
                                 onPress={() => setUniModalVisible(true)}
                             >
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                    <MaterialCommunityIcons name="school" size={20} color={colors.primary} />
-                                    <Text style={{ color: formData.universityName ? colors.black : colors.gray, fontSize: 15, fontWeight: '600' }}>
+                                    <Ionicons name="school-outline" size={20} color="#056f36" />
+                                    <Text style={[styles.selectUniText, formData.universityName && { color: '#111' }]}>
                                         {formData.universityName || 'Select Campus'}
                                     </Text>
                                 </View>
-                                <Ionicons name="chevron-down" size={20} color={colors.gray} />
+                                <Ionicons name="chevron-down" size={20} color="#666" />
                             </TouchableOpacity>
 
                             <View style={styles.rowInputs}>
-                                <TextInput style={[styles.modalInputSingle, { flex: 1, marginRight: 10, backgroundColor: colors.background, color: colors.black, borderColor: colors.border }]} placeholder="Hostel (e.g. Hostel 4)" placeholderTextColor={colors.gray} value={formData.hostel} onChangeText={(text) => setFormData({ ...formData, hostel: text })} />
-                                <TextInput style={[styles.modalInputSingle, { flex: 1, backgroundColor: colors.background, color: colors.black, borderColor: colors.border }]} placeholder="Room No." placeholderTextColor={colors.gray} value={formData.room} onChangeText={(text) => setFormData({ ...formData, room: text })} />
+                                <TextInput 
+                                    style={[styles.modalInput, { flex: 1, marginRight: 10 }]} 
+                                    placeholder="Hostel / Building Block" 
+                                    placeholderTextColor="#999" 
+                                    value={formData.hostel} 
+                                    onChangeText={(text) => setFormData({ ...formData, hostel: text })} 
+                                />
+                                <TextInput 
+                                    style={[styles.modalInput, { flex: 1 }]} 
+                                    placeholder="Room No. / Details" 
+                                    placeholderTextColor="#999" 
+                                    value={formData.room} 
+                                    onChangeText={(text) => setFormData({ ...formData, room: text })} 
+                                />
                             </View>
 
+                            <Text style={styles.optionLabel}>Location Tag</Text>
                             <View style={styles.typeSelector}>
-                                {['Home', 'Work', 'Other'].map(type => (
+                                {[
+                                    { type: 'Home', label: 'Home' },
+                                    { type: 'Work', label: 'Study/Work' },
+                                    { type: 'Other', label: 'Other' }
+                                ].map(item => (
                                     <TouchableOpacity
-                                        key={type}
-                                        style={[styles.typeButton, { borderColor: colors.border }, formData.type === type && [styles.typeButtonActive, { backgroundColor: isDarkMode ? '#1e1b4b' : '#fff0f6' }]]}
-                                        onPress={() => setFormData({ ...formData, type })}
+                                        key={item.type}
+                                        style={[
+                                            styles.typeButton, 
+                                            formData.type === item.type && styles.typeButtonActive
+                                        ]}
+                                        onPress={() => setFormData({ ...formData, type: item.type })}
                                     >
-                                        <Text style={[styles.typeButtonText, { color: colors.gray }, formData.type === type && styles.typeButtonTextActive]}>{type}</Text>
+                                        <Text style={[
+                                            styles.typeButtonText, 
+                                            formData.type === item.type && styles.typeButtonTextActive
+                                        ]}>
+                                            {item.label}
+                                        </Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
 
                             <View style={styles.modalButtonsRow}>
                                 <TouchableOpacity style={styles.modalCancelButton} onPress={() => setModalVisible(false)}>
-                                    <Text style={[styles.modalCancelText, { color: colors.gray }]}>Cancel</Text>
+                                    <Text style={styles.modalCancelText}>Cancel</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.modalSaveButton} onPress={handleSaveAddress}>
-                                    <Text style={styles.modalSaveText}>Save</Text>
+                                    <Text style={styles.modalSaveText}>Save Location</Text>
                                 </TouchableOpacity>
                             </View>
                         </ScrollView>
@@ -354,30 +386,34 @@ export default function AddressBookScreen({ navigation, route }) {
 
             {/* University Selection Modal */}
             <Modal visible={uniModalVisible} transparent={true} animationType="slide" onRequestClose={() => setUniModalVisible(false)}>
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.uniModalContent, { backgroundColor: colors.white }]}>
+                <View style={styles.uniModalOverlay}>
+                    <View style={styles.uniModalContainer}>
                         <View style={styles.uniModalHeader}>
-                            <Text style={[styles.modalTitle, { marginBottom: 0, color: colors.black }]}>Select Campus</Text>
+                            <Text style={styles.uniModalTitle}>Select Campus</Text>
                             <TouchableOpacity onPress={() => setUniModalVisible(false)}>
-                                <Ionicons name="close" size={24} color={colors.black} />
+                                <Ionicons name="close" size={24} color="#333" />
                             </TouchableOpacity>
                         </View>
                         <FlatList
                             data={universities}
-                            keyExtractor={item => item.id}
+                            keyExtractor={(item) => item.id}
                             renderItem={({ item }) => (
                                 <TouchableOpacity
-                                    style={[styles.uniItem, { borderBottomColor: colors.border }]}
+                                    style={styles.uniItem}
                                     onPress={() => {
                                         setFormData({ ...formData, universityId: item.id, universityName: item.name });
                                         setUniModalVisible(false);
                                     }}
                                 >
-                                    <MaterialCommunityIcons name="school-outline" size={22} color={colors.primary} />
-                                    <Text style={[styles.uniItemText, { color: colors.black }]}>{item.name}</Text>
+                                    <Ionicons name="school" size={20} color="#056f36" style={{ marginRight: 15 }} />
+                                    <Text style={styles.uniItemText}>{item.name}</Text>
                                 </TouchableOpacity>
                             )}
-                            contentContainerStyle={{ paddingBottom: 20 }}
+                            ListEmptyComponent={
+                                <View style={{ padding: 30, alignItems: 'center' }}>
+                                    <Text style={{ color: '#999' }}>No campuses available.</Text>
+                                </View>
+                            }
                         />
                     </View>
                 </View>
@@ -392,54 +428,314 @@ export default function AddressBookScreen({ navigation, route }) {
                 onConfirm={alertConfig.onConfirm}
                 onCancel={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
             />
+
+            {/* Setup Done Button — only shown during onboarding flow */}
+            {isSetup && (
+                <View style={styles.bottomStickyBar}>
+                    {addresses.length === 0 && (
+                        <Text style={{ textAlign: 'center', color: '#999', fontSize: 12, fontWeight: '700', marginBottom: 8 }}>
+                            Add an address above to continue
+                        </Text>
+                    )}
+                    <TouchableOpacity
+                        style={[styles.doneBtn, addresses.length === 0 && styles.doneBtnDisabled]}
+                        disabled={addresses.length === 0}
+                        onPress={() => {
+                            dispatch(clearSetupPending());
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'Main' }],
+                            });
+                        }}
+                    >
+                        <Ionicons name="checkmark-circle" size={20} color={addresses.length === 0 ? '#aaa' : '#fff'} style={{ marginRight: 8 }} />
+                        <Text style={[styles.doneBtnText, addresses.length === 0 && { color: '#aaa' }]}>Done, Let's Go!</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fcfcfc' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-    backButton: { width: 40, height: 40, justifyContent: 'center' },
-    headerTitle: { fontSize: 18, fontWeight: '900', color: '#1c1c1c', letterSpacing: -0.5 },
+    container: { flex: 1, backgroundColor: '#f2f7f2' },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#f2f7f2'
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 18, fontWeight: '900', color: '#056f36' },
 
-    scrollContent: { padding: 15 },
-    addAddressContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 18, borderRadius: 16, borderWidth: 2, borderColor: '#fff0f6', borderStyle: 'dashed', marginBottom: 25 },
-    addAddressText: { color: COLORS.primary, fontSize: 16, fontWeight: '900', marginLeft: 10 },
+    scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 50 },
 
-    savedAddressesTitle: { fontSize: 12, color: '#aaa', fontWeight: '900', marginBottom: 15, letterSpacing: 1 },
+    mainTitle: { fontSize: 24, fontWeight: '900', color: '#111' },
+    subTitle: { fontSize: 14, color: '#666', marginTop: 4, marginBottom: 25 },
 
-    addressCard: { backgroundColor: '#fff', padding: 18, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10, elevation: 3, marginBottom: 15, borderWidth: 1, borderColor: '#f8f8f8' },
-    addressTypeHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    addressType: { fontSize: 16, fontWeight: '900', color: '#1c1c1c', marginLeft: 8 },
-    addressText: { fontSize: 14, color: '#666', lineHeight: 22, marginBottom: 18 },
+    addressCard: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 16,
+        borderWidth: 1.5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.02,
+        shadowRadius: 10,
+        elevation: 1
+    },
+    defaultCardBorder: { borderColor: '#27c96c' },
+    regularCardBorder: { borderColor: '#f0f4f0' },
 
-    addressActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f8f8f8', paddingTop: 15 },
-    defaultText: { color: COLORS.primary, fontSize: 13, fontWeight: '900' },
-    editDeleteActions: { flexDirection: 'row', alignItems: 'center' },
-    actionButton: { paddingHorizontal: 5 },
-    actionText: { color: COLORS.primary, fontSize: 13, fontWeight: '900' },
-    actionTextDelete: { color: '#aaa', fontSize: 13, fontWeight: 'bold' },
-    actionDivider: { color: '#eee', marginHorizontal: 8 },
+    cardHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15
+    },
+    cardIconWrapper: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    defaultBadge: {
+        backgroundColor: '#27c96c',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 8
+    },
+    defaultBadgeText: { color: '#fff', fontSize: 11, fontWeight: '900' },
 
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(26, 26, 46, 0.75)', justifyContent: 'center', alignItems: 'center' },
-    modalContainer: { width: '90%', backgroundColor: '#fff', borderRadius: 24, padding: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.2, shadowRadius: 30, elevation: 20 },
-    modalTitle: { fontSize: 20, fontWeight: '900', color: '#1a1a2e', marginBottom: 20 },
-    modalInputSingle: { borderWidth: 1, borderColor: '#f1f5f9', borderRadius: 12, padding: 14, fontSize: 15, color: '#1a1a2e', backgroundColor: '#f8fafc', marginBottom: 15 },
+    addressTitleText: { fontSize: 16, fontWeight: '900', color: '#111' },
+    addressDetailText: { fontSize: 13, color: '#666', marginTop: 4, fontWeight: '600' },
+    addressSubDetailText: { fontSize: 12, color: '#999', marginTop: 2, fontWeight: '500' },
+
+    cardActionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 20,
+        gap: 12
+    },
+    editBtn: {
+        flex: 1,
+        backgroundColor: '#f0f4f0',
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    editBtnText: { color: '#056f36', fontSize: 13, fontWeight: '800' },
+    setDefaultBtn: {
+        flex: 1.2,
+        backgroundColor: '#fff',
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#e2e8f0'
+    },
+    setDefaultBtnText: { color: '#666', fontSize: 13, fontWeight: '800' },
+    deleteBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#fee2e2',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+
+    emptyContainer: {
+        paddingVertical: 40,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    emptyText: {
+        color: '#999',
+        fontSize: 14,
+        marginTop: 10,
+        fontWeight: '700'
+    },
+
+    addAddressBtn: {
+        backgroundColor: '#056f36',
+        borderRadius: 16,
+        height: 52,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 15,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 3
+    },
+    addAddressText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+    tipText: {
+        textAlign: 'center',
+        fontSize: 12,
+        color: '#888',
+        fontWeight: '600',
+        marginTop: 15
+    },
+
+    // Modal Form styling
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'flex-end'
+    },
+    modalContainer: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        padding: 24,
+        maxHeight: '85%'
+    },
+    modalTitle: { fontSize: 18, fontWeight: '900', color: '#111', marginBottom: 20 },
+    modalInput: {
+        height: 48,
+        borderWidth: 1.5,
+        borderColor: '#edf2ed',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        fontSize: 14,
+        color: '#111',
+        marginBottom: 12,
+        fontWeight: '700'
+    },
+    optionLabel: { fontSize: 12, fontWeight: '800', color: '#888', letterSpacing: 0.5, marginTop: 4, marginBottom: 8 },
+    selectUniButton: {
+        height: 48,
+        borderWidth: 1.5,
+        borderColor: '#edf2ed',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12
+    },
+    selectUniText: { color: '#999', fontSize: 14, fontWeight: '700' },
     rowInputs: { flexDirection: 'row', justifyContent: 'space-between' },
-    typeSelector: { flexDirection: 'row', gap: 10, marginBottom: 25 },
-    typeButton: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9', alignItems: 'center' },
-    typeButtonActive: { backgroundColor: '#fff0f6', borderColor: COLORS.primary },
-    typeButtonText: { color: '#64748b', fontWeight: 'bold', fontSize: 13 },
-    typeButtonTextActive: { color: COLORS.primary, fontWeight: '900' },
-    addressName: { fontSize: 15, fontWeight: '900', color: '#1a1a2e', marginBottom: 4 },
-    modalButtonsRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
-    modalCancelButton: { paddingHorizontal: 15, paddingVertical: 10, borderRadius: 8, justifyContent: 'center' },
-    modalCancelText: { color: '#94a3b8', fontSize: 15, fontWeight: 'bold' },
-    modalSaveButton: { backgroundColor: COLORS.primary, paddingHorizontal: 30, paddingVertical: 15, borderRadius: 15, justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 10 },
-    modalSaveText: { color: '#fff', fontSize: 15, fontWeight: '900' },
-    optionLabel: { fontSize: 14, fontWeight: '800', color: '#64748b' },
-    uniModalContent: { width: '90%', maxHeight: '70%', borderRadius: 24, padding: 25 },
-    uniModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    uniItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, gap: 12 },
-    uniItemText: { fontSize: 16, fontWeight: '600' }
+    
+    typeSelector: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 20
+    },
+    typeButton: {
+        flex: 1,
+        height: 42,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#edf2ed',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    typeButtonActive: {
+        backgroundColor: '#edf5ed',
+        borderColor: '#27c96c'
+    },
+    typeButtonText: { color: '#666', fontSize: 12, fontWeight: '800' },
+    typeButtonTextActive: { color: '#056f36' },
+
+    modalButtonsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 10,
+        marginBottom: 15
+    },
+    modalCancelButton: {
+        flex: 1,
+        height: 48,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    modalCancelText: { color: '#666', fontSize: 14, fontWeight: '800' },
+    modalSaveButton: {
+        flex: 1.5,
+        backgroundColor: '#056f36',
+        height: 48,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    modalSaveText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+
+    // Campus selection modal
+    uniModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    uniModalContainer: {
+        width: '100%',
+        maxWidth: 340,
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 20,
+        maxHeight: '60%'
+    },
+    uniModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f4f0',
+        paddingBottom: 15,
+        marginBottom: 10
+    },
+    uniModalTitle: { fontSize: 16, fontWeight: '900', color: '#111' },
+    uniItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f7faf7'
+    },
+    uniItemText: { fontSize: 14, color: '#333', fontWeight: '800' },
+    bottomStickyBar: {
+        backgroundColor: '#fff',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#e6ede6',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 6
+    },
+    doneBtn: {
+        backgroundColor: '#056f36',
+        borderRadius: 16,
+        height: 50,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    doneBtnText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '850'
+    },
+    doneBtnDisabled: {
+        backgroundColor: '#e0e0e0',
+        shadowOpacity: 0,
+        elevation: 0,
+    }
 });
