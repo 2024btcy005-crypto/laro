@@ -208,7 +208,13 @@ export default function LoginScreen() {
 
                         <TouchableOpacity
                             style={styles.toggleContainer}
-                            onPress={() => setIsLoginMode(!isLoginMode)}
+                            onPress={() => {
+                                if (isLoginMode) {
+                                    navigation.navigate('Register');
+                                } else {
+                                    setIsLoginMode(true);
+                                }
+                            }}
                         >
                             <Text style={[styles.toggleText, { color: colors.gray }]}>
                                 {isLoginMode ? "Don't have an account? " : "Already have an account? "}
