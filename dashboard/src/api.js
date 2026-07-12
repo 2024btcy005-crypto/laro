@@ -60,4 +60,8 @@ export const createUniversity = (data) => api.post('/universities', data);
 export const updateUniversity = (id, data) => api.put(`/universities/${id}`, data);
 export const deleteUniversity = (id) => api.delete(`/universities/${id}`);
 
+export const getAllQuests = () => api.get('/admin/quests');
+export const createQuest = (data) => api.post('/admin/quests', data);
+export const deleteQuest = (id) => api.delete(`/admin/quests/${id}`);
+
 export default api;

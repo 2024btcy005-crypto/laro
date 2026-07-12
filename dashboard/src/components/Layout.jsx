@@ -29,6 +29,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import CategoryIcon from '@mui/icons-material/Category';
 import SchoolIcon from '@mui/icons-material/School';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
 const drawerWidth = 280;
 
@@ -51,6 +52,7 @@ export default function Layout() {
         { text: 'Shops', icon: <StoreIcon />, path: '/shops' },
         { text: 'Products', icon: <FastfoodIcon />, path: '/products' },
         { text: 'Users', icon: <PeopleIcon />, path: '/users', superOnly: true },
+        { text: 'Quests', icon: <EmojiEventsIcon />, path: '/quests' },
         { text: 'Coupons', icon: <LocalOfferIcon />, path: '/coupons' },
         { text: 'Categories', icon: <CategoryIcon />, path: '/categories' },
         { text: 'Universities', icon: <SchoolIcon />, path: '/universities', superOnly: true },

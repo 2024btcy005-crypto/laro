@@ -72,9 +72,6 @@ function TabNavigator() {
                     if (route.name === 'Home') {
                         iconName = focused ? 'home' : 'home-outline';
                         label = 'Home';
-                    } else if (route.name === 'Quests') {
-                        iconName = focused ? 'compass' : 'compass-outline';
-                        label = 'Quests';
                     } else if (route.name === 'Orders') {
                         iconName = focused ? 'receipt' : 'receipt-outline';
                         label = 'Orders';
@@ -107,11 +104,6 @@ function TabNavigator() {
             <Tab.Screen
                 name="Home"
                 component={HomeScreen}
-                listeners={{ tabPress: () => Haptics.selectionAsync() }}
-            />
-            <Tab.Screen
-                name="Quests"
-                component={QuestsTabScreen}
                 listeners={{ tabPress: () => Haptics.selectionAsync() }}
             />
             <Tab.Screen
