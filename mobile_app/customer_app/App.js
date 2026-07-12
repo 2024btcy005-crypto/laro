@@ -29,6 +29,8 @@ import LinkWalletScreen from './src/screens/auth/LinkWalletScreen';
 import ProfileScreen from './src/screens/profile/ProfileScreen';
 import ProductDetailScreen from './src/screens/shop/ProductDetailScreen';
 import LoyaltyScreen from './src/screens/profile/LoyaltyScreen';
+import QuestScreen from './src/screens/home/QuestScreen';
+import QuestsTabScreen from './src/screens/home/QuestsTabScreen';
 
 import OrdersScreen from './src/screens/profile/OrdersScreen';
 import FavoritesScreen from './src/screens/profile/FavoritesScreen';
@@ -70,6 +72,9 @@ function TabNavigator() {
                     if (route.name === 'Home') {
                         iconName = focused ? 'home' : 'home-outline';
                         label = 'Home';
+                    } else if (route.name === 'Quests') {
+                        iconName = focused ? 'compass' : 'compass-outline';
+                        label = 'Quests';
                     } else if (route.name === 'Orders') {
                         iconName = focused ? 'receipt' : 'receipt-outline';
                         label = 'Orders';
@@ -102,6 +107,11 @@ function TabNavigator() {
             <Tab.Screen
                 name="Home"
                 component={HomeScreen}
+                listeners={{ tabPress: () => Haptics.selectionAsync() }}
+            />
+            <Tab.Screen
+                name="Quests"
+                component={QuestsTabScreen}
                 listeners={{ tabPress: () => Haptics.selectionAsync() }}
             />
             <Tab.Screen
@@ -255,6 +265,7 @@ function RootNavigator() {
 
                     {/* Manage university selection */}
                     <Stack.Screen name="ChangeUniversity" component={UniversitySelectionScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Quest" component={QuestScreen} options={{ headerShown: false }} />
                 </>
             ) : (
                 <>

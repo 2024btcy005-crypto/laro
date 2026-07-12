@@ -46,6 +46,7 @@ export default function HomeScreen({ navigation }) {
     const [adModalVisible, setAdModalVisible] = useState(false);
     const [userCoords, setUserCoords] = useState(null);
     const [quests, setQuests] = useState([]);
+    const pulseAnim = useRef(new Animated.Value(0.6)).current;
 
     const cart = useSelector(state => state.cart);
     const { user, selectedUniversity } = useSelector(state => state.auth);
@@ -168,6 +169,20 @@ export default function HomeScreen({ navigation }) {
 
     useEffect(() => {
         fetchActiveAd();
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 1.0,
+                    duration: 1000,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 0.6,
+                    duration: 1000,
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
     }, []);
 
     const fetchActiveAd = async () => {
@@ -531,7 +546,7 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.questsHeaderRow}>
                     <Text style={styles.questsWidgetTitle}>COMMUNITY CHALLENGES 🏆</Text>
                     <View style={styles.liveIndicator}>
-                        <View style={styles.liveDot} />
+                        <Animated.View style={[styles.liveDot, { opacity: pulseAnim }]} />
                         <Text style={styles.liveText}>LIVE</Text>
                     </View>
                 </View>
@@ -541,15 +556,30 @@ export default function HomeScreen({ navigation }) {
                     const progressPercent = Math.round(progressFraction * 100);
 
                     return (
-                        <View key={quest.id} style={styles.questCard}>
+                        <TouchableOpacity 
+                            key={quest.id} 
+                            style={styles.questCard}
+                            activeOpacity={0.9}
+                            onPress={async () => {
+                                try {
+                                    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                } catch (e) {}
+                                navigation.navigate('Quest', { quest });
+                            }}
+                        >
                             <View style={styles.questCardTop}>
+                                <View style={styles.questIconWrapper}>
+                                    <Ionicons name="trophy" size={24} color="#056f36" />
+                                </View>
                                 <View style={styles.questInfoBox}>
                                     <Text style={styles.questTitle}>{quest.title}</Text>
-                                    <Text style={styles.questDesc}>{quest.description}</Text>
                                 </View>
                                 <View style={styles.questRewardBadge}>
                                     <Text style={styles.questRewardLabel}>REWARD</Text>
-                                    <Text style={styles.questRewardAmount}>+{Math.round(quest.rewardAmount)} Ł</Text>
+                                    <View style={styles.rewardAmountRow}>
+                                        <MaterialCommunityIcons name="database-marker" size={14} color="#056f36" style={{ marginRight: 2 }} />
+                                        <Text style={styles.questRewardAmount}>+{Math.round(quest.rewardAmount)} Ł</Text>
+                                    </View>
                                 </View>
                             </View>
 
@@ -564,7 +594,7 @@ export default function HomeScreen({ navigation }) {
                                     <Text style={styles.progressPercentText}>{progressPercent}%</Text>
                                 </View>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     );
                 })}
             </View>
@@ -1757,22 +1787,35 @@ const styles = StyleSheet.create({
     },
     questCard: {
         backgroundColor: '#ffffff',
-        borderRadius: 20,
+        borderRadius: 22,
         padding: 16,
         borderWidth: 1.5,
-        borderColor: '#eef6ee',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.02,
-        shadowRadius: 8,
-        elevation: 2,
+        borderColor: '#d0dcd0',
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 3,
         marginBottom: 12,
     },
     questCardTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        gap: 12,
+    },
+    questIconWrapper: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: '#edf5ed',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    rewardAmountRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     questInfoBox: {
         flex: 1,
