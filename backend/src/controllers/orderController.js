@@ -476,6 +476,11 @@ const getWalletHistory = async (req, res) => {
                     model: Order,
                     as: 'order',
                     include: [{ model: Shop, as: 'shop', attributes: ['name', 'imageUrl'] }]
+                },
+                {
+                    model: User,
+                    as: 'peerUser',
+                    attributes: ['name', 'phoneNumber', 'avatarUrl']
                 }
             ],
             order: [['createdAt', 'DESC']],

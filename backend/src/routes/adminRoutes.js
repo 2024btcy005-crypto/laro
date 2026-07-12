@@ -18,6 +18,11 @@ const {
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middlewares/authMiddleware');
 const { authorize } = require('../middlewares/roleMiddleware');
+const {
+    createQuest,
+    getQuests,
+    deleteQuest
+} = require('../controllers/questController');
 
 const router = express.Router();
 
@@ -43,5 +48,10 @@ router.route('/advertisement')
 
 router.put('/users/:id/status', toggleUserStatus);
 router.put('/users/:id/role', updateUserRole);
+
+// Quest admin routes
+router.post('/quests', createQuest);
+router.get('/quests', getQuests);
+router.delete('/quests/:id', deleteQuest);
 
 module.exports = router;

@@ -147,7 +147,13 @@ export default function CartScreen({ navigation }) {
                 {/* Cart Items List */}
                 {cart.items.map((item, idx) => (
                     <View key={item.id || item._id} style={styles.cartCard}>
-                        <Image source={{ uri: item.imageUrl || 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400&q=80' }} style={styles.cartItemImage} />
+                        {item.imageUrl ? (
+                            <Image source={{ uri: item.imageUrl }} style={styles.cartItemImage} />
+                        ) : (
+                            <View style={[styles.cartItemImage, styles.cartItemPlaceholder]}>
+                                <Ionicons name="cube-outline" size={24} color="#056f36" />
+                            </View>
+                        )}
                         <View style={styles.cartItemDetails}>
                             <Text style={styles.cartItemShopName} numberOfLines={1}>{item.category || 'Store Item'}</Text>
                             <Text style={styles.cartItemName} numberOfLines={1}>{item.name}</Text>
@@ -372,6 +378,13 @@ const styles = StyleSheet.create({
         elevation: 1
     },
     cartItemImage: { width: 68, height: 68, borderRadius: 14 },
+    cartItemPlaceholder: {
+        backgroundColor: '#edf5ed',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#d0dcd0',
+    },
     cartItemDetails: {
         flex: 1,
         marginLeft: 12,
@@ -401,7 +414,7 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontWeight: '900',
-        width: 14,
+        minWidth: 18,
         textAlign: 'center'
     },
 

@@ -240,7 +240,7 @@ function RootNavigator() {
                     <Stack.Screen name="ShopDetails" component={ShopDetailsScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Cart" component={CartScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: 'Checkout' }} />
+                    <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
 
                     {/* Profile Sub-Screens */}
                     <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ headerShown: false }} />

@@ -1,0 +1,7 @@
+- [x] Redesign `TransactionDetailScreen.js` header to match mockup styling (custom green elements)
+- [x] Add checkmark circle status indicator, "TRANSACTION SUCCESSFUL" title, and colored amount label
+- [x] Implement main transaction card with shop info and a two-column key-value grid (Date, Time, Payment, Fee, Transaction ID)
+- [x] Build clipboard copy logic for transaction ID and toast notification feedback
+- [x] Create promotional banner for referral/coffee discounts
+- [x] Add bottom Action Buttons ("Share Receipt" and "Get Help") and tagline footer
+- [x] Verify UI layout

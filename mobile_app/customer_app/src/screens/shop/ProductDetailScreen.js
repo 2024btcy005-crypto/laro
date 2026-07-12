@@ -81,7 +81,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         const cartItemPayload = {
             ...product,
             price: productPrice,
-            quantity: localQty,
+            quantityToAdd: localQty,
             shopId: product.shopId
         };
 

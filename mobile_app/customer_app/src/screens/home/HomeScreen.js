@@ -13,7 +13,7 @@ import api, { resolveImageUrl, API_BASE_URL } from '../../services/api';
 import { FavouriteService } from '../../services/FavouriteService';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../../store/cartSlice';
+import { addToCart, removeFromCart } from '../../store/cartSlice';
 import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Location from 'expo-location';
@@ -45,6 +45,7 @@ export default function HomeScreen({ navigation }) {
     const [activeAd, setActiveAd] = useState(null);
     const [adModalVisible, setAdModalVisible] = useState(false);
     const [userCoords, setUserCoords] = useState(null);
+    const [quests, setQuests] = useState([]);
 
     const cart = useSelector(state => state.cart);
     const { user, selectedUniversity } = useSelector(state => state.auth);
@@ -112,8 +113,28 @@ export default function HomeScreen({ navigation }) {
         try {
             const key = `@user_addresses_${user?.id || 'guest'}`;
             const storedAddresses = await AsyncStorage.getItem(key);
-            const addresses = storedAddresses ? JSON.parse(storedAddresses) : [];
+            let addresses = storedAddresses ? JSON.parse(storedAddresses) : [];
             
+            // Sync with backend address if present
+            if (user?.address && typeof user.address === 'string' && user.address.trim() !== '') {
+                const match = addresses.find(a => a && a.address === user.address);
+                if (!match) {
+                    const parts = user.address.split(',').map(p => p.trim());
+                    const cloudAddr = {
+                        id: 'cloud_' + Date.now().toString(),
+                        type: 'Home',
+                        name: user.name || 'Student',
+                        phone: user.phoneNumber || '',
+                        hostel: parts[0] || 'Main Dormitory',
+                        room: parts[1] || 'Room 402',
+                        address: user.address,
+                        isDefault: addresses.length === 0
+                    };
+                    addresses = [cloudAddr, ...addresses];
+                    await AsyncStorage.setItem(key, JSON.stringify(addresses));
+                }
+            }
+
             // Auto-redirect checks for authenticated (non-guest) users
             if (user && user.id !== 'guest') {
                 if (addresses.length === 0) {
@@ -240,10 +261,15 @@ export default function HomeScreen({ navigation }) {
             const finalLng = lng || userCoords?.lng || 82.9999;
             const uniId = selectedUniversity?.id || '';
 
-            const [shopsRes, ordersRes] = await Promise.all([
+            const [shopsRes, ordersRes, questsRes] = await Promise.all([
                 api.get(`/shops?lat=${finalLat}&lng=${finalLng}&universityId=${uniId}&t=${Date.now()}`),
-                api.get('/orders')
+                api.get('/orders'),
+                api.get('/quests/active')
             ].map(p => p.catch(e => e))); // catch individual errors so partial load works
+
+            if (questsRes && questsRes.data && !questsRes.isAxiosError) {
+                setQuests(questsRes.data);
+            }
 
             if (shopsRes && shopsRes.data) {
                 setShops(shopsRes.data);
@@ -414,8 +440,15 @@ export default function HomeScreen({ navigation }) {
                             <Text style={styles.estDeliveryLabel}>Est. Delivery</Text>
                         </View>
 
-                        <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={[styles.profileAvatarWrapper, { backgroundColor: '#f3fbf4', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#dcecdc' }]}>
-                            <Ionicons name="person" size={20} color="#056f36" />
+                        <TouchableOpacity 
+                            onPress={() => navigation.navigate('Profile')} 
+                            style={[styles.profileAvatarWrapper, { backgroundColor: '#f3fbf4', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#dcecdc' }]}
+                        >
+                            {user?.avatarUrl ? (
+                                <Image source={{ uri: user.avatarUrl }} style={styles.profileAvatar} />
+                            ) : (
+                                <Ionicons name="person" size={20} color="#056f36" />
+                            )}
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -490,13 +523,76 @@ export default function HomeScreen({ navigation }) {
         </ScrollView>
     );
 
-    const renderGridItem = (product) => {
-        // Dynamic background colors like the image
-        const bgColors = isDarkMode
-            ? ['#1e1b4b', '#1e293b', '#172554', '#1e1b4b']
-            : ['#E3F2FD', '#FFF8E1', '#E8F5E9', '#F3E5F5'];
-        const bgColor = bgColors[Math.floor(Math.random() * bgColors.length)];
+    const renderQuestsWidget = () => {
+        if (!quests || quests.length === 0) return null;
 
+        return (
+            <View style={styles.questsWidgetContainer}>
+                <View style={styles.questsHeaderRow}>
+                    <Text style={styles.questsWidgetTitle}>COMMUNITY CHALLENGES 🏆</Text>
+                    <View style={styles.liveIndicator}>
+                        <View style={styles.liveDot} />
+                        <Text style={styles.liveText}>LIVE</Text>
+                    </View>
+                </View>
+
+                {quests.map((quest) => {
+                    const progressFraction = Math.min(quest.currentCount / quest.targetCount, 1);
+                    const progressPercent = Math.round(progressFraction * 100);
+
+                    return (
+                        <View key={quest.id} style={styles.questCard}>
+                            <View style={styles.questCardTop}>
+                                <View style={styles.questInfoBox}>
+                                    <Text style={styles.questTitle}>{quest.title}</Text>
+                                    <Text style={styles.questDesc}>{quest.description}</Text>
+                                </View>
+                                <View style={styles.questRewardBadge}>
+                                    <Text style={styles.questRewardLabel}>REWARD</Text>
+                                    <Text style={styles.questRewardAmount}>+{Math.round(quest.rewardAmount)} Ł</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.progressContainer}>
+                                <View style={styles.progressBarBg}>
+                                    <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+                                </View>
+                                <View style={styles.progressTextRow}>
+                                    <Text style={styles.progressCountText}>
+                                        {quest.currentCount} / {quest.targetCount} orders completed
+                                    </Text>
+                                    <Text style={styles.progressPercentText}>{progressPercent}%</Text>
+                                </View>
+                            </View>
+                        </View>
+                    );
+                })}
+            </View>
+        );
+    };
+
+    const handleQuickAdd = (product) => {
+        const cartItemPayload = {
+            ...product,
+            price: product.price,
+            quantityToAdd: 1,
+            shopId: product.shopId
+        };
+        dispatch(addToCart(cartItemPayload));
+        setToastMessage(`${product.name} added to cart!`);
+        setToastVisible(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    };
+
+    const handleDecreaseQty = (product) => {
+        const productId = product.id || product._id;
+        dispatch(removeFromCart(productId));
+        setToastMessage(`Removed ${product.name} from cart`);
+        setToastVisible(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    };
+
+    const renderGridItem = (product) => {
         // Compute discount
         let discountPercent = 0;
         if (product.originalPrice && product.originalPrice > product.price) {
@@ -505,45 +601,95 @@ export default function HomeScreen({ navigation }) {
 
         const isFav = favProducts.includes(product.id || product._id);
 
+        // Find quantity in cart using a secure ID comparison (preventing undefined === undefined matching)
+        const getProductId = (p) => p?.id || p?._id;
+        const targetId = getProductId(product);
+        const cartItem = targetId ? cart.items.find(item => getProductId(item) === targetId) : null;
+        const cartQty = cartItem ? cartItem.quantity : 0;
+
         return (
-            <TouchableOpacity
+            <View
                 key={product.id || product._id}
                 style={[styles.gridProductItem, product.stockQuantity === 0 && { opacity: 0.6 }]}
-                onPress={() => navigation.navigate('ProductDetail', { product })}
-                disabled={product.stockQuantity === 0}
             >
-                <View style={[styles.gridImageWrapper, { backgroundColor: isDarkMode ? colors.white + '10' : bgColor }]}>
-                    <Image source={{ uri: resolveImageUrl(product.imageUrl) }} style={styles.gridProductImage} />
-                    {product.stockQuantity === 0 && (
-                        <View style={styles.outOfStockOverlay}>
-                            <Text style={styles.outOfStockText}>OUT OF STOCK</Text>
-                        </View>
-                    )}
-                    {discountPercent > 0 && product.stockQuantity > 0 && (
-                        <View style={styles.discountBadge}>
-                            <Text style={styles.discountBadgeText}>{discountPercent}% OFF</Text>
-                        </View>
-                    )}
-                    <TouchableOpacity
-                        style={[styles.gridFavBtn, { backgroundColor: isDarkMode ? colors.background : 'rgba(255,255,255,0.8)' }]}
-                        onPress={() => toggleFavProduct(product)}
-                    >
-                        <Ionicons
-                            name={isFav ? "heart" : "heart-outline"}
-                            size={18}
-                            color={isFav ? "#ff4757" : colors.black}
-                        />
-                    </TouchableOpacity>
-                </View>
-                <Text style={[styles.gridProductName, { color: colors.black }]} numberOfLines={2}>{product.name}</Text>
+                <TouchableOpacity
+                    style={styles.cardPressArea}
+                    onPress={() => navigation.navigate('ProductDetail', { product })}
+                    disabled={product.stockQuantity === 0}
+                    activeOpacity={0.8}
+                >
+                    <View style={[styles.gridImageWrapper, { backgroundColor: isDarkMode ? colors.white + '10' : '#f8faf8' }]}>
+                        <Image source={{ uri: resolveImageUrl(product.imageUrl) }} style={styles.gridProductImage} />
+                        {product.stockQuantity === 0 && (
+                            <View style={styles.outOfStockOverlay}>
+                                <Text style={styles.outOfStockText}>OUT OF STOCK</Text>
+                            </View>
+                        )}
+                        {discountPercent > 0 && product.stockQuantity > 0 && (
+                            <View style={styles.discountBadge}>
+                                <Text style={styles.discountBadgeText}>{discountPercent}% OFF</Text>
+                            </View>
+                        )}
+                        <TouchableOpacity
+                            style={[styles.gridFavBtn, { backgroundColor: isDarkMode ? colors.background : 'rgba(255,255,255,0.8)' }]}
+                            onPress={() => toggleFavProduct(product)}
+                        >
+                            <Ionicons
+                                name={isFav ? "heart" : "heart-outline"}
+                                size={18}
+                                color={isFav ? "#ff4757" : colors.black}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                    
+                    {/* Category and Veg indicator row */}
+                    <View style={styles.cardMetaRow}>
+                        {product.isVeg !== undefined && (
+                            <View style={[styles.vegSquare, { borderColor: product.isVeg ? '#00b894' : '#d63031' }]}>
+                                <View style={[styles.vegCircle, { backgroundColor: product.isVeg ? '#00b894' : '#d63031' }]} />
+                            </View>
+                        )}
+                        <Text style={styles.cardCategoryText}>{product.category || 'Item'}</Text>
+                    </View>
 
-                <View style={styles.priceContainer}>
-                    <Text style={[styles.currentPrice, { color: colors.black }]}>{CONSTANTS.CURRENCY}{product.price}</Text>
-                    {discountPercent > 0 && (
-                        <Text style={[styles.originalPrice, { color: colors.gray }]}>{CONSTANTS.CURRENCY}{product.originalPrice}</Text>
+                    <Text style={[styles.gridProductName, { color: colors.black }]} numberOfLines={2}>{product.name}</Text>
+                </TouchableOpacity>
+
+                <View style={styles.cardBottomRow}>
+                    <View style={styles.priceCol}>
+                        {discountPercent > 0 && (
+                            <Text style={[styles.originalPrice, { color: colors.gray }]}>{CONSTANTS.CURRENCY}{product.originalPrice}</Text>
+                        )}
+                        <Text style={[styles.currentPrice, { color: colors.black }]}>{CONSTANTS.CURRENCY}{product.price}</Text>
+                    </View>
+                    
+                    {cartQty > 0 ? (
+                        <View style={styles.qtyContainer}>
+                            <TouchableOpacity 
+                                style={styles.qtyBtn} 
+                                onPress={() => handleDecreaseQty(product)}
+                            >
+                                <Ionicons name="remove" size={14} color="#056f36" />
+                            </TouchableOpacity>
+                            <Text style={styles.qtyText}>{cartQty}</Text>
+                            <TouchableOpacity 
+                                style={styles.qtyBtn} 
+                                onPress={() => handleQuickAdd(product)}
+                            >
+                                <Ionicons name="add" size={14} color="#056f36" />
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <TouchableOpacity 
+                            style={styles.quickAddBtn}
+                            onPress={() => handleQuickAdd(product)}
+                            disabled={product.stockQuantity === 0}
+                        >
+                            <Text style={styles.quickAddBtnText}>+ ADD</Text>
+                        </TouchableOpacity>
                     )}
                 </View>
-            </TouchableOpacity>
+            </View>
         );
     };
 
@@ -724,6 +870,7 @@ export default function HomeScreen({ navigation }) {
                 ListHeaderComponent={
                     <View>
                         {renderHeader()}
+                        {renderQuestsWidget()}
                         <View style={{ height: 10 }} />
                     </View>
                 }
@@ -961,29 +1108,52 @@ const styles = StyleSheet.create({
     capsuleHeaderText: { fontSize: 17, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.3 },
     gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 10 },
 
-    gridProductItem: { width: (width - 60) / 4, marginBottom: 20, alignItems: 'center' },
-    gridImageWrapper: { width: '100%', aspectRatio: 1, borderRadius: 12, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', padding: 10 },
-    gridProductImage: { width: '100%', height: '100%', resizeMode: 'contain' },
+    gridProductItem: { 
+        width: (width - 40) / 2, 
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 10,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#eef2ee',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 6,
+        elevation: 2
+    },
+    cardPressArea: { width: '100%' },
+    gridImageWrapper: { width: '100%', aspectRatio: 1, borderRadius: 14, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', padding: 8 },
+    gridProductImage: { width: '90%', height: '90%', resizeMode: 'contain' },
     gridProductName: {
-        fontSize: 12,
-        fontWeight: '500',
-        textAlign: 'center',
+        fontSize: 14,
+        fontWeight: '700',
+        textAlign: 'left',
         paddingHorizontal: 4,
+        marginTop: 6,
         marginBottom: 2
     },
-    priceContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4
-    },
+    cardMetaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingHorizontal: 4, gap: 6 },
+    vegSquare: { width: 12, height: 12, borderWidth: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 2 },
+    vegCircle: { width: 6, height: 6, borderRadius: 3 },
+    cardCategoryText: { fontSize: 10, fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: 0.5 },
+    cardBottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%', paddingHorizontal: 4, marginTop: 6 },
+    priceCol: { flex: 1 },
+    quickAddBtn: { borderWidth: 1.5, borderColor: '#056f36', backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 12, height: 28, justifyContent: 'center', alignItems: 'center' },
+    quickAddBtnText: { color: '#056f36', fontSize: 12, fontWeight: '900' },
+    qtyContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 8, height: 28, borderWidth: 1.5, borderColor: '#056f36' },
+    qtyBtn: { width: 24, height: '100%', justifyContent: 'center', alignItems: 'center' },
+    qtyText: { color: '#056f36', fontSize: 12, fontWeight: '900', paddingHorizontal: 6, minWidth: 16, textAlign: 'center' },
     currentPrice: {
-        fontSize: 12,
-        fontWeight: 'bold',
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#111'
     },
     originalPrice: {
-        fontSize: 10,
-        textDecorationLine: 'line-through'
+        fontSize: 11,
+        textDecorationLine: 'line-through',
+        color: '#888',
+        marginBottom: 2
     },
     discountBadge: {
         position: 'absolute',
@@ -1548,5 +1718,127 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 18,
         paddingHorizontal: 15,
+    },
+    questsWidgetContainer: {
+        marginHorizontal: 15,
+        marginVertical: 12,
+    },
+    questsHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    questsWidgetTitle: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: '#056f36',
+        letterSpacing: 0.5,
+    },
+    liveIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fee2e2',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
+    },
+    liveDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#ef4444',
+        marginRight: 4,
+    },
+    liveText: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: '#ef4444',
+    },
+    questCard: {
+        backgroundColor: '#ffffff',
+        borderRadius: 20,
+        padding: 16,
+        borderWidth: 1.5,
+        borderColor: '#eef6ee',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 8,
+        elevation: 2,
+        marginBottom: 12,
+    },
+    questCardTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: 12,
+    },
+    questInfoBox: {
+        flex: 1,
+    },
+    questTitle: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#111',
+        marginBottom: 4,
+    },
+    questDesc: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#666',
+        lineHeight: 16,
+    },
+    questRewardBadge: {
+        backgroundColor: '#edf5ed',
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#d0dcd0',
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        alignItems: 'center',
+        minWidth: 70,
+    },
+    questRewardLabel: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: '#056f36',
+        letterSpacing: 0.5,
+        marginBottom: 2,
+    },
+    questRewardAmount: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#056f36',
+    },
+    progressContainer: {
+        marginTop: 14,
+    },
+    progressBarBg: {
+        height: 8,
+        backgroundColor: '#f0f3f0',
+        borderRadius: 4,
+        overflow: 'hidden',
+    },
+    progressBarFill: {
+        height: '100%',
+        backgroundColor: '#056f36',
+        borderRadius: 4,
+    },
+    progressTextRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 6,
+    },
+    progressCountText: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#666',
+    },
+    progressPercentText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#056f36',
     },
 });

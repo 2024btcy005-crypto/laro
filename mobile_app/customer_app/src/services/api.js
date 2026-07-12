@@ -1,5 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { store } from '../store';
+import { signOut } from '../store/authSlice';
 
 // PRODUCTION URL
 const PRODUCTION_URL = 'https://laro.onrender.com/api';
@@ -44,6 +46,7 @@ api.interceptors.request.use(
     }
 );
 
+
 // Response interceptor to handle 401 Token Failures
 api.interceptors.response.use(
     (response) => response,
@@ -52,8 +55,12 @@ api.interceptors.response.use(
             console.log('[API] Unauthorized access detected, clearing session.');
             await AsyncStorage.removeItem('userToken');
             await AsyncStorage.removeItem('userData');
-            // Note: We can't easily logout from Redux here without store injection, 
-            // but clearing storage ensures next reload fixes it.
+            
+            try {
+                store.dispatch(signOut());
+            } catch (dispatchErr) {
+                console.error('[API] Failed to dispatch signOut:', dispatchErr);
+            }
         }
         return Promise.reject(error);
     }

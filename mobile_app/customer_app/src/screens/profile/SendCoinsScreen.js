@@ -411,10 +411,15 @@ export default function SendCoinsScreen({ navigation, route }) {
                         </>
                     )}
 
-                    {/* Recipient Details display if matches */}
                     {recipient && (
                         <View style={styles.recipientFoundCard}>
-                            <Image source={{ uri: recipient.avatarUrl || recipient.avatar || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&q=80' }} style={styles.foundAvatar} />
+                            {recipient.avatarUrl || recipient.avatar ? (
+                                <Image source={{ uri: recipient.avatarUrl || recipient.avatar }} style={styles.foundAvatar} />
+                            ) : (
+                                <View style={[styles.foundAvatar, styles.foundAvatarPlaceholder]}>
+                                    <Text style={styles.foundAvatarText}>{recipient.name ? recipient.name.charAt(0).toUpperCase() : '?'}</Text>
+                                </View>
+                            )}
                             <View style={styles.foundDetails}>
                                 <Text style={styles.foundName}>{recipient.name}</Text>
                                 <Text style={styles.foundPhone}>+91 {phone}</Text>
@@ -636,6 +641,18 @@ const styles = StyleSheet.create({
         marginBottom: 20
     },
     foundAvatar: { width: 44, height: 44, borderRadius: 22 },
+    foundAvatarPlaceholder: {
+        backgroundColor: '#edf5ed',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: '#d0dcd0',
+    },
+    foundAvatarText: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#056f36',
+    },
     foundDetails: { flex: 1, marginLeft: 12 },
     foundName: { fontSize: 14, fontWeight: '900', color: '#111' },
     foundPhone: { fontSize: 11, color: '#666', fontWeight: '650', marginTop: 2 },

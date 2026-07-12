@@ -13,6 +13,7 @@ const XeroxPricing = require('./XeroxPricing');
 const Category = require('./Category');
 const Advertisement = require('./Advertisement');
 const University = require('./University');
+const Quest = require('./Quest');
 
 // === Define Associations ===
 
@@ -91,6 +92,13 @@ Product.belongsTo(University, { foreignKey: 'universityId', as: 'university' });
 University.hasMany(Order, { foreignKey: 'universityId', as: 'orders' });
 Order.belongsTo(University, { foreignKey: 'universityId', as: 'university' });
 
+// Quest Associations
+University.hasMany(Quest, { foreignKey: 'universityId', as: 'quests' });
+Quest.belongsTo(University, { foreignKey: 'universityId', as: 'university' });
+
+Product.hasMany(Quest, { foreignKey: 'productId', as: 'quests' });
+Quest.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
+
 module.exports = {
     User,
     Shop,
@@ -106,6 +114,7 @@ module.exports = {
     XeroxPricing,
     Category,
     Advertisement,
-    University
+    University,
+    Quest
 };
 

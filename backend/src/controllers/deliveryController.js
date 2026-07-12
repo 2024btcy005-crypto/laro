@@ -1,5 +1,62 @@
-const { Order, Delivery, User, Shop, OrderItem, Product, WalletTransaction, University } = require('../models');
+const { Order, Delivery, User, Shop, OrderItem, Product, WalletTransaction, University, Quest } = require('../models');
 const { notifyCustomerOrderStatus } = require('../services/socketService');
+
+// Helper to progress university quests upon order delivery completion
+const processQuestProgress = async (order) => {
+    const universityId = order.universityId;
+    if (!universityId) return;
+
+    // Load order items
+    const orderItems = await OrderItem.findAll({ where: { orderId: order.id } });
+    if (!orderItems || orderItems.length === 0) return;
+
+    for (const item of orderItems) {
+        const productId = item.productId;
+        const qty = item.quantity || 1;
+
+        const activeQuests = await Quest.findAll({
+            where: {
+                universityId,
+                productId,
+                status: 'active'
+            }
+        });
+
+        for (const quest of activeQuests) {
+            await quest.reload();
+            if (quest.status === 'active') {
+                const newCount = quest.currentCount + qty;
+                if (newCount >= quest.targetCount) {
+                    await quest.update({
+                        currentCount: quest.targetCount,
+                        status: 'completed'
+                    });
+
+                    // Reward all students in the university
+                    const students = await User.findAll({ where: { universityId } });
+                    for (const student of students) {
+                        const studentBalance = Number(student.laroCurrency || 0);
+                        const rewardAmount = Number(quest.rewardAmount || 0);
+                        const updatedBalance = studentBalance + rewardAmount;
+
+                        await student.update({ laroCurrency: updatedBalance });
+
+                        await WalletTransaction.create({
+                            userId: student.id,
+                            amount: rewardAmount,
+                            type: 'credit',
+                            description: `Quest Reward: ${quest.title}!`,
+                            balanceAfter: updatedBalance
+                        });
+                    }
+                    console.log(`[QUEST] Quest "${quest.title}" completed! Rewarded ${students.length} students with ${quest.rewardAmount} Laro Coins each.`);
+                } else {
+                    await quest.increment('currentCount', { by: qty });
+                }
+            }
+        }
+    }
+};
 
 // @desc    Assign/Accept an order delivery
 // @route   POST /api/delivery/orders/:id/accept
@@ -117,6 +174,13 @@ const updateDeliveryStatus = async (req, res) => {
                     }
 
                     console.log(`[LOYALTY] User ${customer.id} earned ${pointsEarned} pts and ${currencyEarned} Ł. New total: ${newPoints} pts, ${newCurrency} Ł. Level: ${newLevel}`);
+                }
+
+                // Process Quest Progression
+                try {
+                    await processQuestProgress(order);
+                } catch (questErr) {
+                    console.error('[QUEST] Error processing quest progress:', questErr);
                 }
             }
 

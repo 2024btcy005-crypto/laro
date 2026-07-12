@@ -358,7 +358,13 @@ export default function CheckoutScreen({ navigation }) {
                         <View style={styles.summaryListCard}>
                             {cart.items.map((item, idx) => (
                                 <View key={item.id || item._id} style={[styles.summaryRow, idx > 0 && styles.summaryRowBorder]}>
-                                    <Image source={{ uri: item.imageUrl || 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400&q=80' }} style={styles.summaryProductImage} />
+                                    {item.imageUrl ? (
+                                        <Image source={{ uri: item.imageUrl }} style={styles.summaryProductImage} />
+                                    ) : (
+                                        <View style={[styles.summaryProductImage, styles.summaryProductPlaceholder]}>
+                                            <Ionicons name="cube-outline" size={16} color="#056f36" />
+                                        </View>
+                                    )}
                                     <View style={styles.summaryProductDetails}>
                                         <Text style={styles.summaryProductName} numberOfLines={1}>{item.name}</Text>
                                         <Text style={styles.summaryProductQty}>Qty: {item.quantity} • Standard Pack</Text>
@@ -633,6 +639,13 @@ const styles = StyleSheet.create({
         borderTopColor: '#f7faf7'
     },
     summaryProductImage: { width: 44, height: 44, borderRadius: 10 },
+    summaryProductPlaceholder: {
+        backgroundColor: '#edf5ed',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#d0dcd0',
+    },
     summaryProductDetails: {
         flex: 1,
         marginLeft: 12

@@ -222,7 +222,15 @@ export default function LaroCurrencyScreen({ navigation }) {
                             const isCredit = item.type === 'credit';
                             
                             return (
-                                <View key={item.id} style={[styles.historyRow, idx > 0 && styles.historyRowBorder]}>
+                                <TouchableOpacity 
+                                    key={item.id} 
+                                    style={[styles.historyRow, idx > 0 && styles.historyRowBorder]}
+                                    onPress={() => {
+                                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                        navigation.navigate('TransactionDetail', { transaction: item });
+                                    }}
+                                    activeOpacity={0.7}
+                                >
                                     <View style={[styles.historyIconCircle, { backgroundColor: iconDetail.bg }]}>
                                         <Ionicons name={iconDetail.name} size={18} color={iconDetail.color} />
                                     </View>
@@ -235,7 +243,7 @@ export default function LaroCurrencyScreen({ navigation }) {
                                     <Text style={[styles.historyAmountText, isCredit ? styles.amountCredit : styles.amountDebit]}>
                                         {isCredit ? '+' : '-'}{item.amount}
                                     </Text>
-                                </View>
+                                </TouchableOpacity>
                             );
                         })
                     ) : (
