@@ -15,8 +15,10 @@ import { COLORS } from './src/theme';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
+import { registerForPushNotificationsAsync } from './src/services/notificationService';
 
 // Import Screens
+
 import HomeScreen from './src/screens/home/HomeScreen';
 import ShopDetailsScreen from './src/screens/shop/ShopDetailsScreen';
 import CartScreen from './src/screens/cart/CartScreen';
@@ -192,15 +194,21 @@ function RootNavigator() {
                 const cartState = { items, shopId: store.getState().cart.shopId, totalAmount: store.getState().cart.totalAmount };
                 await AsyncStorage.setItem('cartData', JSON.stringify(cartState));
             } catch (e) {
-                console.log('Saving cart failed');
-            }
-        };
         if (items.length >= 0) {
             persistCart();
         }
     }, [items]);
 
+
+    // Register push notification token on login
+    useEffect(() => {
+        if (isAuthenticated) {
+            registerForPushNotificationsAsync();
+        }
+    }, [isAuthenticated]);
+
     const { colors, isDarkMode } = useTheme();
+
 
     if (isLoading) {
         return (
