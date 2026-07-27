@@ -194,10 +194,14 @@ function RootNavigator() {
                 const cartState = { items, shopId: store.getState().cart.shopId, totalAmount: store.getState().cart.totalAmount };
                 await AsyncStorage.setItem('cartData', JSON.stringify(cartState));
             } catch (e) {
+                console.log('Saving cart failed');
+            }
+        };
         if (items.length >= 0) {
             persistCart();
         }
     }, [items]);
+
 
 
     // Register push notification token on login
