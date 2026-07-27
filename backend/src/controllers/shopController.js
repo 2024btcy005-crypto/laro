@@ -171,14 +171,12 @@ const createShop = async (req, res) => {
 
         let finalUniversityId = null;
 
-        // Only Campus Admins can specify a university (though routes might restrict this)
-        if (req.user && req.user.role === 'campus_admin') {
+        if (req.body.universityId) {
+            finalUniversityId = req.body.universityId;
+        } else if (req.user && req.user.role === 'campus_admin') {
             finalUniversityId = req.user.universityId;
-        } else if (req.user && req.user.role === 'super_admin') {
-            // Super admins always create global shops unless they explicitly override 
-            // (but we've hidden that in the UI, so let's default to null)
-            finalUniversityId = null;
         }
+
 
         const shop = await Shop.create({
             name,

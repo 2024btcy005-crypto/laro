@@ -100,13 +100,15 @@ export default function RestaurantManagement() {
                 getAllUniversities()
             ]);
 
-            // Filter shops exclusively for food outlets / canteens / cafes / bakeries
+            // Filter shops exclusively for food outlets / canteens / cafes / bakeries (excluding general retail stores)
             const foodShops = (shopsRes.data || []).filter(s => {
                 const cat = (s.category || '').toLowerCase();
-                return cat.includes('food') || cat.includes('canteen') || cat.includes('cafe') || cat.includes('bakery') || cat.includes('restaurant') || cat.includes('juice') || cat.includes('dining') || !s.isWarehouse;
+                const isRetailStore = cat.includes('stationery') || cat.includes('print') || cat.includes('xerox') || cat.includes('grocery') || cat.includes('book') || cat.includes('electronics');
+                return !isRetailStore;
             });
 
             setRestaurants(foodShops);
+
             setProducts(productsRes.data || []);
             setOrders(ordersRes.data || []);
             setUniversities(unisRes.data || []);
