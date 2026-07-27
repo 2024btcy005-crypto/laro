@@ -47,8 +47,43 @@ export default function HomeScreen({ navigation }) {
     const [activeAd, setActiveAd] = useState(null);
     const [adModalVisible, setAdModalVisible] = useState(false);
     const [userCoords, setUserCoords] = useState(null);
+
     const [quests, setQuests] = useState([]);
     const pulseAnim = useRef(new Animated.Value(0.6)).current;
+
+
+    // Animated Search Placeholder
+    const SEARCH_SUGGESTIONS = [
+        "Search 'Cold Coffee' ☕",
+        "Search 'Farmhouse Pizza' 🍕",
+        "Search 'Xerox & Printing' 🖨️",
+        "Search 'Crispy Burger' 🍔",
+        "Search 'Paneer Thali' 🍛",
+        "Search 'Lab Notebooks & Pens' 📝",
+        "Search 'Fresh Mango Juice' 🧃"
+    ];
+    const [placeholderIndex, setPlaceholderIndex] = useState(0);
+    const searchFadeAnim = useRef(new Animated.Value(1)).current;
+    const searchTranslateY = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            Animated.parallel([
+                Animated.timing(searchFadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+                Animated.timing(searchTranslateY, { toValue: -10, duration: 250, useNativeDriver: true })
+            ]).start(() => {
+                setPlaceholderIndex(prev => (prev + 1) % SEARCH_SUGGESTIONS.length);
+                searchTranslateY.setValue(10);
+                Animated.parallel([
+                    Animated.timing(searchFadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+                    Animated.timing(searchTranslateY, { toValue: 0, duration: 300, useNativeDriver: true })
+                ]).start();
+            });
+        }, 2800);
+
+        return () => clearInterval(interval);
+    }, []);
+
 
     const cart = useSelector(state => state.cart);
     const { user, selectedUniversity } = useSelector(state => state.auth);
@@ -453,12 +488,14 @@ export default function HomeScreen({ navigation }) {
                             </View>
                         </TouchableOpacity>
 
-                        <View style={styles.estDeliveryContainer}>
-                            <Text style={styles.estDeliveryTime}>
-                                {shops[0]?.estimatedDeliveryTime || '12-15 min'}
+                        <View style={{ alignItems: 'flex-end', marginRight: 12, justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 17, fontWeight: '900', color: '#111827', letterSpacing: -0.3 }} numberOfLines={1}>
+                                {user?.name || 'Devi Kumar'}
                             </Text>
-                            <Text style={styles.estDeliveryLabel}>Est. Delivery</Text>
                         </View>
+
+
+
 
                         <TouchableOpacity 
                             onPress={() => navigation.navigate('Profile')} 
@@ -475,23 +512,42 @@ export default function HomeScreen({ navigation }) {
 
                 <View style={[styles.searchBarContainer, { backgroundColor: isDarkMode ? colors.white + '10' : '#fff', borderColor: isDarkMode ? colors.border : '#e6ede6' }]}>
                     <Ionicons name="search" size={20} color={colors.gray} style={{ marginRight: 8 }} />
-                    <TextInput
-                        placeholder="Search for snacks, stationery, and more..."
-                        placeholderTextColor="#aaaaaa"
-                        style={[styles.headerSearchInput, { color: colors.black }]}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
+                    <View style={{ flex: 1, justifyContent: 'center', height: 40, position: 'relative' }}>
+                        {!searchQuery && (
+                            <Animated.View
+                                pointerEvents="none"
+                                style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    right: 0,
+                                    opacity: searchFadeAnim,
+                                    transform: [{ translateY: searchTranslateY }]
+                                }}
+                            >
+                                <Text style={{ color: '#888888', fontSize: 14, fontWeight: '500' }}>
+                                    {SEARCH_SUGGESTIONS[placeholderIndex]}
+                                </Text>
+                            </Animated.View>
+                        )}
+                        <TextInput
+                            placeholder=""
+                            placeholderTextColor="transparent"
+                            style={[styles.headerSearchInput, { color: colors.black, width: '100%' }]}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                    </View>
                     {searchQuery.length > 0 ? (
                         <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
                             <Ionicons name="close-circle" size={18} color={colors.gray} />
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity style={{ padding: 4 }}>
-                            <Ionicons name="mic" size={20} color="#056f36" />
+                            <Ionicons name="mic" size={20} color="#006d33" />
                         </TouchableOpacity>
                     )}
                 </View>
+
 
                 <View style={{ marginBottom: 15 }}>
                     <ScrollView

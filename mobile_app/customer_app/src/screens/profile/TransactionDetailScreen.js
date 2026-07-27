@@ -22,7 +22,7 @@ export default function TransactionDetailScreen({ route, navigation }) {
     const id = transaction.id || transaction._id || 'TXN-4829-BZ-9021-LP';
     const amount = transaction.amount !== undefined ? transaction.amount : 200;
     const isCredit = transaction.type === 'credit';
-    const description = transaction.description || 'Payment for Coffee';
+    const description = transaction.description || 'Laro Wallet Transfer';
     const createdAt = transaction.createdAt || '2023-10-20T11:45:00';
     const balanceAfter = transaction.balanceAfter !== undefined ? transaction.balanceAfter : 800;
     const fee = transaction.fee !== undefined ? transaction.fee : '0.00';
@@ -201,16 +201,6 @@ export default function TransactionDetailScreen({ route, navigation }) {
                     </View>
                 </View>
 
-                {/* Optional Bonus Discount Banner */}
-                <View style={styles.bonusBanner}>
-                    <View style={styles.giftIconCircle}>
-                        <FontAwesome5 name="gift" size={16} color="#056f36" />
-                    </View>
-                    <View style={styles.bonusTextWrapper}>
-                        <Text style={styles.bonusTitleText}>Redeemed for Coffee</Text>
-                        <Text style={styles.bonusDescText}>Applied campus referral discount to this order. You saved 50 Laro coins.</Text>
-                    </View>
-                </View>
 
                 {/* Bottom Action Buttons */}
                 <View style={styles.actionsContainer}>

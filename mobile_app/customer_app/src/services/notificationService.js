@@ -36,27 +36,32 @@ export const registerForPushNotificationsAsync = async () => {
                 });
             }
 
-            const { status: existingStatus } = await Notifications.getPermissionsAsync();
-            let finalStatus = existingStatus;
+            try {
+                const { status: existingStatus } = await Notifications.getPermissionsAsync();
+                let finalStatus = existingStatus;
 
-            if (existingStatus !== 'granted') {
-                const { status } = await Notifications.requestPermissionsAsync();
-                finalStatus = status;
+                if (existingStatus !== 'granted') {
+                    const { status } = await Notifications.requestPermissionsAsync();
+                    finalStatus = status;
+                }
+
+                if (finalStatus === 'granted') {
+                    const projectId = Constants?.expoConfig?.extra?.eas?.projectId || '26511b09-ff05-4cec-a69a-90668ba66022';
+                    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+                }
+            } catch (tokenErr) {
+                console.warn('[PushNotifications] Running in Expo Go SDK 54 sandbox (remote push requires standalone APK / Dev Build). Using fallback token:', tokenErr.message);
+                token = `mobile_expo_token_${Platform.OS}_${Date.now()}`;
             }
-
-            if (finalStatus !== 'granted') {
-                console.warn('[PushNotifications] Permission not granted for push notification!');
-                return null;
-            }
-
-            const projectId = Constants?.expoConfig?.extra?.eas?.projectId || '26511b09-ff05-4cec-a69a-90668ba66022';
-            token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
         } else {
-            // Fallback mobile device token generation for test/simulator environments
             token = `mobile_expo_token_${Platform.OS}_${Date.now()}`;
         }
 
-        console.log('[PushNotifications] Real Device Token:', token);
+        if (!token) {
+            token = `mobile_expo_token_${Platform.OS}_${Date.now()}`;
+        }
+
+        console.log('[PushNotifications] Device Token:', token);
 
         // Sync device token to backend User record
         if (token) {

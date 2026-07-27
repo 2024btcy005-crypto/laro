@@ -338,6 +338,60 @@ export default function MarketingManagement() {
                                 </Alert>
                             )}
 
+                            {/* QUICK NOTIFICATION TEMPLATE SUGGESTIONS */}
+                            <Box sx={{ mb: 3 }}>
+                                <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 800, letterSpacing: '0.05em', display: 'block', mb: 1.5 }}>
+                                    ⚡ QUICK NOTIFICATION TEMPLATES (CLICK TO USE):
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                    <Chip
+                                        label="🔥 Midnight Sale (20% OFF)"
+                                        clickable
+                                        onClick={() => {
+                                            setNotifTitle('Midnight Craving Flash Sale! 🍕');
+                                            setNotifBody('Get 20% OFF on all late-night canteen orders till 2 AM. Use promo code MIDNIGHT20 at checkout!');
+                                        }}
+                                        sx={{ bgcolor: '#e6f7ed', color: '#006d33', fontWeight: 700, '&:hover': { bgcolor: '#38c567', color: '#fff' } }}
+                                    />
+                                    <Chip
+                                        label="☕ Exam Night Fuel Up"
+                                        clickable
+                                        onClick={() => {
+                                            setNotifTitle('Exam Night Fuel Up! ☕');
+                                            setNotifBody('Need caffeine for late-night study sessions? Order Iced Cold Coffee & Sandwiches with ZERO delivery fee!');
+                                        }}
+                                        sx={{ bgcolor: '#fef3c7', color: '#b45309', fontWeight: 700, '&:hover': { bgcolor: '#f59e0b', color: '#fff' } }}
+                                    />
+                                    <Chip
+                                        label="🖨️ Instant Xerox Printing"
+                                        clickable
+                                        onClick={() => {
+                                            setNotifTitle('Skip the Lab Print Queue! 🖨️');
+                                            setNotifBody('Upload your PDF lab manuals now and collect printed copies instantly at your Hostel Drop Zone.');
+                                        }}
+                                        sx={{ bgcolor: '#e0f2fe', color: '#0284c7', fontWeight: 700, '&:hover': { bgcolor: '#0284c7', color: '#fff' } }}
+                                    />
+                                    <Chip
+                                        label="🍔 Canteen 50% OFF"
+                                        clickable
+                                        onClick={() => {
+                                            setNotifTitle('Canteen Happy Hour - 50% OFF! 🍔');
+                                            setNotifBody('Flash sale alert! Fresh bakery snacks and burgers are 50% OFF for the next 30 minutes. Order now!');
+                                        }}
+                                        sx={{ bgcolor: '#fee2e2', color: '#dc2626', fontWeight: 700, '&:hover': { bgcolor: '#dc2626', color: '#fff' } }}
+                                    />
+                                    <Chip
+                                        label="🪙 50 Bonus Coins Drop"
+                                        clickable
+                                        onClick={() => {
+                                            setNotifTitle('Free 50 Laro Coins Added! 🪙');
+                                            setNotifBody('Bonus Laro Coins have been credited to your Zippit Wallet. Redeem them on your food & print orders today!');
+                                        }}
+                                        sx={{ bgcolor: '#f3e8ff', color: '#7c3aed', fontWeight: 700, '&:hover': { bgcolor: '#7c3aed', color: '#fff' } }}
+                                    />
+                                </Box>
+                            </Box>
+
                             <form onSubmit={handleSendNotification}>
                                 <FormControl fullWidth sx={{ mb: 3 }}>
                                     <InputLabel>Target Audience / Campus</InputLabel>
@@ -364,6 +418,7 @@ export default function MarketingManagement() {
                                     required
                                     sx={{ mb: 3 }}
                                 />
+
 
                                 <TextField
                                     fullWidth

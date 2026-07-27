@@ -86,9 +86,11 @@ export const couponAPI = {
 };
 
 export const walletAPI = {
+    getBalance: () => api.get('/orders/summary'),
     findUser: (phone) => api.get(`/orders/find-user?phone=${phone}`),
     transfer: (data) => api.post('/orders/transfer', data),
     getRecentRecipients: () => api.get('/orders/recent-recipients'),
 };
+
 
 export default api;

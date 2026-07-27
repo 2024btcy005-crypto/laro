@@ -9,13 +9,28 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { restoreToken } from './src/store/authSlice';
 import { setStoreCart } from './src/store/cartSlice';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator, Text, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from './src/theme';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import { registerForPushNotificationsAsync } from './src/services/notificationService';
+
+// Configure top-level Expo notification handler
+try {
+    const Notifications = require('expo-notifications');
+    Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+        }),
+    });
+} catch (e) {
+    console.warn('[App] Push notification module not initialized:', e.message);
+}
+
 
 // Import Screens
 
@@ -204,12 +219,35 @@ function RootNavigator() {
 
 
 
-    // Register push notification token on login
+    // Register push notification token on login & attach foreground listener
     useEffect(() => {
         if (isAuthenticated) {
             registerForPushNotificationsAsync();
+
+            let Notifications;
+            try {
+                Notifications = require('expo-notifications');
+            } catch (e) {}
+
+            if (Notifications) {
+                const subReceived = Notifications.addNotificationReceivedListener(notification => {
+                    console.log('[PUSH RECEIVED FOREGROUND]:', notification);
+                    const { title, body } = notification.request.content;
+                    Alert.alert(title || 'Zippit Alert 🔔', body || 'You have a new update!');
+                });
+
+                const subResponse = Notifications.addNotificationResponseReceivedListener(response => {
+                    console.log('[PUSH TAPPED]:', response);
+                });
+
+                return () => {
+                    subReceived.remove();
+                    subResponse.remove();
+                };
+            }
         }
     }, [isAuthenticated]);
+
 
     const { colors, isDarkMode } = useTheme();
 
