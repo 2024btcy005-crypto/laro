@@ -28,6 +28,7 @@ import UniversitySelectionScreen from './src/screens/auth/UniversitySelectionScr
 import LinkWalletScreen from './src/screens/auth/LinkWalletScreen';
 import ProfileScreen from './src/screens/profile/ProfileScreen';
 import ProductDetailScreen from './src/screens/shop/ProductDetailScreen';
+import FoodDeliveryScreen from './src/screens/shop/FoodDeliveryScreen';
 import LoyaltyScreen from './src/screens/profile/LoyaltyScreen';
 import QuestScreen from './src/screens/home/QuestScreen';
 import QuestsTabScreen from './src/screens/home/QuestsTabScreen';
@@ -240,6 +241,7 @@ function RootNavigator() {
                     <Stack.Screen name="UniversitySelection" component={UniversitySelectionScreen} options={{ headerShown: false }} />
 
                     <Stack.Screen name="ShopDetails" component={ShopDetailsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="FoodDelivery" component={FoodDeliveryScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Cart" component={CartScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
@@ -258,6 +260,7 @@ function RootNavigator() {
                     {/* Manage university selection */}
                     <Stack.Screen name="ChangeUniversity" component={UniversitySelectionScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Quest" component={QuestScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="QuestsList" component={QuestsTabScreen} options={{ headerShown: false }} />
                 </>
             ) : (
                 <>

@@ -506,6 +506,53 @@ const updateUserRole = async (req, res) => {
     }
 };
 
+// @desc    Send broadcast push notification
+// @route   POST /api/admin/notifications/broadcast
+// @access  Private/Admin
+const broadcastNotification = async (req, res) => {
+    try {
+        const { title, body, universityId, data } = req.body;
+        if (!title || !body) {
+            return res.status(400).json({ message: 'Title and body are required' });
+        }
+
+        const { sendPushNotification } = require('../services/notificationService');
+
+        const whereClause = { isActive: true };
+        if (universityId && universityId !== 'all') {
+            whereClause.universityId = universityId;
+        }
+
+        const users = await User.findAll({
+            where: whereClause,
+            attributes: ['id', 'name', 'fcmToken']
+        });
+
+        const tokens = users.map(u => u.fcmToken).filter(Boolean);
+
+        let sentCount = 0;
+        let failCount = 0;
+
+        for (const token of tokens) {
+            try {
+                await sendPushNotification(token, title, body, data || {});
+                sentCount++;
+            } catch (err) {
+                failCount++;
+            }
+        }
+
+        res.json({
+            message: `Notification broadcast completed. Target users: ${users.length}, Sent: ${sentCount}, Failed/No Token: ${failCount + (users.length - tokens.length)}`,
+            targetUserCount: users.length,
+            sentCount
+        });
+    } catch (error) {
+        console.error('[ADMIN BROADCAST NOTIFICATION ERROR]', error);
+        res.status(500).json({ error: 'Failed to broadcast notification' });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getAllOrders,
@@ -521,5 +568,7 @@ module.exports = {
     getAllItemSales,
     getAdvertisement,
     updateAdvertisement,
-    updateUserRole
+    updateUserRole,
+    broadcastNotification
 };
+

@@ -54,8 +54,10 @@ export const deleteCategory = (id) => api.delete(`/categories/${id}`);
 
 export const getAdvertisement = () => api.get('/admin/advertisement');
 export const updateAdvertisement = (data) => api.put('/admin/advertisement', data);
+export const sendBroadcastNotification = (data) => api.post('/admin/notifications/broadcast', data);
 
 export const getAllUniversities = () => api.get('/universities');
+
 export const createUniversity = (data) => api.post('/universities', data);
 export const updateUniversity = (id, data) => api.put(`/universities/${id}`, data);
 export const deleteUniversity = (id) => api.delete(`/universities/${id}`);

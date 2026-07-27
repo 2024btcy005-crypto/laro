@@ -1,8 +1,10 @@
 const { Order, Delivery, User, Shop, OrderItem, Product, WalletTransaction, University, Quest } = require('../models');
 const { notifyCustomerOrderStatus } = require('../services/socketService');
+const { sendPushNotification } = require('../services/notificationService');
 
 // Helper to progress university quests upon order delivery completion
 const processQuestProgress = async (order) => {
+
     const universityId = order.universityId;
     if (!universityId) return;
 
@@ -89,6 +91,21 @@ const acceptDelivery = async (req, res) => {
             assignedAt: new Date()
         });
 
+        // Trigger Push Notification to Customer
+        try {
+            const customer = await User.findByPk(order.customerId);
+            if (customer && customer.fcmToken) {
+                await sendPushNotification(
+                    customer.fcmToken,
+                    'Delivery Partner Assigned 🛵',
+                    `A delivery partner has accepted your order #${order.id.substring(0, 8)} and is heading to the shop.`,
+                    { orderId: order.id, type: 'order_assigned' }
+                );
+            }
+        } catch (notifErr) {
+            console.error('[PUSH NOTIF] Failed to send assignment notification:', notifErr.message);
+        }
+
         res.status(200).json(delivery);
 
     } catch (error) {
@@ -138,6 +155,22 @@ const updateDeliveryStatus = async (req, res) => {
 
         if (orderStatusMap[status]) {
             await Order.update({ status: orderStatusMap[status] }, { where: { id: orderId } });
+
+            // Trigger Push Notification to Customer for status update
+            try {
+                const customer = await User.findByPk(delivery.order.customerId);
+                if (customer && customer.fcmToken) {
+                    const notifTitle = status === 'picked' ? 'Out for Delivery! 🛵' : 'Order Delivered! 🎉';
+                    const notifBody = status === 'picked'
+                        ? `Your order #${orderId.substring(0, 8)} is picked up and on its way!`
+                        : `Your order #${orderId.substring(0, 8)} has been delivered. Enjoy!`;
+                    
+                    await sendPushNotification(customer.fcmToken, notifTitle, notifBody, { orderId, type: `order_${status}` });
+                }
+            } catch (notifErr) {
+                console.error('[PUSH NOTIF] Failed to send status update notification:', notifErr.message);
+            }
+
 
             // Loyalty Logic: Reward points and update level upon delivery
             if (status === 'delivered') {

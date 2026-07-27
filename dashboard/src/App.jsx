@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import CouponManagement from './pages/CouponManagement';
 import UniversityManagement from './pages/UniversityManagement';
 import QuestManagement from './pages/QuestManagement';
+import MarketingManagement from './pages/MarketingManagement';
 
 // A component to protect routes and redirect to login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -42,12 +43,14 @@ function App() {
                         <Route path="products" element={<ProductManagement />} />
                         <Route path="orders" element={<OrderManagement />} />
                         <Route path="users" element={<UserManagement />} />
+                        <Route path="marketing" element={<MarketingManagement />} />
                         <Route path="coupons" element={<CouponManagement />} />
                         <Route path="categories" element={<CategoryManagement />} />
                         <Route path="universities" element={<UniversityManagement />} />
                         <Route path="quests" element={<QuestManagement />} />
                         <Route path="settings" element={<Settings />} />
                     </Route>
+
                 </Routes>
             </BrowserRouter>
         </ThemeProvider>

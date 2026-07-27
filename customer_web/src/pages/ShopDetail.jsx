@@ -29,12 +29,25 @@ const MenuItem = ({ item, shop, cart, addToCart, removeFromCart, getItemQuantity
         if (newFavs) setIsFav(!isFav);
     };
 
+    const isVeg = item.isVeg !== false;
+    const rating = item.rating || (4.2 + (typeof item.id === 'string' ? item.id.charCodeAt(0) % 7 : 3) * 0.1).toFixed(1);
+
     return (
-        <div className="menu-item-card">
+        <div className={`menu-item-card ${item.isBestseller ? 'bestseller-card' : ''}`}>
             <div className="item-info">
+                <div className="item-badge-row">
+                    <span className={`veg-badge ${isVeg ? 'veg' : 'non-veg'}`}>
+                        <span className="dot" />
+                    </span>
+                    {item.isBestseller && <span className="bestseller-tag">🔥 MUST TRY</span>}
+                    {item.variants?.length > 0 && <span className="customisable-tag">✨ CUSTOMISABLE</span>}
+                </div>
                 <h3 className="item-name">{item.name}</h3>
-                <p className="item-price">₹{item.price}{item.variants?.length > 0 && ' onwards'}</p>
-                <p className="item-desc">{item.description || 'No description available for this delicious dish.'}</p>
+                <div className="item-price-rating-row">
+                    <span className="item-price">₹{item.price}{item.variants?.length > 0 && <span className="onwards-tag"> onwards</span>}</span>
+                    <span className="item-rating-pill">⭐ {rating}</span>
+                </div>
+                <p className="item-desc">{item.description || 'Prepared fresh with high-quality ingredients by campus chefs.'}</p>
             </div>
             <div className="item-action">
                 <div className="item-image-sm">
@@ -43,35 +56,39 @@ const MenuItem = ({ item, shop, cart, addToCart, removeFromCart, getItemQuantity
                         alt={item.name}
                         onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = 'https://via.placeholder.com/150?text=Food';
+                            e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop';
                         }}
                     />
                     <button
                         className={`item-fav-btn ${isFav ? 'active' : ''}`}
                         onClick={handleToggleFav}
+                        title="Save to favorites"
                     >
-                        <Heart size={16} fill={isFav ? "#ff4757" : "transparent"} stroke={isFav ? "#ff4757" : "#64748b"} />
+                        <Heart size={16} fill={isFav ? "#ff4757" : "transparent"} stroke={isFav ? "#ff4757" : "#fff"} />
                     </button>
-                </div>
-                {getItemQuantity(item.id) > 0 ? (
-                    <div className="quantity-control">
-                        <button onClick={() => removeFromCart(item.id)}><Minus size={16} /></button>
-                        <span>{getItemQuantity(item.id)}</span>
-                        <button onClick={() => addToCart(item, shop)}><Plus size={16} /></button>
-                    </div>
-                ) : (
-                    !item.isAvailable ? (
-                        <button className="add-btn disabled" disabled>UNAVAILABLE</button>
-                    ) : (
-                        item.variants?.length > 0 ? (
-                            <button className="add-btn" onClick={() => setShowVariants(!showVariants)}>
-                                {showVariants ? 'CLOSE' : 'CHOOSE'}
-                            </button>
+
+                    <div className="item-button-overlay">
+                        {getItemQuantity(item.id) > 0 ? (
+                            <div className="quantity-control">
+                                <button onClick={() => removeFromCart(item.id)}><Minus size={14} /></button>
+                                <span>{getItemQuantity(item.id)}</span>
+                                <button onClick={() => addToCart(item, shop)}><Plus size={14} /></button>
+                            </div>
                         ) : (
-                            <button className="add-btn" onClick={() => addToCart(item, shop)}>ADD</button>
-                        )
-                    )
-                )}
+                            !item.isAvailable ? (
+                                <button className="add-btn disabled" disabled>OUT OF STOCK</button>
+                            ) : (
+                                item.variants?.length > 0 ? (
+                                    <button className="add-btn" onClick={() => setShowVariants(!showVariants)}>
+                                        {showVariants ? 'CLOSE' : 'CHOOSE +'}
+                                    </button>
+                                ) : (
+                                    <button className="add-btn" onClick={() => addToCart(item, shop)}>ADD +</button>
+                                )
+                            )
+                        )}
+                    </div>
+                </div>
             </div>
 
             {
@@ -366,6 +383,21 @@ export default function ShopDetail() {
                                 </div>
                             )}
                     </div>
+
+                    {!isXeroxShop && (
+                        <div className="shop-bottom-hygiene-card">
+                            <div className="hygiene-header">
+                                <span className="shield-icon">🛡️</span>
+                                <h4>100% Campus Hygiene & Quality Assured</h4>
+                            </div>
+                            <p className="hygiene-text">
+                                Partner Outlet Verified by Laro Quality Control. Freshly prepared under strict safety standards.
+                            </p>
+                            <div className="hygiene-divider" />
+                            <p className="made-with-love">Made with ❤️ for Students</p>
+                            <p className="copyright-text">© 2026 Laro Technologies Private Limited. All Rights Reserved.</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Xerox / Printing: Document Upload Panel */}

@@ -17,6 +17,7 @@ import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import api, { uploadImage, getAllUniversities, resolveImageUrl } from '../api';
 import SchoolIcon from '@mui/icons-material/School';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 
 export default function ShopManagement() {
     const theme = useTheme();
@@ -45,6 +46,40 @@ export default function ShopManagement() {
 
     const [uploading, setUploading] = useState(false);
     const fileInputRef = React.useRef(null);
+    const quickFileInputRef = React.useRef(null);
+    const [targetQuickShop, setTargetQuickShop] = useState(null);
+
+    const handleQuickImageClick = (shop) => {
+        setTargetQuickShop(shop);
+        if (quickFileInputRef.current) {
+            quickFileInputRef.current.click();
+        }
+    };
+
+    const handleQuickFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !targetQuickShop) return;
+
+        setLoading(true);
+        try {
+            const uploadFormData = new FormData();
+            uploadFormData.append('image', file);
+            const res = await uploadImage(uploadFormData);
+            const newUrl = res.data.url;
+
+            const shopId = targetQuickShop._id || targetQuickShop.id;
+            await api.put(`/shops/${shopId}`, {
+                ...targetQuickShop,
+                imageUrl: newUrl
+            });
+
+            fetchShops();
+        } catch (err) {
+            console.error('Quick image change failed:', err);
+            setError('Failed to update shop image.');
+            setLoading(false);
+        }
+    };
 
     // Xerox Pricing State
     const [pricingOpen, setPricingOpen] = useState(false);
@@ -293,10 +328,28 @@ export default function ShopManagement() {
                                         <CardMedia
                                             component="img"
                                             height="180"
-                                            image={shop.imageUrl || 'https://via.placeholder.com/400x200?text=No+Image'}
+                                            image={resolveImageUrl(shop.imageUrl) || 'https://via.placeholder.com/400x200?text=No+Image'}
                                             alt={shop.name}
                                             sx={{ transition: 'transform 0.5s ease-in-out' }}
                                         />
+                                        <Tooltip title="Change Food Spot Image">
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleQuickImageClick(shop)}
+                                                sx={{
+                                                    position: 'absolute',
+                                                    bottom: 10,
+                                                    left: 10,
+                                                    bgcolor: 'rgba(0,0,0,0.65)',
+                                                    color: '#fff',
+                                                    backdropFilter: 'blur(6px)',
+                                                    border: '1px solid rgba(255,255,255,0.2)',
+                                                    '&:hover': { bgcolor: 'rgba(0,0,0,0.85)', transform: 'scale(1.1)' }
+                                                }}
+                                            >
+                                                <PhotoCameraIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
                                         <Chip
                                             label={shop.isActive ? (shop.isOpen ? "OPEN" : "CLOSED") : "OFFLINE"}
                                             color={shop.isActive ? (shop.isOpen ? "success" : "error") : "default"}
@@ -611,6 +664,7 @@ export default function ShopManagement() {
                         </Box>
                     </Fade>
                 </Modal>
+                <input type="file" hidden ref={quickFileInputRef} onChange={handleQuickFileChange} accept="image/*" />
             </Box>
         </Fade>
     );

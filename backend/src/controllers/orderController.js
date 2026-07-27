@@ -480,7 +480,7 @@ const getWalletHistory = async (req, res) => {
                 {
                     model: User,
                     as: 'peerUser',
-                    attributes: ['name', 'phoneNumber', 'avatarUrl']
+                    attributes: ['name', 'phoneNumber']
                 }
             ],
             order: [['createdAt', 'DESC']],

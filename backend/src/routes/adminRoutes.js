@@ -14,7 +14,8 @@ const {
     getAllItemSales,
     getAdvertisement,
     updateAdvertisement,
-    updateUserRole
+    updateUserRole,
+    broadcastNotification
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middlewares/authMiddleware');
 const { authorize } = require('../middlewares/roleMiddleware');
@@ -46,7 +47,11 @@ router.route('/advertisement')
     .get(protect, admin, getAdvertisement)
     .put(protect, admin, updateAdvertisement);
 
+// Push Notification broadcast route
+router.post('/notifications/broadcast', protect, admin, broadcastNotification);
+
 router.put('/users/:id/status', toggleUserStatus);
+
 router.put('/users/:id/role', updateUserRole);
 
 // Quest admin routes

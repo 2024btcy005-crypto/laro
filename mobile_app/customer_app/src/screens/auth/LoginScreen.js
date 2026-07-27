@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, TextInput, TouchableOpacity, Image, 
-    KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert 
+    KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, Dimensions 
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { signIn } from '../../store/authSlice';
@@ -10,12 +10,17 @@ import api from '../../services/api';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../../theme';
 import LaroAlert from '../../components/LaroAlert';
-import { useTheme } from '../../context/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import * as Haptics from 'expo-haptics';
+
+const { width } = Dimensions.get('window');
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-    const { colors } = useTheme();
     const insets = useSafeAreaInsets();
     const [isLoginMode, setIsLoginMode] = useState(true);
     const [name, setName] = useState('');
@@ -28,6 +33,43 @@ export default function LoginScreen() {
 
     const dispatch = useDispatch();
     const navigation = useNavigation();
+
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        responseType: 'id_token',
+        webClientId: '1089766186717-9hc8sqak0nhb3r09hd3k93d31744t4pp.apps.googleusercontent.com',
+        androidClientId: '1089766186717-9hc8sqak0nhb3r09hd3k93d31744t4pp.apps.googleusercontent.com',
+        iosClientId: '1089766186717-9hc8sqak0nhb3r09hd3k93d31744t4pp.apps.googleusercontent.com',
+    });
+
+    React.useEffect(() => {
+        if (response?.type === 'success') {
+            const idToken = response.authentication?.idToken || response.params?.id_token;
+            if (idToken) {
+                setLoading(true);
+                sendSocialTokenToBackend(idToken);
+            }
+        } else if (response?.type === 'error') {
+            console.error('[GOOGLE AUTH ERR]', response.error);
+            Alert.alert('Authentication Failed', 'Google login returned an error.');
+        }
+    }, [response]);
+
+    const sendSocialTokenToBackend = async (idToken) => {
+        try {
+            const res = await api.post('/auth/social-login', { idToken });
+            const { token, id, name: userName, email: userEmail, phoneNumber, role, needsWallet } = res.data;
+            const userData = { id, name: userName, email: userEmail, phoneNumber, role };
+
+            await AsyncStorage.setItem('userToken', token);
+            await AsyncStorage.setItem('userData', JSON.stringify(userData));
+
+            dispatch(signIn({ user: userData, token, setupPending: needsWallet }));
+        } catch (error) {
+            Alert.alert('Authentication Failed', error.response?.data?.message || 'Failed to authenticate via Google.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
@@ -47,7 +89,7 @@ export default function LoginScreen() {
             return;
         }
         if (!isLoginMode && password !== confirmPassword) {
-            Alert.alert('Password Mismatch', 'Passwords do not match. Please try again.');
+            Alert.alert('Password Mismatch', 'Passwords do not match.');
             return;
         }
         if (!isLoginMode && !name) {
@@ -62,25 +104,16 @@ export default function LoginScreen() {
                 ? { email, password }
                 : { email, password, name, role: 'customer' };
 
-            console.log(`[AUTH] Calling ${endpoint} for ${email}...`);
             const response = await api.post(endpoint, payload);
-
             const { token, id, name: userName, phoneNumber, role } = response.data;
             const userData = { id, name: userName, email, phoneNumber, role };
 
             await AsyncStorage.setItem('userToken', token);
             await AsyncStorage.setItem('userData', JSON.stringify(userData));
 
-            // Pass setupPending:true for new registrations so App.js routes to LinkWallet
             dispatch(signIn({ user: userData, token, setupPending: !isLoginMode }));
-
-            console.log('[AUTH] Success! Logged in as:', userName);
-            // SetupRedirectScreen handles routing:
-            //   - New registrations (laro_setup_pending=true) → LinkWallet setup flow
-            //   - Normal logins → Main
         } catch (error) {
-            console.error('[AUTH ERROR]', error.response?.data || error.message);
-            const msg = error.response?.data?.message || 'Something went wrong. Please check your credentials and try again.';
+            const msg = error.response?.data?.message || 'Something went wrong. Please check your credentials.';
             setAlertConfig({
                 visible: true,
                 title: isLoginMode ? 'Login Failed' : 'Account Error',
@@ -94,19 +127,33 @@ export default function LoginScreen() {
     };
 
     const handleGoogleLogin = () => {
-        Alert.alert('Service Unavailable', "Google Sign-In service isn't available right now. Sorry!");
-    };
-
-    const handleSkip = async () => {
-        const guestData = { id: 'guest', name: 'Guest User', role: 'customer', email: 'guest@laro.app' };
-        const guestToken = 'guest_session_token';
-
-        await AsyncStorage.setItem('userToken', guestToken);
-        await AsyncStorage.setItem('userData', JSON.stringify(guestData));
-
-        dispatch(signIn({ user: guestData, token: guestToken }));
-        console.log('[AUTH] Entering as Guest');
-        // SetupRedirectScreen will route to Main for guest users
+        if (__DEV__) {
+            Alert.alert(
+                'Google Sign-In Option',
+                'Select an option to proceed:',
+                [
+                    {
+                        text: 'Use Mock Account',
+                        onPress: () => {
+                            setLoading(true);
+                            const mockIdToken = `mock_google_dev_${Math.floor(Math.random() * 10000)}`;
+                            sendSocialTokenToBackend(mockIdToken);
+                        }
+                    },
+                    {
+                        text: 'Real Google Sign-In',
+                        onPress: () => {
+                            if (request) promptAsync();
+                            else Alert.alert('Initialization Error', 'Google login request is not initialized yet.');
+                        }
+                    },
+                    { text: 'Cancel', style: 'cancel' }
+                ]
+            );
+        } else {
+            if (request) promptAsync();
+            else Alert.alert('Initialization Error', 'Google login request is not initialized yet.');
+        }
     };
 
     return (
@@ -120,31 +167,65 @@ export default function LoginScreen() {
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    
-                    {/* Zippit Mascot/Logo header icon */}
-                    <View style={styles.logoContainer}>
-                        <View style={styles.logoBgSquare}>
-                            <Image 
-                                source={{ uri: 'https://img.icons8.com/color/96/lightning-bolt.png' }} 
-                                style={styles.logoImage} 
-                            />
+                    {/* Header Branding */}
+                    <View style={styles.headerHero}>
+                        <View style={styles.logoCircleWrapper}>
+                            <Ionicons name="flash" size={30} color="#056f36" />
+                        </View>
+                        <Text style={styles.brandTitleText}>LARO</Text>
+                        <View style={styles.speedBadge}>
+                            <Ionicons name="sparkles" size={10} color="#056f36" />
+                            <Text style={styles.speedBadgeText}>10-MIN CAMPUS EXPRESS</Text>
                         </View>
                     </View>
 
-                    {/* Titles */}
-                    <Text style={styles.welcomeTitle}>
-                        {isLoginMode ? 'Welcome Back' : 'Create Account'}
-                    </Text>
-                    <Text style={styles.welcomeSubtitle}>
-                        {isLoginMode 
-                            ? 'Log in to continue to campus delivery.' 
-                            : 'Sign up to get fast campus deliveries.'
-                        }
-                    </Text>
+                    {/* Mode Segmented Selector */}
+                    <View style={styles.modeSegmentContainer}>
+                        <TouchableOpacity
+                            style={[
+                                styles.modeTab, 
+                                isLoginMode && styles.modeTabActive
+                            ]}
+                            onPress={() => {
+                                Haptics.selectionAsync();
+                                setIsLoginMode(true);
+                            }}
+                        >
+                            <Text style={[
+                                styles.modeTabText, 
+                                isLoginMode && styles.modeTabTextActive
+                            ]}>Login</Text>
+                        </TouchableOpacity>
 
-                    {/* Form inputs */}
-                    <View style={styles.formContainer}>
-                        
+                        <TouchableOpacity
+                            style={[
+                                styles.modeTab, 
+                                !isLoginMode && styles.modeTabActive
+                            ]}
+                            onPress={() => {
+                                Haptics.selectionAsync();
+                                setIsLoginMode(false);
+                            }}
+                        >
+                            <Text style={[
+                                styles.modeTabText, 
+                                !isLoginMode && styles.modeTabTextActive
+                            ]}>Sign Up</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Elevated Form Card */}
+                    <View style={styles.formCard}>
+                        <Text style={styles.welcomeTitle}>
+                            {isLoginMode ? 'Welcome Back 👋' : 'Create Account 🚀'}
+                        </Text>
+                        <Text style={styles.welcomeSubtitle}>
+                            {isLoginMode 
+                                ? 'Log in to continue to campus delivery.' 
+                                : 'Sign up to get fast campus deliveries.'
+                            }
+                        </Text>
+
                         {!isLoginMode && (
                             <View style={styles.inputWrapper}>
                                 <Text style={styles.inputLabel}>Full Name</Text>
@@ -230,11 +311,15 @@ export default function LoginScreen() {
                             </View>
                         )}
 
-                        {/* Login Primary Action Button */}
+                        {/* Login Button */}
                         <TouchableOpacity 
                             style={styles.loginBtn} 
-                            onPress={handleLogin}
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                handleLogin();
+                            }}
                             disabled={loading}
+                            activeOpacity={0.85}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
@@ -243,12 +328,12 @@ export default function LoginScreen() {
                                     <Text style={styles.loginBtnText}>
                                         {isLoginMode ? 'Login' : 'Sign Up'}
                                     </Text>
-                                    <Ionicons name="arrow-forward" size={16} color="#fff" style={{ marginLeft: 8 }} />
+                                    <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
                                 </View>
                             )}
                         </TouchableOpacity>
 
-                        {/* Divider OR */}
+                        {/* Divider */}
                         <View style={styles.dividerRow}>
                             <View style={styles.dividerLine} />
                             <Text style={styles.dividerText}>OR</Text>
@@ -256,26 +341,17 @@ export default function LoginScreen() {
                         </View>
 
                         {/* Google Sign In Button */}
-                        <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleLogin}>
-                            <Ionicons name="logo-google" size={16} color="#056f36" style={{ marginRight: 10 }} />
+                        <TouchableOpacity 
+                            style={styles.googleBtn} 
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                handleGoogleLogin();
+                            }}
+                        >
+                            <Ionicons name="logo-google" size={18} color="#056f36" style={{ marginRight: 10 }} />
                             <Text style={styles.googleBtnText}>Sign in with your Google</Text>
                         </TouchableOpacity>
-
-                        {/* Toggle login / signup */}
-                        <TouchableOpacity 
-                            style={styles.toggleTextContainer}
-                            onPress={() => setIsLoginMode(p => !p)}
-                        >
-                            <Text style={styles.toggleNormalText}>
-                                {isLoginMode ? "Don't have an account? " : "Already have an account? "}
-                                <Text style={styles.toggleHighlightText}>
-                                    {isLoginMode ? 'Sign Up' : 'Login'}
-                                </Text>
-                            </Text>
-                        </TouchableOpacity>
-
                     </View>
-
                 </ScrollView>
             </KeyboardAvoidingView>
 
@@ -294,69 +370,135 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f2f7f2' },
     scrollContent: {
-        paddingHorizontal: 24,
-        paddingTop: 30,
+        paddingHorizontal: 20,
+        paddingTop: 20,
         paddingBottom: 40,
         alignItems: 'center'
     },
     
-    // Logo styling
-    logoContainer: {
-        marginBottom: 25,
-        alignItems: 'center'
+    headerHero: {
+        alignItems: 'center',
+        marginBottom: 20,
     },
-    logoBgSquare: {
-        width: 60,
-        height: 60,
+    logoCircleWrapper: {
+        width: 64,
+        height: 64,
+        borderRadius: 20,
         backgroundColor: '#fff',
-        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
+        borderWidth: 1.5,
+        borderColor: '#e6ede6',
+        elevation: 3,
+        shadowColor: '#056f36',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.04,
+        shadowOpacity: 0.08,
         shadowRadius: 8,
-        elevation: 2
+        marginBottom: 8,
     },
-    logoImage: {
-        width: 32,
-        height: 32,
-        resizeMode: 'contain'
-    },
-
-    welcomeTitle: {
+    brandTitleText: {
         fontSize: 26,
         fontWeight: '900',
         color: '#056f36',
-        textAlign: 'center',
-        marginBottom: 8
+        letterSpacing: 1.5,
+    },
+    speedBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#e6ede6',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20,
+        marginTop: 4,
+    },
+    speedBadgeText: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: '#056f36',
+        letterSpacing: 0.5,
+    },
+
+    modeSegmentContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#e6ede6',
+        borderRadius: 16,
+        padding: 4,
+        width: '100%',
+        marginBottom: 20,
+    },
+    modeTab: {
+        flex: 1,
+        paddingVertical: 11,
+        alignItems: 'center',
+        borderRadius: 12,
+    },
+    modeTabActive: {
+        backgroundColor: '#fff',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+    },
+    modeTabText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#666',
+    },
+    modeTabTextActive: {
+        color: '#056f36',
+        fontWeight: '900',
+    },
+
+    formCard: {
+        width: '100%',
+        padding: 24,
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        borderWidth: 1.5,
+        borderColor: '#e6ede6',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+    },
+    welcomeTitle: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: '#056f36',
+        marginBottom: 4,
+        letterSpacing: -0.3,
     },
     welcomeSubtitle: {
         fontSize: 13,
         color: '#666',
-        textAlign: 'center',
-        fontWeight: '650',
-        marginBottom: 35
+        fontWeight: '500',
+        marginBottom: 20,
+        lineHeight: 18,
     },
 
     formContainer: {
         width: '100%'
     },
     inputWrapper: {
-        marginBottom: 20
+        marginBottom: 16
     },
     passwordHeaderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 8
+        marginBottom: 6
     },
     inputLabel: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '900',
         color: '#056f36',
         textTransform: 'uppercase',
-        letterSpacing: 0.3
+        letterSpacing: 0.5,
     },
     forgotPasswordText: {
         fontSize: 11,
@@ -369,9 +511,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderWidth: 1.5,
         borderColor: '#e6ede6',
-        borderRadius: 16,
-        height: 52,
-        paddingHorizontal: 16
+        borderRadius: 14,
+        height: 50,
+        paddingHorizontal: 14
     },
     textInput: {
         flex: 1,
@@ -380,19 +522,18 @@ const styles = StyleSheet.create({
         color: '#111'
     },
 
-    // Login Action button
     loginBtn: {
         backgroundColor: '#056f36',
-        borderRadius: 16,
+        borderRadius: 14,
         height: 52,
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 10,
+        elevation: 4,
         shadowColor: '#056f36',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.15,
         shadowRadius: 8,
-        elevation: 2
     },
     loginBtnContent: {
         flexDirection: 'row',
@@ -400,15 +541,14 @@ const styles = StyleSheet.create({
     },
     loginBtnText: {
         color: '#fff',
-        fontSize: 15,
-        fontWeight: '850'
+        fontSize: 16,
+        fontWeight: '800'
     },
 
-    // OR Divider
     dividerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: 25
+        marginVertical: 20
     },
     dividerLine: {
         flex: 1,
@@ -419,39 +559,22 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '900',
         color: '#bbb',
-        marginHorizontal: 15
+        marginHorizontal: 12
     },
 
-    // Google Login button
     googleBtn: {
         backgroundColor: '#fff',
         borderWidth: 1.5,
         borderColor: '#e6ede6',
-        borderRadius: 16,
-        height: 52,
+        borderRadius: 14,
+        height: 50,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 25
     },
     googleBtnText: {
         color: '#056f36',
         fontSize: 14,
         fontWeight: '850'
-    },
-
-    // Toggle row
-    toggleTextContainer: {
-        alignItems: 'center',
-        paddingVertical: 10
-    },
-    toggleNormalText: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: '#555'
-    },
-    toggleHighlightText: {
-        color: '#056f36',
-        fontWeight: '900'
     }
 });

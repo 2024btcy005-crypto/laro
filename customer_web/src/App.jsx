@@ -9,6 +9,7 @@ import MyQR from './pages/MyQR';
 import Loyalty from './pages/Loyalty';
 import Settings from './pages/Settings';
 import About from './pages/About';
+import FoodDelivery from './pages/FoodDelivery';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import TermsAndConditions from './pages/TermsAndConditions';
@@ -17,6 +18,7 @@ import NavBar from './components/NavBar';
 import Sidebar from './components/Sidebar';
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { registerWebPushNotifications } from './services/notificationService';
 import './App.css';
 
 const Layout = ({ children }) => {
@@ -25,8 +27,10 @@ const Layout = ({ children }) => {
   useEffect(() => {
     const handleToggle = () => setIsSidebarOpen(prev => !prev);
     window.addEventListener('toggleSidebar', handleToggle);
+    registerWebPushNotifications();
     return () => window.removeEventListener('toggleSidebar', handleToggle);
   }, []);
+
 
   return (
     <div className="app-container">
@@ -76,6 +80,14 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <ShopDetail />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/food-delivery" element={
+              <ProtectedRoute>
+                <Layout>
+                  <FoodDelivery />
                 </Layout>
               </ProtectedRoute>
             } />

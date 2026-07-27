@@ -84,7 +84,13 @@ export default function LaroCurrencyScreen({ navigation }) {
     // Get specific transaction icon and styling
     const getTxIconDetails = (desc = '', type = 'credit') => {
         const lowerDesc = desc.toLowerCase();
-        if (lowerDesc.includes('reward') || lowerDesc.includes('order')) {
+        if (lowerDesc.includes('quest') || lowerDesc.includes('challenge') || lowerDesc.includes('milestone')) {
+            return {
+                name: 'trophy',
+                bg: '#fff9c4',
+                color: '#f57f17'
+            };
+        } else if (lowerDesc.includes('reward') || lowerDesc.includes('order')) {
             return {
                 name: 'bag-handle',
                 bg: '#e8f5e9',

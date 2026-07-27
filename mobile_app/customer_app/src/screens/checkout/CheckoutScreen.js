@@ -457,6 +457,10 @@ export default function CheckoutScreen({ navigation }) {
                                 </View>
                                 <Text style={styles.billTotalValue}>{CONSTANTS.CURRENCY}{parseFloat(grandTotal || 0).toFixed(2)}</Text>
                             </View>
+
+                            <View style={{ alignItems: 'center', paddingTop: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: '#edf2ed' }}>
+                                <Text style={{ fontSize: 11, fontWeight: '800', color: '#056f36' }}>Made with ❤️ for Students</Text>
+                            </View>
                         </View>
                     </ScrollView>
 

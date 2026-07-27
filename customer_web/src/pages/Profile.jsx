@@ -444,6 +444,11 @@ export default function Profile() {
                 </main>
             </div>
 
+            <footer className="profile-footer-copyright">
+                <p className="made-with-love">Made with ❤️ for Students</p>
+                <p>© 2026 Laro Technologies Private Limited. All Rights Reserved.</p>
+            </footer>
+
             {/* Edit Profile Modal */}
             {isEditModalOpen && (
                 <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>
@@ -667,6 +672,9 @@ export default function Profile() {
                             <div className="summary-row total">
                                 <span>Total Paid</span>
                                 <span>₹{selectedOrder.totalAmount}</span>
+                            </div>
+                            <div className="receipt-footer-love" style={{ textAlign: 'center', marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed var(--border)', fontSize: '12px', fontWeight: '800', color: 'var(--primary)' }}>
+                                Made with ❤️ for Students
                             </div>
                         </div>
                     </div>

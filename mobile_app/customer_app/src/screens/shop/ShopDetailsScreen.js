@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
-    Image, ActivityIndicator, StatusBar, ScrollView, Alert, Dimensions, Modal
+    Image, ActivityIndicator, StatusBar, ScrollView, Alert, Dimensions, Modal,
+    Animated, PanResponder
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,6 +19,179 @@ import { FavouriteService } from '../../services/FavouriteService';
 import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
+
+const SwipeableProductItem = ({
+    item,
+    isDarkMode,
+    colors,
+    favProducts,
+    toggleFavProduct,
+    handleAddToCart,
+    cart,
+    dispatch,
+    navigation
+}) => {
+    const pan = useRef(new Animated.ValueXY()).current;
+    const isFav = favProducts.includes(item.id || item._id);
+
+    const resetPosition = () => {
+        Animated.spring(pan, {
+            toValue: { x: 0, y: 0 },
+            bounciness: 4,
+            speed: 18,
+            useNativeDriver: false
+        }).start();
+    };
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                return Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.5;
+            },
+            onPanResponderGrant: () => {
+                pan.stopAnimation();
+            },
+            onPanResponderMove: Animated.event(
+                [null, { dx: pan.x }],
+                { useNativeDriver: false }
+            ),
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dx > 70) {
+                    toggleFavProduct(item);
+                } else if (gestureState.dx < -70) {
+                    handleAddToCart(item);
+                }
+                resetPosition();
+            },
+            onPanResponderTerminate: () => {
+                resetPosition();
+            }
+        })
+    ).current;
+
+    const itemQty = cart.items.find(i => (i.id || i._id) === (item.id || item._id))?.quantity || 0;
+    const isVeg = item.isVeg !== false;
+
+    const favOpacity = pan.x.interpolate({
+        inputRange: [0, 40, 90],
+        outputRange: [0, 0.6, 1],
+        extrapolate: 'clamp'
+    });
+
+    const cartOpacity = pan.x.interpolate({
+        inputRange: [-90, -40, 0],
+        outputRange: [1, 0.6, 0],
+        extrapolate: 'clamp'
+    });
+
+    return (
+        <View style={styles.swipeCardWrapper}>
+            <Animated.View style={[styles.swipeActionBackground, styles.swipeFavBg, { opacity: favOpacity }]}>
+                <View style={styles.swipeActionContentLeft}>
+                    <Ionicons name={isFav ? "heart-dislike" : "heart"} size={20} color="#fff" />
+                    <Text style={styles.swipeActionText}>{isFav ? 'Unfavorite' : 'Favorite ❤️'}</Text>
+                </View>
+            </Animated.View>
+
+            <Animated.View style={[styles.swipeActionBackground, styles.swipeCartBg, { opacity: cartOpacity }]}>
+                <View style={styles.swipeActionContentRight}>
+                    <Text style={styles.swipeActionText}>Add to Cart 🛒</Text>
+                    <Ionicons name="cart" size={20} color="#fff" />
+                </View>
+            </Animated.View>
+
+            <Animated.View
+                style={[
+                    styles.productCard,
+                    { backgroundColor: colors.white, borderColor: colors.border, marginBottom: 0 },
+                    { transform: [{ translateX: pan.x }] }
+                ]}
+                {...panResponder.panHandlers}
+            >
+                <TouchableOpacity
+                    style={{ flex: 1, flexDirection: 'row' }}
+                    onPress={() => navigation.navigate('ProductDetail', { product: item })}
+                    activeOpacity={0.9}
+                >
+                    <View style={styles.infoWrapper}>
+                        <View style={styles.badgeRow}>
+                            <View style={[styles.vegBadgeIcon, { borderColor: isVeg ? '#16a34a' : '#dc2626' }]}>
+                                <View style={[styles.vegBadgeDot, { backgroundColor: isVeg ? '#16a34a' : '#dc2626', borderRadius: isVeg ? 4 : 0 }]} />
+                            </View>
+                            {item.isBestseller && (
+                                <View style={styles.bestsellerTag}>
+                                    <Text style={styles.bestsellerTagText}>🔥 MUST TRY</Text>
+                                </View>
+                            )}
+                            {item.variants?.length > 0 && (
+                                <View style={styles.customisableTag}>
+                                    <Text style={styles.customisableTagText}>✨ CUSTOMISABLE</Text>
+                                </View>
+                            )}
+                        </View>
+                        <Text style={[styles.productName, { color: colors.black }]} numberOfLines={2}>{item.name}</Text>
+                        <View style={styles.priceRatingRow}>
+                            <Text style={[styles.price, { color: colors.black }]}>
+                                {CONSTANTS.CURRENCY}{item.price}
+                                {item.variants?.length > 0 && <Text style={{ fontSize: 11, color: colors.gray, fontWeight: '600' }}> onwards</Text>}
+                            </Text>
+                            <View style={styles.ratingBadge}>
+                                <Text style={styles.ratingBadgeText}>⭐ {(item.rating || (4.2 + (typeof item.id === 'string' ? item.id.charCodeAt(0) % 7 : 3) * 0.1)).toFixed(1)}</Text>
+                            </View>
+                        </View>
+                        {item.description ? (
+                            <Text style={[styles.productDesc, { color: colors.gray }]} numberOfLines={2}>{item.description}</Text>
+                        ) : null}
+                    </View>
+
+                    <View style={styles.imageActionWrapper}>
+                        <View style={[styles.imageWrapper, { backgroundColor: isDarkMode ? colors.background : '#f8fafc' }]}>
+                            <Image source={{ uri: resolveImageUrl(item.imageUrl) }} style={styles.productImage} defaultSource={{ uri: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop' }} />
+                            <TouchableOpacity
+                                style={styles.itemFavBtn}
+                                onPress={() => toggleFavProduct(item)}
+                            >
+                                <Ionicons
+                                    name={isFav ? "heart" : "heart-outline"}
+                                    size={18}
+                                    color={isFav ? "#ff4757" : "#fff"}
+                                />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.cardAddButtonOverlay}>
+                            {itemQty > 0 ? (
+                                <View style={styles.stepperContainer}>
+                                    <TouchableOpacity
+                                        style={styles.stepperBtn}
+                                        onPress={() => dispatch({ type: 'cart/removeFromCart', payload: item.id || item._id })}
+                                    >
+                                        <Ionicons name="remove" size={16} color="#fff" />
+                                    </TouchableOpacity>
+                                    <Text style={[styles.stepperQtyText, { color: '#ffffff', fontWeight: '900', fontSize: 15 }]}>{itemQty}</Text>
+                                    <TouchableOpacity
+                                        style={styles.stepperBtn}
+                                        onPress={() => handleAddToCart(item)}
+                                    >
+                                        <Ionicons name="add" size={16} color="#fff" />
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <TouchableOpacity
+                                    style={styles.floatingAddBtn}
+                                    onPress={() => handleAddToCart(item)}
+                                >
+                                    <Text style={styles.floatingAddBtnText}>{item.variants?.length > 0 ? 'CHOOSE +' : 'ADD +'}</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </Animated.View>
+        </View>
+    );
+};
 
 export default function ShopDetailsScreen({ route, navigation }) {
     const { shop: initialShop, shopId: initialShopId } = route.params;
@@ -258,43 +432,18 @@ export default function ShopDetailsScreen({ route, navigation }) {
     );
 
     const renderProduct = (item) => (
-        <TouchableOpacity
+        <SwipeableProductItem
             key={item.id || item._id}
-            style={[styles.productCard, { backgroundColor: colors.white, borderColor: colors.border }]}
-            onPress={() => navigation.navigate('ProductDetail', { product: item })}
-        >
-            <View style={[styles.imageWrapper, { backgroundColor: isDarkMode ? colors.background : '#f9f9f9' }]}>
-                <Image source={{ uri: resolveImageUrl(item.imageUrl) }} style={styles.productImage} />
-            </View>
-            <View style={styles.infoWrapper}>
-                <View style={styles.productHeader}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.productName, { color: colors.black }]} numberOfLines={2}>{item.name}</Text>
-                        <Text style={[styles.price, { color: colors.black }]}>
-                            {CONSTANTS.CURRENCY}{item.price}
-                            {item.variants?.length > 0 && <Text style={{ fontSize: 12, color: colors.gray, fontWeight: '600' }}> onwards</Text>}
-                        </Text>
-                    </View>
-                    <TouchableOpacity
-                        style={styles.itemFavBtn}
-                        onPress={() => toggleFavProduct(item)}
-                    >
-                        <Ionicons
-                            name={favProducts.includes(item.id || item._id) ? "heart" : "heart-outline"}
-                            size={20}
-                            color={favProducts.includes(item.id || item._id) ? "#ff4757" : "#ccc"}
-                        />
-                    </TouchableOpacity>
-                </View>
-                <TouchableOpacity
-                    style={[styles.addToCartBtn, { backgroundColor: colors.white, borderColor: colors.border }]}
-                    onPress={() => handleAddToCart(item)}
-                >
-                    <Text style={styles.addToCartText}>{item.variants?.length > 0 ? 'CHOOSE' : 'ADD'}</Text>
-                    <Ionicons name={item.variants?.length > 0 ? "chevron-forward" : "add"} size={14} color={COLORS.primary} />
-                </TouchableOpacity>
-            </View>
-        </TouchableOpacity>
+            item={item}
+            isDarkMode={isDarkMode}
+            colors={colors}
+            favProducts={favProducts}
+            toggleFavProduct={toggleFavProduct}
+            handleAddToCart={handleAddToCart}
+            cart={cart}
+            dispatch={dispatch}
+            navigation={navigation}
+        />
     );
 
     return (
@@ -525,9 +674,20 @@ export default function ShopDetailsScreen({ route, navigation }) {
                             {groupedProducts[cat].map(product => renderProduct(product))}
                         </View>
                     ))}
-                    {products.length === 0 && (
-                        <Text style={[styles.emptyText, { color: colors.gray }]}>No products available in this shop.</Text>
-                    )}
+
+                    {/* Bottom Hygiene & Campus Quality Assurance Footer */}
+                    <View style={[styles.bottomHygieneCard, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: colors.border }]}>
+                        <View style={styles.hygieneHeader}>
+                            <Ionicons name="shield-checkmark" size={22} color="#056f36" />
+                            <Text style={[styles.hygieneTitle, { color: colors.black }]}>100% Campus Hygiene Assured</Text>
+                        </View>
+                        <Text style={[styles.hygieneDesc, { color: colors.gray }]}>
+                            Partner Outlet Verified by Laro Quality Control. Freshly prepared under strict safety standards.
+                        </Text>
+                        <View style={styles.hygieneDivider} />
+                        <Text style={styles.bottomMadeWithLove}>Made with ❤️ for Students</Text>
+                        <Text style={[styles.bottomCopyright, { color: colors.gray }]}>© 2026 Laro Technologies Private Limited</Text>
+                    </View>
                 </ScrollView>
             )}
 
@@ -568,19 +728,111 @@ const styles = StyleSheet.create({
     cartBadge: { position: 'absolute', top: 5, right: 5, backgroundColor: COLORS.accent, borderRadius: 10, width: 18, height: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
     cartBadgeText: { fontSize: 10, fontWeight: 'bold', color: '#fff' },
 
-    list: { padding: 20, paddingBottom: 120 },
+    list: { padding: 20, paddingBottom: 150 },
     sectionContainer: { marginBottom: 30 },
     categoryHeading: { fontSize: 22, fontWeight: '900', color: '#1a1a1a', marginBottom: 15, letterSpacing: -0.5 },
 
-    productCard: { flexDirection: 'row', backgroundColor: '#fff', marginBottom: 15, borderRadius: 20, padding: 12, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, borderWidth: 1, borderColor: '#f0f0f0' },
-    imageWrapper: { width: 90, height: 90, backgroundColor: '#f9f9f9', borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
-    productImage: { width: '85%', height: '85%', resizeMode: 'contain' },
+    bottomHygieneCard: {
+        marginTop: 20,
+        marginBottom: 20,
+        borderRadius: 22,
+        padding: 20,
+        borderWidth: 1,
+        alignItems: 'center',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.03,
+        shadowRadius: 6
+    },
+    hygieneHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+    hygieneTitle: { fontSize: 14, fontWeight: '900' },
+    hygieneDesc: { fontSize: 12, textAlign: 'center', lineHeight: 18, fontWeight: '500' },
+    hygieneDivider: { height: 1, backgroundColor: '#edf2ed', width: '100%', marginVertical: 14 },
+    bottomMadeWithLove: { fontSize: 13, fontWeight: '900', color: '#056f36', textAlign: 'center' },
+    bottomCopyright: { fontSize: 11, fontWeight: '600', textAlign: 'center', marginTop: 4 },
 
-    infoWrapper: { flex: 1, marginLeft: 15, justifyContent: 'space-between', paddingVertical: 2 },
-    productName: { fontSize: 15, fontWeight: '700', color: '#333' },
-    price: { fontSize: 18, fontWeight: '900', color: '#1a1a1a', marginTop: 4 },
-    addToCartBtn: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#eee', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 12, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, alignSelf: 'flex-start' },
-    addToCartText: { color: COLORS.primary, fontWeight: '900', fontSize: 12, marginRight: 4 },
+    productCard: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        marginBottom: 16,
+        borderRadius: 22,
+        padding: 14,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.06)',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between'
+    },
+    infoWrapper: { flex: 1, marginRight: 12 },
+    badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' },
+    vegBadgeIcon: { width: 14, height: 14, borderWidth: 1.5, borderRadius: 3.5, justifyContent: 'center', alignItems: 'center' },
+    vegBadgeDot: { width: 6, height: 6 },
+    bestsellerTag: { backgroundColor: '#fef3c7', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#fde68a' },
+    bestsellerTagText: { fontSize: 9, fontWeight: '900', color: '#b45309' },
+    customisableTag: { backgroundColor: '#f3e8ff', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#e9d5ff' },
+    customisableTagText: { fontSize: 9, fontWeight: '900', color: '#7c3aed' },
+    productName: { fontSize: 16, fontWeight: '800', color: '#111', lineHeight: 20 },
+    priceRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+    price: { fontSize: 15, fontWeight: '900', color: '#111' },
+    ratingBadge: { backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#bbf7d0', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6 },
+    ratingBadgeText: { fontSize: 10, fontWeight: '900', color: '#15803d' },
+    productDesc: { fontSize: 12, fontWeight: '500', color: '#64748b', marginTop: 4, lineHeight: 16 },
+
+    imageActionWrapper: { alignItems: 'center', position: 'relative', width: 110, paddingBottom: 10 },
+    imageWrapper: { width: 110, height: 110, borderRadius: 16, overflow: 'hidden', position: 'relative' },
+    productImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+    itemFavBtn: { position: 'absolute', top: 6, right: 6, width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+
+    cardAddButtonOverlay: { position: 'absolute', bottom: -10, width: '90%', alignItems: 'center' },
+    floatingAddBtn: { width: '100%', backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#056f36', paddingVertical: 7, borderRadius: 12, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#056f36', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 5 },
+    floatingAddBtnText: { color: '#056f36', fontSize: 12, fontWeight: '900', letterSpacing: 0.5 },
+    stepperContainer: { width: '100%', backgroundColor: '#056f36', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 12, elevation: 4, shadowColor: '#056f36', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 5 },
+    stepperBtn: { padding: 2 },
+    swipeCardWrapper: {
+        position: 'relative',
+        marginBottom: 16,
+        borderRadius: 20,
+        overflow: 'hidden'
+    },
+    swipeActionBackground: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        borderRadius: 20,
+        justifyContent: 'center',
+        paddingHorizontal: 20
+    },
+    swipeFavBg: {
+        backgroundColor: '#ec4899',
+        alignItems: 'flex-start'
+    },
+    swipeCartBg: {
+        backgroundColor: '#056f36',
+        alignItems: 'flex-end'
+    },
+    swipeActionContentLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+    },
+    swipeActionContentRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+    },
+    swipeActionText: {
+        color: '#fff',
+        fontWeight: '900',
+        fontSize: 13,
+        letterSpacing: 0.5
+    },
 
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     emptyText: { textAlign: 'center', fontSize: 16, color: '#888', marginTop: 50 },

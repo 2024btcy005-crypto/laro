@@ -6,6 +6,7 @@ import { COLORS, CONSTANTS } from '../../theme';
 import { orderAPI } from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
+import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
@@ -201,19 +202,34 @@ export default function OrdersScreen({ navigation }) {
             {/* Custom Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Your Orders</Text>
+                <TouchableOpacity 
+                    style={styles.cartIcon} 
+                    onPress={() => {
+                        Haptics.selectionAsync();
+                        navigation.navigate('Cart');
+                    }}
+                >
+                    <Ionicons name="cart-outline" size={26} color="#056f36" />
+                </TouchableOpacity>
             </View>
 
             {/* Custom Tabs */}
             <View style={styles.tabBar}>
                 <TouchableOpacity 
                     style={[styles.tabButton, activeTab === 'active' && styles.activeTabButton]}
-                    onPress={() => setActiveTab('active')}
+                    onPress={() => {
+                        Haptics.selectionAsync();
+                        setActiveTab('active');
+                    }}
                 >
                     <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>Active</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                     style={[styles.tabButton, activeTab === 'past' && styles.activeTabButton]}
-                    onPress={() => setActiveTab('past')}
+                    onPress={() => {
+                        Haptics.selectionAsync();
+                        setActiveTab('past');
+                    }}
                 >
                     <Text style={[styles.tabText, activeTab === 'past' && styles.activeTabText]}>Past</Text>
                 </TouchableOpacity>
@@ -277,15 +293,13 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 20,
+        justifyContent: 'space-between',
+        paddingHorizontal: 24,
         paddingVertical: 15,
         backgroundColor: '#fcfdfc',
     },
-    menuBtn: { padding: 4 },
-    headerTitle: { fontSize: 20, fontWeight: '900', color: '#111' },
-    profileBtn: { width: 36, height: 36, borderRadius: 18, overflow: 'hidden' },
-    avatarImage: { width: '100%', height: '100%' },
+    headerTitle: { fontSize: 24, fontWeight: '900', color: '#056f36' },
+    cartIcon: { padding: 4 },
     
     tabBar: {
         flexDirection: 'row',

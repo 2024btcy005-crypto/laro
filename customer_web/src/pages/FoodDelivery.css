@@ -1,0 +1,381 @@
+.food-delivery-container {
+    padding-top: 40px;
+    padding-bottom: 80px;
+}
+
+/* Hero Banner Style - Signature Laro Green & Emerald Theme */
+.food-hero-banner {
+    position: relative;
+    border-radius: 32px;
+    background: linear-gradient(135deg, #056f36 0%, #27994B 60%, #034e25 100%);
+    overflow: hidden;
+    padding: 60px 40px;
+    margin-bottom: 40px;
+    box-shadow: 0 20px 40px rgba(5, 111, 54, 0.2);
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at top right, rgba(52, 211, 153, 0.25), transparent 60%);
+    pointer-events: none;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 600px;
+    color: white;
+}
+
+.badge-promo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    animation: pulseGlow 2s infinite;
+}
+
+.hero-title {
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.hero-subtitle {
+    font-size: 17px;
+    opacity: 0.92;
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.hero-search-box {
+    position: relative;
+    background: var(--white);
+    border-radius: 16px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.hero-search-box .search-icon {
+    color: #056f36;
+    margin-left: 16px;
+    margin-right: 12px;
+}
+
+.hero-search-box input {
+    border: none;
+    background: transparent;
+    padding: 14px 0;
+    width: 100%;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--black);
+    outline: none;
+}
+
+.hero-search-box input::placeholder {
+    color: #94a3b8;
+}
+
+/* Category Slider */
+.food-categories-sec {
+    margin-bottom: 40px;
+}
+
+.section-title-sm {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--black);
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+}
+
+.food-categories-scroll {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 15px;
+    scrollbar-width: none;
+}
+
+.food-categories-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.food-cat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 20px;
+    border-radius: 20px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    min-width: 110px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.food-cat-card:hover {
+    transform: translateY(-4px);
+    border-color: #27994B;
+    box-shadow: var(--shadow-md);
+}
+
+.food-cat-card.active {
+    background: #056f36;
+    border-color: #056f36;
+    box-shadow: 0 10px 20px rgba(5, 111, 54, 0.25);
+}
+
+.food-cat-icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #edf5ed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #056f36;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+}
+
+.food-cat-card.active .food-cat-icon-circle {
+    background: rgba(255, 255, 255, 0.22);
+    color: white;
+}
+
+.food-cat-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--black);
+    text-align: center;
+}
+
+.food-cat-card.active .food-cat-name {
+    color: white;
+}
+
+/* Layout section */
+.food-main-layout {
+    margin-top: 20px;
+}
+
+.food-main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 30px;
+}
+
+.main-heading {
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--black);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+}
+
+.sub-heading {
+    font-size: 14px;
+    color: var(--gray);
+}
+
+.campus-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #edf5ed;
+    border: 1px solid #d5edd5;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #056f36;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Empty states */
+.empty-food-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--white);
+    border-radius: 24px;
+    border: 1px dashed var(--border);
+    margin: 20px 0;
+}
+
+.empty-icon {
+    color: #056f36;
+    margin-bottom: 16px;
+    animation: rotateSlow 8s linear infinite;
+}
+
+.empty-food-state h3 {
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: var(--black);
+}
+
+.empty-food-state p {
+    color: var(--gray);
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+/* Float order tracker */
+.live-order-tracker-card {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+    background: var(--white);
+    border-radius: 20px;
+    padding: 16px 20px;
+    width: 320px;
+    border: 1px solid var(--border);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tracker-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gray);
+    margin-bottom: 12px;
+}
+
+.pulse-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #056f36;
+    box-shadow: 0 0 0 rgba(5, 111, 54, 0.4);
+    animation: pulseRing 1.5s infinite;
+}
+
+.tracker-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tracker-shop-name {
+    font-size: 15px;
+    font-weight: 850;
+    color: var(--black);
+    margin-bottom: 2px;
+}
+
+.tracker-status {
+    font-size: 13px;
+    font-weight: 700;
+    color: #056f36;
+}
+
+.btn-track-arrow {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: #edf5ed;
+    border-radius: 8px;
+    color: #056f36;
+    font-size: 12px;
+    font-weight: 800;
+    transition: all 0.2s ease;
+}
+
+.btn-track-arrow:hover {
+    background: #056f36;
+    color: white;
+}
+
+/* Animations */
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+}
+
+@keyframes pulseRing {
+    0% {
+        box-shadow: 0 0 0 0 rgba(5, 111, 54, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(5, 111, 54, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(5, 111, 54, 0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) translateY(0);
+    }
+}
+
+@keyframes rotateSlow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .food-hero-banner {
+        padding: 40px 24px;
+        border-radius: 24px;
+    }
+    
+    .hero-title {
+        font-size: 32px;
+    }
+    
+    .hero-subtitle {
+        font-size: 15px;
+    }
+    
+    .food-main-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .live-order-tracker-card {
+        width: calc(100% - 40px);
+        bottom: 20px;
+        right: 20px;
+        left: 20px;
+    }
+}

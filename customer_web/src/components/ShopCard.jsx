@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Clock, Heart } from 'lucide-react';
 import { resolveImageUrl } from '../api';
+import { FavouriteService } from '../services/FavouriteService';
 import './ShopCard.css';
 
 const ShopCard = ({ shop }) => {

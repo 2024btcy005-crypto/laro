@@ -8,10 +8,11 @@ const admin = require('../config/firebase');
  * @param {object} data - Optional payload data
  */
 const sendPushNotification = async (token, title, body, data = {}) => {
-    if (!admin || !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        console.warn('Firebase Admin not initialized or missing credentials. Skipping push notification.');
+    if (!admin || !admin.apps || admin.apps.length === 0) {
+        console.warn('[FIREBASE] Firebase Admin not initialized. Skipping push notification.');
         return;
     }
+
 
     if (!token) {
         console.warn('No FCM token provided for push notification.');

@@ -356,6 +356,9 @@ export default function Checkout() {
                                 </div>
                                 <span>₹{total}</span>
                             </div>
+                            <div className="bill-footer-love">
+                                <span>Made with ❤️ for Students</span>
+                            </div>
                         </div>
 
                         {error && <p className="order-error">{error}</p>}

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, Home, ShoppingBag, User, Wallet,
     MapPin, Settings, HelpCircle, LogOut,
-    Heart, Award, QrCode
+    Heart, Award, QrCode, Utensils
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -29,6 +29,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
     const menuItems = [
         { icon: <Home size={22} />, label: 'Home', path: '/' },
+        { icon: <Utensils size={22} />, label: 'Food Delivery', path: '/food-delivery' },
         { icon: <ShoppingBag size={22} />, label: 'My Orders', path: '/profile', protected: true },
         { icon: <Heart size={22} />, label: 'Favorites', path: '/favorites', protected: true },
         { icon: <Award size={22} />, label: 'Loyalty', path: '/loyalty', protected: true },

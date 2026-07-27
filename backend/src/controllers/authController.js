@@ -258,12 +258,25 @@ const socialLogin = async (req, res) => {
             return res.status(400).json({ message: "ID Token is required." });
         }
 
-        // Verify the token
-        const ticket = await client.verifyIdToken({
-            idToken,
-            audience: process.env.GOOGLE_CLIENT_ID,
-        });
-        const payload = ticket.getPayload();
+        let payload;
+        // Support developer mock token bypass in local dev
+        if (process.env.NODE_ENV === 'development' && idToken.startsWith('mock_')) {
+            const devId = idToken.replace('mock_', '');
+            payload = {
+                sub: `mock_social_id_${devId}`,
+                email: `dev_user_${devId}@laro.app`,
+                name: `Dev Google User (${devId})`,
+                picture: 'https://via.placeholder.com/150'
+            };
+            console.log('[AUTH] Bypassing Google OAuth verification for local development mock token:', devId);
+        } else {
+            // Verify the token
+            const ticket = await client.verifyIdToken({
+                idToken,
+                audience: process.env.GOOGLE_CLIENT_ID,
+            });
+            payload = ticket.getPayload();
+        }
 
         const { sub: socialProviderId, email, name, picture } = payload;
 
@@ -281,6 +294,7 @@ const socialLogin = async (req, res) => {
         res.status(200).json({
             id: user.id,
             name: user.name,
+            email: user.email,
             phoneNumber: user.phoneNumber,
             role: user.role,
             token: generateToken(user.id, user.role),
@@ -400,6 +414,27 @@ const deleteAccount = async (req, res) => {
     }
 };
 
+// @desc    Update FCM Push Notification Token
+// @route   POST /api/auth/fcm-token
+// @access  Private
+const updateFcmToken = async (req, res) => {
+    try {
+        const { fcmToken } = req.body;
+        if (!fcmToken) {
+            return res.status(400).json({ message: "fcmToken is required" });
+        }
+        const user = await User.findByPk(req.user.id);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        user.fcmToken = fcmToken;
+        await user.save();
+
+        res.status(200).json({ message: "FCM Token registered successfully" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     sendOtp,
     verifyOtp,
@@ -409,5 +444,7 @@ module.exports = {
     linkPhoneNumber,
     socialLogin,
     updateProfile,
-    deleteAccount
+    deleteAccount,
+    updateFcmToken
 };
+

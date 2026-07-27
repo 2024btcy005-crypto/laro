@@ -30,6 +30,7 @@ import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import CategoryIcon from '@mui/icons-material/Category';
 import SchoolIcon from '@mui/icons-material/School';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import CampaignIcon from '@mui/icons-material/Campaign';
 
 const drawerWidth = 280;
 
@@ -51,6 +52,7 @@ export default function Layout() {
         { text: 'Orders', icon: <ShoppingBagIcon />, path: '/orders' },
         { text: 'Shops', icon: <StoreIcon />, path: '/shops' },
         { text: 'Products', icon: <FastfoodIcon />, path: '/products' },
+        { text: 'Marketing & Ads', icon: <CampaignIcon />, path: '/marketing' },
         { text: 'Users', icon: <PeopleIcon />, path: '/users', superOnly: true },
         { text: 'Quests', icon: <EmojiEventsIcon />, path: '/quests' },
         { text: 'Coupons', icon: <LocalOfferIcon />, path: '/coupons' },
@@ -58,6 +60,7 @@ export default function Layout() {
         { text: 'Universities', icon: <SchoolIcon />, path: '/universities', superOnly: true },
         { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
     ].filter(item => !item.superOnly || isSuperAdmin);
+
 
     const handleLogout = () => {
         localStorage.removeItem('token');

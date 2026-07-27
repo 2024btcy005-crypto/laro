@@ -241,6 +241,10 @@ export default function CartScreen({ navigation }) {
                         <Text style={styles.billTotalLabel}>Total Payable</Text>
                         <Text style={styles.billTotalValue}>{CONSTANTS.CURRENCY}{parseFloat(grandTotal || 0).toFixed(2)}</Text>
                     </View>
+
+                    <View style={styles.billFooterBadge}>
+                        <Text style={styles.billMadeWithLoveText}>Made with ❤️ for Students</Text>
+                    </View>
                 </View>
 
                 {/* Savings Banner */}
@@ -474,6 +478,18 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 1,
         marginBottom: 12
+    },
+    billFooterBadge: {
+        alignItems: 'center',
+        paddingTop: 10,
+        marginTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#edf2ed',
+    },
+    billMadeWithLoveText: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#056f36',
     },
     billCardTitle: { fontSize: 15, fontWeight: '900', color: '#111', marginBottom: 15 },
     billRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 6 },

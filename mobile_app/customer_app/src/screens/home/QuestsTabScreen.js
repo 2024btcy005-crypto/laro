@@ -84,9 +84,22 @@ export default function QuestsTabScreen({ navigation }) {
             
             {/* Header */}
             <View style={styles.header}>
-                <View>
-                    <Text style={[styles.headerSubtitle, { color: '#056f36' }]}>COMMUNITY CHALLENGES</Text>
-                    <Text style={[styles.headerTitle, { color: colors.text }]}>Campus Quests</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {navigation.canGoBack() && (
+                        <TouchableOpacity 
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(()=>{});
+                                navigation.goBack();
+                            }} 
+                            style={{ marginRight: 12, paddingVertical: 4 }}
+                        >
+                            <Ionicons name="arrow-back" size={24} color="#056f36" />
+                        </TouchableOpacity>
+                    )}
+                    <View>
+                        <Text style={[styles.headerSubtitle, { color: '#056f36' }]}>COMMUNITY CHALLENGES</Text>
+                        <Text style={[styles.headerTitle, { color: colors.text }]}>Campus Quests</Text>
+                    </View>
                 </View>
                 <View style={styles.liveIndicator}>
                     <View style={styles.liveDot} />

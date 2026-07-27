@@ -268,6 +268,14 @@ export default function ProfileScreen({ navigation }) {
 
                     {/* Navigation Menu Links */}
                     <View style={styles.menuLinksContainer}>
+                        <TouchableOpacity style={styles.menuLinkItem} onPress={() => navigation.navigate('QuestsList')}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="compass-outline" size={22} color="#056f36" style={{ marginRight: 15 }} />
+                                <Text style={[styles.menuLinkLabel, { color: '#056f36', fontWeight: '700' }]}>Campus Challenges</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color="#056f36" />
+                        </TouchableOpacity>
+
                         <TouchableOpacity style={styles.menuLinkItem} onPress={() => navigation.navigate('LaroCurrency')}>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <Ionicons name="card-outline" size={22} color="#333" style={{ marginRight: 15 }} />
@@ -310,8 +318,9 @@ export default function ProfileScreen({ navigation }) {
                     </View>
 
                     {/* Footer Copyright */}
+                    <Text style={styles.footerMadeWithLove}>Made with ❤️ for Students</Text>
                     <Text style={styles.footerVersion}>Laro Version 2.4.0 (Build 882)</Text>
-                    <Text style={styles.footerCopyright}>copyright 2026 laro technologies private ltd</Text>
+                    <Text style={styles.footerCopyright}>© 2026 Laro Technologies Private Limited. All Rights Reserved.</Text>
 
                 </ScrollView>
             )}
@@ -555,6 +564,7 @@ const styles = StyleSheet.create({
     },
     menuLinkLabel: { fontSize: 14, fontWeight: '800', color: '#111' },
 
-    footerVersion: { textAlign: 'center', fontSize: 12, fontWeight: '700', color: '#999' },
-    footerCopyright: { textAlign: 'center', fontSize: 11, fontWeight: '600', color: '#bbb', marginTop: 4, marginBottom: 10 }
+    footerMadeWithLove: { textAlign: 'center', fontSize: 13, fontWeight: '800', color: '#056f36', marginTop: 20 },
+    footerVersion: { textAlign: 'center', fontSize: 12, fontWeight: '700', color: '#999', marginTop: 4 },
+    footerCopyright: { textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#94a3b8', marginTop: 4, marginBottom: 25 }
 });

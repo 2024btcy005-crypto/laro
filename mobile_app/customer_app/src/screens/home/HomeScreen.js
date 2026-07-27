@@ -433,7 +433,7 @@ export default function HomeScreen({ navigation }) {
 
     const renderHeader = () => {
         return (
-            <View style={[styles.headerWrapper, { paddingTop: (insets?.top || 0) + 10 }]}>
+            <View style={[styles.headerContainer, { paddingTop: (insets?.top || 0) + 10 }]}>
                 <View style={styles.locationHeader}>
                     <View style={styles.locationContainer}>
                         <TouchableOpacity style={styles.addressSelector} onPress={() => navigation.navigate('ChangeUniversity')}>
@@ -468,20 +468,25 @@ export default function HomeScreen({ navigation }) {
                     </View>
                 </View>
 
-                <View style={styles.customSearchBar}>
-                    <Ionicons name="search" size={20} color="#666" style={styles.customSearchIcon} />
+                <View style={[styles.searchBarContainer, { backgroundColor: isDarkMode ? colors.white + '10' : '#fff', borderColor: isDarkMode ? colors.border : '#e6ede6' }]}>
+                    <Ionicons name="search" size={20} color={colors.gray} style={{ marginRight: 8 }} />
                     <TextInput
-                        placeholder="Search for snacks, stationery, and more"
-                        placeholderTextColor="#999"
-                        style={styles.customSearchInput}
+                        placeholder="Search for snacks, stationery, and more..."
+                        placeholderTextColor="#aaaaaa"
+                        style={[styles.headerSearchInput, { color: colors.black }]}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                     />
-                    <TouchableOpacity style={styles.micButton}>
-                        <Ionicons name="mic" size={20} color="#056f36" />
-                    </TouchableOpacity>
+                    {searchQuery.length > 0 ? (
+                        <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
+                            <Ionicons name="close-circle" size={18} color={colors.gray} />
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={{ padding: 4 }}>
+                            <Ionicons name="mic" size={20} color="#056f36" />
+                        </TouchableOpacity>
+                    )}
                 </View>
-
 
                 <View style={{ marginBottom: 15 }}>
                     <ScrollView
@@ -519,6 +524,29 @@ export default function HomeScreen({ navigation }) {
                         ))}
                     </ScrollView>
                 </View>
+
+                {/* Dedicated Food Delivery Promo Banner */}
+                <TouchableOpacity
+                    style={styles.foodDeliveryPromoBanner}
+                    activeOpacity={0.9}
+                    onPress={() => {
+                        Haptics.selectionAsync();
+                        navigation.navigate('FoodDelivery');
+                    }}
+                >
+                    <Image
+                        source={{ uri: 'https://img.freepik.com/free-psd/food-delivery-social-media-banner-template_23-2149028042.jpg' }}
+                        style={styles.foodDeliveryPromoImage}
+                    />
+                    <View style={styles.foodDeliveryPromoOverlay}>
+                        <View style={styles.foodDeliveryPromoHeader}>
+                            <MaterialCommunityIcons name="silverware-fork-knife" size={14} color="#fff" />
+                            <Text style={styles.foodDeliveryPromoTag}>FOOD DELIVERY NOW LIVE</Text>
+                        </View>
+                        <Text style={styles.foodDeliveryPromoTitle}>Campus Food Spots</Text>
+                        <Text style={styles.foodDeliveryPromoSubtitle}>Craving snacks, drinks, or biryani? Order now & track live! ➔</Text>
+                    </View>
+                </TouchableOpacity>
             </View>
         );
     };
@@ -1102,22 +1130,22 @@ const styles = StyleSheet.create({
     searchBarContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 15,
-        paddingVertical: 12,
+        paddingHorizontal: 14,
+        height: 50,
         borderRadius: 16,
-        borderWidth: 1,
+        borderWidth: 1.5,
         marginBottom: 15,
         justifyContent: 'space-between',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
         elevation: 2
     },
     searchLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
     searchRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     searchDivider: { width: 1, height: 20 },
-    headerSearchInput: { flex: 1, marginLeft: 10, fontSize: 16, fontWeight: '600' },
+    headerSearchInput: { flex: 1, marginLeft: 6, fontSize: 14, fontWeight: '600' },
     searchIconBtn: { padding: 5, marginLeft: 5 },
 
     categoryScrollView: { marginTop: 5 },
@@ -1883,5 +1911,58 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '900',
         color: '#056f36',
+    },
+    foodDeliveryPromoBanner: {
+        width: '100%',
+        height: 135,
+        borderRadius: 20,
+        overflow: 'hidden',
+        position: 'relative',
+        marginVertical: 10,
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+    },
+    foodDeliveryPromoImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    foodDeliveryPromoOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        padding: 16,
+        justifyContent: 'flex-end',
+    },
+    foodDeliveryPromoHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 4,
+    },
+    foodDeliveryPromoTag: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    foodDeliveryPromoTitle: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: '900',
+    },
+    foodDeliveryPromoSubtitle: {
+        color: '#eee',
+        fontSize: 12,
+        fontWeight: '750',
+        marginTop: 2,
     },
 });
