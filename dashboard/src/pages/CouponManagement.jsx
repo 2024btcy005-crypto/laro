@@ -112,9 +112,10 @@ export default function CouponManagement() {
                             px: 3,
                             py: 1.5,
                             fontSize: '0.9rem',
-                            boxShadow: '0 10px 20px rgba(236, 72, 153, 0.2)',
+                            boxShadow: '0 10px 20px rgba(0, 109, 51, 0.2)',
                         }}
                     >
+
                         Create New Coupon
                     </Button>
                 </Box>
@@ -321,9 +322,11 @@ export default function CouponManagement() {
                                             borderRadius: 2,
                                             fontWeight: '900',
                                             py: 2,
-                                            background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                                            background: '#006d33',
+                                            '&:hover': { background: '#005225' }
                                         }}
                                     >
+
                                         Create Coupon
                                     </Button>
                                 </Grid>

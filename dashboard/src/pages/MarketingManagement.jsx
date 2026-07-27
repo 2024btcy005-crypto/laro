@@ -146,17 +146,19 @@ export default function MarketingManagement() {
     };
 
     return (
-        <Box sx={{ p: { xs: 2, md: 4 } }}>
+
+        <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 6 }}>
+
             <Box sx={{ mb: 3 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#f8fafc', mb: 1 }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: '#111827', mb: 1 }}>
                     Marketing & Communications
                 </Typography>
-                <Typography variant="body1" sx={{ color: '#94a3b8' }}>
+                <Typography variant="body1" sx={{ color: '#6b7280' }}>
                     Manage homepage hero banner advertisements and broadcast real-time push notifications to students.
                 </Typography>
             </Box>
 
-            <Paper sx={{ bgcolor: '#1e293b', borderRadius: 3, border: '1px solid #334155' }}>
+            <Paper sx={{ bgcolor: '#ffffff', borderRadius: 4, border: '1px solid #e5e7eb' }}>
                 <Tabs
                     value={tabIndex}
                     onChange={(e, val) => setTabIndex(val)}
@@ -166,8 +168,8 @@ export default function MarketingManagement() {
                         borderBottom: 1,
                         borderColor: 'divider',
                         px: 2,
-                        '& .MuiTab-root': { color: '#94a3b8', fontWeight: 600 },
-                        '& .Mui-selected': { color: '#ec4899' }
+                        '& .MuiTab-root': { color: '#6b7280', fontWeight: 600 },
+                        '& .Mui-selected': { color: '#006d33' }
                     }}
                 >
                     <Tab icon={<CampaignIcon />} iconPosition="start" label="Hero Banner Ads" />
@@ -178,7 +180,7 @@ export default function MarketingManagement() {
                 <TabPanel value={tabIndex} index={0}>
                     <Grid container spacing={4} sx={{ px: 3 }}>
                         <Grid item xs={12} md={7}>
-                            <Typography variant="h6" sx={{ color: '#f8fafc', fontWeight: 700, mb: 2 }}>
+                            <Typography variant="h6" sx={{ color: '#111827', fontWeight: 700, mb: 2 }}>
                                 Active Hero Banner Settings
                             </Typography>
 
@@ -190,7 +192,7 @@ export default function MarketingManagement() {
 
                             {adLoading ? (
                                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                                    <CircularProgress />
+                                    <CircularProgress sx={{ color: '#006d33' }} />
                                 </Box>
                             ) : (
                                 <form onSubmit={handleSaveAd}>
@@ -200,7 +202,7 @@ export default function MarketingManagement() {
                                         value={adTitle}
                                         onChange={(e) => setAdTitle(e.target.value)}
                                         required
-                                        sx={{ mb: 3, input: { color: '#fff' }, label: { color: '#94a3b8' } }}
+                                        sx={{ mb: 3 }}
                                     />
 
                                     <Box sx={{ mb: 3 }}>
@@ -210,14 +212,14 @@ export default function MarketingManagement() {
                                             value={adImageUrl}
                                             onChange={(e) => setAdImageUrl(e.target.value)}
                                             required
-                                            sx={{ mb: 1, input: { color: '#fff' }, label: { color: '#94a3b8' } }}
+                                            sx={{ mb: 1 }}
                                         />
                                         <Button
                                             variant="outlined"
                                             component="label"
                                             startIcon={uploadingImage ? <CircularProgress size={18} /> : <CloudUploadIcon />}
                                             disabled={uploadingImage}
-                                            sx={{ borderColor: '#ec4899', color: '#ec4899' }}
+                                            sx={{ borderColor: '#006d33', color: '#006d33' }}
                                         >
                                             {uploadingImage ? 'Uploading...' : 'Upload Image File'}
                                             <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
@@ -230,7 +232,7 @@ export default function MarketingManagement() {
                                         placeholder="/shop/123 or https://..."
                                         value={adLinkUrl}
                                         onChange={(e) => setAdLinkUrl(e.target.value)}
-                                        sx={{ mb: 3, input: { color: '#fff' }, label: { color: '#94a3b8' } }}
+                                        sx={{ mb: 3 }}
                                     />
 
                                     <FormControlLabel
@@ -242,7 +244,7 @@ export default function MarketingManagement() {
                                             />
                                         }
                                         label={
-                                            <Typography sx={{ color: adIsActive ? '#4ade80' : '#94a3b8', fontWeight: 600 }}>
+                                            <Typography sx={{ color: adIsActive ? '#006d33' : '#6b7280', fontWeight: 600 }}>
                                                 {adIsActive ? 'Banner Active (Displayed on App Home)' : 'Banner Inactive (Hidden)'}
                                             </Typography>
                                         }
@@ -255,8 +257,8 @@ export default function MarketingManagement() {
                                         disabled={adSaving}
                                         startIcon={adSaving ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
                                         sx={{
-                                            bgcolor: '#ec4899',
-                                            '&:hover': { bgcolor: '#db2777' },
+                                            bgcolor: '#006d33',
+                                            '&:hover': { bgcolor: '#005225' },
                                             py: 1.5,
                                             px: 4,
                                             fontWeight: 700,
@@ -271,15 +273,15 @@ export default function MarketingManagement() {
 
                         {/* LIVE BANNER PREVIEW CARD */}
                         <Grid item xs={12} md={5}>
-                            <Typography variant="h6" sx={{ color: '#f8fafc', fontWeight: 700, mb: 2 }}>
+                            <Typography variant="h6" sx={{ color: '#111827', fontWeight: 700, mb: 2 }}>
                                 Customer App Live Preview
                             </Typography>
 
-                            <Card sx={{ bgcolor: '#0f172a', borderRadius: 3, border: '1px solid #334155', overflow: 'hidden' }}>
-                                <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
+                            <Card sx={{ bgcolor: '#ffffff', borderRadius: 3, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+                                <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <VisibilityIcon sx={{ color: '#ec4899', fontSize: 20 }} />
-                                        <Typography variant="subtitle2" sx={{ color: '#f8fafc', fontWeight: 600 }}>
+                                        <VisibilityIcon sx={{ color: '#006d33', fontSize: 20 }} />
+                                        <Typography variant="subtitle2" sx={{ color: '#111827', fontWeight: 600 }}>
                                             Hero Banner Mockup
                                         </Typography>
                                     </Box>
@@ -291,7 +293,7 @@ export default function MarketingManagement() {
                                     />
                                 </Box>
 
-                                <Box sx={{ position: 'relative', minHeight: 180, bgcolor: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Box sx={{ position: 'relative', minHeight: 180, bgcolor: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     {adImageUrl ? (
                                         <img
                                             src={resolveImageUrl(adImageUrl)}
@@ -303,17 +305,17 @@ export default function MarketingManagement() {
                                             }}
                                         />
                                     ) : (
-                                        <Typography variant="body2" sx={{ color: '#64748b' }}>
+                                        <Typography variant="body2" sx={{ color: '#6b7280' }}>
                                             No Banner Image Set
                                         </Typography>
                                     )}
                                 </Box>
 
                                 <CardContent>
-                                    <Typography variant="h6" sx={{ color: '#f8fafc', fontWeight: 700 }}>
+                                    <Typography variant="h6" sx={{ color: '#111827', fontWeight: 700 }}>
                                         {adTitle || 'Promotional Campaign Title'}
                                     </Typography>
-                                    <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', mt: 0.5 }}>
+                                    <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mt: 0.5 }}>
                                         {adLinkUrl ? `Destination: ${adLinkUrl}` : 'No click action link'}
                                     </Typography>
                                 </CardContent>
@@ -326,7 +328,7 @@ export default function MarketingManagement() {
                 <TabPanel value={tabIndex} index={1}>
                     <Grid container spacing={4} sx={{ px: 3 }}>
                         <Grid item xs={12} md={7}>
-                            <Typography variant="h6" sx={{ color: '#f8fafc', fontWeight: 700, mb: 2 }}>
+                            <Typography variant="h6" sx={{ color: '#111827', fontWeight: 700, mb: 2 }}>
                                 Broadcast Push Notification
                             </Typography>
 
@@ -338,12 +340,11 @@ export default function MarketingManagement() {
 
                             <form onSubmit={handleSendNotification}>
                                 <FormControl fullWidth sx={{ mb: 3 }}>
-                                    <InputLabel sx={{ color: '#94a3b8' }}>Target Audience / Campus</InputLabel>
+                                    <InputLabel>Target Audience / Campus</InputLabel>
                                     <Select
                                         value={targetUni}
                                         onChange={(e) => setTargetUni(e.target.value)}
                                         label="Target Audience / Campus"
-                                        sx={{ color: '#fff', '.MuiSvgIcon-root': { color: '#94a3b8' } }}
                                     >
                                         <MenuItem value="all">🌐 All Campuses (Global Broadcast)</MenuItem>
                                         {universities.map((uni) => (
@@ -361,7 +362,7 @@ export default function MarketingManagement() {
                                     value={notifTitle}
                                     onChange={(e) => setNotifTitle(e.target.value)}
                                     required
-                                    sx={{ mb: 3, input: { color: '#fff' }, label: { color: '#94a3b8' } }}
+                                    sx={{ mb: 3 }}
                                 />
 
                                 <TextField
@@ -373,7 +374,7 @@ export default function MarketingManagement() {
                                     value={notifBody}
                                     onChange={(e) => setNotifBody(e.target.value)}
                                     required
-                                    sx={{ mb: 3, textarea: { color: '#fff' }, label: { color: '#94a3b8' } }}
+                                    sx={{ mb: 3 }}
                                 />
 
                                 <Button
@@ -382,8 +383,8 @@ export default function MarketingManagement() {
                                     disabled={notifSending}
                                     startIcon={notifSending ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
                                     sx={{
-                                        bgcolor: '#ec4899',
-                                        '&:hover': { bgcolor: '#db2777' },
+                                        bgcolor: '#006d33',
+                                        '&:hover': { bgcolor: '#005225' },
                                         py: 1.5,
                                         px: 4,
                                         fontWeight: 700,
@@ -397,16 +398,16 @@ export default function MarketingManagement() {
 
                         {/* PHONE NOTIFICATION PREVIEW */}
                         <Grid item xs={12} md={5}>
-                            <Typography variant="h6" sx={{ color: '#f8fafc', fontWeight: 700, mb: 2 }}>
+                            <Typography variant="h6" sx={{ color: '#111827', fontWeight: 700, mb: 2 }}>
                                 Student Lock-Screen Preview
                             </Typography>
 
                             <Paper
                                 elevation={4}
                                 sx={{
-                                    bgcolor: '#0f172a',
+                                    bgcolor: '#ffffff',
                                     borderRadius: 4,
-                                    border: '2px solid #334155',
+                                    border: '2px solid #e5e7eb',
                                     p: 2.5,
                                     maxWidth: 360,
                                     mx: 'auto'
@@ -414,23 +415,23 @@ export default function MarketingManagement() {
                             >
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 12, color: '#fff' }}>
+                                        <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: '#006d33', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 12, color: '#fff' }}>
                                             Z
                                         </Box>
-                                        <Typography variant="subtitle2" sx={{ color: '#f8fafc', fontWeight: 700 }}>
+                                        <Typography variant="subtitle2" sx={{ color: '#111827', fontWeight: 700 }}>
                                             Zippit Campus
                                         </Typography>
                                     </Box>
-                                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
                                         Now
                                     </Typography>
                                 </Box>
 
-                                <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', p: 2, borderRadius: 3, border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                    <Typography variant="subtitle1" sx={{ color: '#f8fafc', fontWeight: 700, mb: 0.5 }}>
+                                <Box sx={{ bgcolor: '#f9fafb', p: 2, borderRadius: 3, border: '1px solid #e5e7eb' }}>
+                                    <Typography variant="subtitle1" sx={{ color: '#111827', fontWeight: 700, mb: 0.5 }}>
                                         {notifTitle || 'Notification Title'}
                                     </Typography>
-                                    <Typography variant="body2" sx={{ color: '#94a3b8', lineHeight: 1.4 }}>
+                                    <Typography variant="body2" sx={{ color: '#6b7280', lineHeight: 1.4 }}>
                                         {notifBody || 'Push notification preview text will appear here as you type...'}
                                     </Typography>
                                 </Box>
@@ -442,3 +443,4 @@ export default function MarketingManagement() {
         </Box>
     );
 }
+

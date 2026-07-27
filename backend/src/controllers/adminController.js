@@ -553,6 +553,157 @@ const broadcastNotification = async (req, res) => {
     }
 };
 
+// @desc    Get detailed financial analytics
+// @route   GET /api/admin/analytics/financial
+// @access  Private/Admin
+const getFinancialAnalytics = async (req, res) => {
+    try {
+        const { days = 30, universityId, shopId } = req.query;
+        const isSuperAdmin = req.user.role === 'super_admin';
+
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - parseInt(days));
+
+        const whereClause = {
+            createdAt: { [Op.gte]: startDate }
+        };
+
+        if (status = 'delivered') whereClause.status = 'delivered';
+        if (shopId) whereClause.shopId = shopId;
+        if (!isSuperAdmin) {
+            whereClause.universityId = req.user.universityId;
+        } else if (universityId && universityId !== 'all') {
+            whereClause.universityId = universityId;
+        }
+
+        const orders = await Order.findAll({
+            where: whereClause,
+            include: [
+                { model: Shop, as: 'shop', attributes: ['id', 'name', 'category'] },
+                { model: User, as: 'customer', attributes: ['name', 'email'] },
+                { model: OrderItem, as: 'items' }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
+
+        // Metrics calculation
+        const gmv = orders.reduce((sum, o) => sum + parseFloat(o.totalAmount || 0), 0);
+        const platformCommissionRate = 0.10; // 10% platform commission
+        const platformCommission = gmv * platformCommissionRate;
+        const deliveryFeesCollected = orders.length * 20; // Avg estimated delivery fee pool
+        const netVendorPayout = Math.max(0, gmv - platformCommission);
+
+        // Payment Method breakdown
+        const paymentMethods = { laro_coins: 0, cod: 0, online: 0 };
+        orders.forEach(o => {
+            const method = (o.paymentMethod || 'cod').toLowerCase();
+            if (method.includes('coin') || method.includes('wallet')) {
+                paymentMethods.laro_coins += parseFloat(o.totalAmount || 0);
+            } else if (method.includes('online') || method.includes('razor')) {
+                paymentMethods.online += parseFloat(o.totalAmount || 0);
+            } else {
+                paymentMethods.cod += parseFloat(o.totalAmount || 0);
+            }
+        });
+
+        // Top Shops by Sales Volume
+        const shopMap = {};
+        orders.forEach(o => {
+            const shopName = o.shop?.name || 'General Campus Store';
+            if (!shopMap[shopName]) shopMap[shopName] = { name: shopName, count: 0, revenue: 0 };
+            shopMap[shopName].count += 1;
+            shopMap[shopName].revenue += parseFloat(o.totalAmount || 0);
+        });
+
+        const topShops = Object.values(shopMap)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
+
+        // Daily trend data
+        const dailyMap = {};
+        orders.forEach(o => {
+            const dateStr = new Date(o.createdAt).toISOString().split('T')[0];
+            if (!dailyMap[dateStr]) dailyMap[dateStr] = { date: dateStr, revenue: 0, orders: 0 };
+            dailyMap[dateStr].revenue += parseFloat(o.totalAmount || 0);
+            dailyMap[dateStr].orders += 1;
+        });
+
+        const dailyTrends = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
+
+        res.json({
+            periodDays: parseInt(days),
+            totalOrdersCount: orders.length,
+            gmv: parseFloat(gmv.toFixed(2)),
+            platformCommission: parseFloat(platformCommission.toFixed(2)),
+            deliveryFeesCollected: parseFloat(deliveryFeesCollected.toFixed(2)),
+            netVendorPayout: parseFloat(netVendorPayout.toFixed(2)),
+            paymentMethods,
+            topShops,
+            dailyTrends
+        });
+    } catch (error) {
+        console.error('[ADMIN FINANCIAL ANALYTICS ERROR]', error);
+        res.status(500).json({ error: 'Failed to fetch financial analytics' });
+    }
+};
+
+// @desc    Export financial CSV report
+// @route   GET /api/admin/analytics/export-csv
+// @access  Private/Admin
+const exportFinancialCSVReport = async (req, res) => {
+    try {
+        const { days = 30, universityId, shopId } = req.query;
+        const isSuperAdmin = req.user.role === 'super_admin';
+
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - parseInt(days));
+
+        const whereClause = {
+            createdAt: { [Op.gte]: startDate }
+        };
+
+        if (shopId) whereClause.shopId = shopId;
+        if (!isSuperAdmin) {
+            whereClause.universityId = req.user.universityId;
+        } else if (universityId && universityId !== 'all') {
+            whereClause.universityId = universityId;
+        }
+
+        const orders = await Order.findAll({
+            where: whereClause,
+            include: [
+                { model: Shop, as: 'shop', attributes: ['name'] },
+                { model: User, as: 'customer', attributes: ['name', 'email'] },
+                { model: OrderItem, as: 'items' }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
+
+        let csvContent = 'Order ID,Date,Time,Shop Name,Customer Name,Status,Payment Method,Items Count,Total Amount (INR),Platform Fee 10% (INR),Net Merchant Payout (INR)\n';
+
+        orders.forEach(o => {
+            const date = new Date(o.createdAt);
+            const dateStr = date.toLocaleDateString();
+            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const total = parseFloat(o.totalAmount || 0);
+            const platformFee = (total * 0.10).toFixed(2);
+            const merchantPayout = (total * 0.90).toFixed(2);
+            const itemsCount = o.items ? o.items.length : 0;
+            const shopName = `"${(o.shop?.name || 'Campus Store').replace(/"/g, '""')}"`;
+            const customerName = `"${(o.customer?.name || 'Student Customer').replace(/"/g, '""')}"`;
+
+            csvContent += `${o.id},${dateStr},${timeStr},${shopName},${customerName},${o.status},${o.paymentMethod || 'COD'},${itemsCount},${total.toFixed(2)},${platformFee},${merchantPayout}\n`;
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=zippit_financial_report_${Date.now()}.csv`);
+        res.status(200).send(csvContent);
+    } catch (error) {
+        console.error('[ADMIN CSV EXPORT ERROR]', error);
+        res.status(500).json({ error: 'Failed to generate financial CSV report' });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getAllOrders,
@@ -569,6 +720,9 @@ module.exports = {
     getAdvertisement,
     updateAdvertisement,
     updateUserRole,
-    broadcastNotification
+    broadcastNotification,
+    getFinancialAnalytics,
+    exportFinancialCSVReport
 };
+
 

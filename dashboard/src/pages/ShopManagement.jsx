@@ -247,10 +247,15 @@ export default function ShopManagement() {
         }
     };
 
-    const filteredShops = shops.filter(shop =>
-        shop.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        shop.category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredShops = shops.filter(shop => {
+        const cat = (shop.category || '').toLowerCase();
+        const isFoodOutlet = cat.includes('food') || cat.includes('canteen') || cat.includes('restaurant') || cat.includes('dining') || cat.includes('juice') || cat.includes('cafe') || cat.includes('bakery');
+        if (isFoodOutlet) return false;
+
+        return shop.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            cat.includes(searchQuery.toLowerCase());
+    });
+
 
     return (
         <Fade in={true} timeout={800}>
@@ -274,9 +279,10 @@ export default function ShopManagement() {
                                 px: 3,
                                 py: 1.5,
                                 fontSize: '0.9rem',
-                                boxShadow: '0 10px 20px rgba(236, 72, 153, 0.2)',
+                                boxShadow: '0 10px 20px rgba(0, 109, 51, 0.2)',
                             }}
                         >
+
                             Add New Shop
                         </Button>
                     )}
@@ -590,9 +596,11 @@ export default function ShopManagement() {
                                             borderRadius: 2,
                                             fontWeight: '900',
                                             py: 2,
-                                            background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                                            background: '#006d33',
+                                            '&:hover': { background: '#005225' }
                                         }}
                                     >
+
                                         {editMode ? 'Save Changes' : 'Create Outlet'}
                                     </Button>
                                 </Grid>

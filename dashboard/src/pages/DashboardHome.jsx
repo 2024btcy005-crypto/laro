@@ -7,20 +7,27 @@ import {
     Card,
     CardContent,
     CircularProgress,
-    useTheme,
+    Avatar,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Chip,
     Fade
 } from '@mui/material';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import PeopleIcon from '@mui/icons-material/People';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import {
     getDashboardStats,
     getAllItemSales
 } from '../api';
 
 export default function DashboardHome() {
-    const theme = useTheme();
     const [stats, setStats] = useState([]);
     const [itemSales, setItemSales] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -39,30 +46,26 @@ export default function DashboardHome() {
                             case 'orders':
                                 return {
                                     ...stat,
-                                    icon: <ShoppingBagIcon sx={{ color: '#fff' }} fontSize="large" />,
-                                    gradient: 'linear-gradient(135deg, #f472b6 0%, #db2777 100%)',
-                                    shadow: 'rgba(236, 72, 153, 0.4)'
+                                    icon: <ShoppingBagIcon sx={{ color: '#006d33' }} />,
+                                    bgcolor: '#e6f7ed'
                                 };
                             case 'revenue':
                                 return {
                                     ...stat,
-                                    icon: <AttachMoneyIcon sx={{ color: '#fff' }} fontSize="large" />,
-                                    gradient: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
-                                    shadow: 'rgba(190, 24, 93, 0.4)'
+                                    icon: <AttachMoneyIcon sx={{ color: '#006d33' }} />,
+                                    bgcolor: '#e6f7ed'
                                 };
                             case 'shops':
                                 return {
                                     ...stat,
-                                    icon: <StorefrontIcon sx={{ color: '#fff' }} fontSize="large" />,
-                                    gradient: 'linear-gradient(135deg, #fbcfe8 0%, #f472b6 100%)',
-                                    shadow: 'rgba(244, 114, 182, 0.4)'
+                                    icon: <StorefrontIcon sx={{ color: '#006d33' }} />,
+                                    bgcolor: '#e6f7ed'
                                 };
                             case 'users':
                                 return {
                                     ...stat,
-                                    icon: <PeopleIcon sx={{ color: '#fff' }} fontSize="large" />,
-                                    gradient: 'linear-gradient(135deg, #fda4af 0%, #e11d48 100%)',
-                                    shadow: 'rgba(225, 29, 72, 0.4)'
+                                    icon: <PeopleIcon sx={{ color: '#006d33' }} />,
+                                    bgcolor: '#e6f7ed'
                                 };
                             default:
                                 return stat;
@@ -72,7 +75,7 @@ export default function DashboardHome() {
                 }
 
                 if (itemSalesRes.status === 'fulfilled') {
-                    setItemSales(itemSalesRes.value.data);
+                    setItemSales(itemSalesRes.value.data || []);
                 }
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -86,144 +89,152 @@ export default function DashboardHome() {
 
     if (loading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-                <CircularProgress thickness={5} size={60} sx={{ color: '#ec4899' }} />
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                <CircularProgress thickness={4} size={50} sx={{ color: '#006d33' }} />
             </Box>
         );
     }
 
     return (
-        <Fade in={!loading} timeout={800}>
-            <Box>
-                <Box mb={6}>
-                    <Typography
-                        variant="h3"
-                        gutterBottom
-                        sx={{
-                            fontWeight: 900,
-                            background: 'linear-gradient(to right, #fff, #f472b6)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            mb: 1
-                        }}
-                    >
-                        Welcome Admin 👋
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 500 }}>
-                        Here's your business pulse for <span style={{ color: '#ec4899', fontWeight: 700 }}>Laro</span>.
-                    </Typography>
-                </Box>
+        <Fade in={!loading} timeout={500}>
+            <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 6 }}>
+                {/* Header Welcome Banner */}
+                <Paper
+                    elevation={0}
+                    sx={{
+                        p: 3.5,
+                        mb: 4,
+                        bgcolor: '#ffffff',
+                        borderRadius: 4,
+                        border: '1px solid #e5e7eb',
+                        display: 'flex',
+                        justify: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 2
+                    }}
+                >
+                    <Box>
+                        <Typography variant="h4" sx={{ fontWeight: 800, color: '#111827', mb: 0.5, letterSpacing: '-0.02em' }}>
+                            Overview & Pulse
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '14px' }}>
+                            Real-time order throughput, active campus canteens, and registered student users.
+                        </Typography>
+                    </Box>
 
-                <Grid container spacing={4}>
+                    <Chip
+                        label="CAMPUS STATUS: OPERATIONAL"
+                        size="small"
+                        sx={{ bgcolor: '#e6f7ed', color: '#006d33', fontWeight: 800, fontSize: '11px', px: 1 }}
+                    />
+                </Paper>
+
+                {/* Minimal KPI Metric Cards */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
                     {stats.map((stat, index) => (
                         <Grid item xs={12} sm={6} md={3} key={index}>
-                            <Card sx={{
-                                height: '100%',
-                                background: 'rgba(30, 41, 59, 0.4)',
-                                backdropFilter: 'blur(20px)',
-                                border: '1px solid rgba(255, 255, 255, 0.05)',
-                                borderRadius: 5,
-                                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                '&:hover': {
-                                    transform: 'translateY(-10px)',
-                                    border: `1px solid ${stat.shadow}`,
-                                    boxShadow: `0 20px 40px -10px ${stat.shadow.replace('0.4', '0.15')}`,
-                                },
-                            }}>
-                                <CardContent sx={{ p: 4 }}>
-                                    <Box sx={{
-                                        background: stat.gradient,
-                                        width: 56,
-                                        height: 56,
-                                        borderRadius: 4,
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        mb: 3,
-                                        boxShadow: `0 10px 20px ${stat.shadow}`,
-                                    }}>
+                            <Card
+                                elevation={0}
+                                sx={{
+                                    height: '100%',
+                                    bgcolor: '#ffffff',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: 4,
+                                    p: 2.5,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        borderColor: '#43d174',
+                                        transform: 'translateY(-2px)'
+                                    }
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                                    <Avatar sx={{ bgcolor: stat.bgcolor || '#f3f4f6', width: 42, height: 42 }}>
                                         {stat.icon}
-                                    </Box>
-                                    <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.4)', mb: 1, letterSpacing: '0.1em', fontWeight: 700 }}>
-                                        {stat.title.toUpperCase()}
-                                    </Typography>
-                                    <Typography variant="h3" sx={{ fontWeight: 900, color: '#fff' }}>
-                                        {stat.value}
-                                    </Typography>
+                                    </Avatar>
+                                </Box>
 
-                                    <Box sx={{
-                                        position: 'absolute',
-                                        top: -20,
-                                        right: -20,
-                                        width: 100,
-                                        height: 100,
-                                        background: stat.gradient,
-                                        filter: 'blur(50px)',
-                                        opacity: 0.1,
-                                        zIndex: 0
-                                    }} />
-                                </CardContent>
+                                <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 700, letterSpacing: '0.05em' }}>
+                                    {stat.title.toUpperCase()}
+                                </Typography>
+                                <Typography variant="h4" sx={{ fontWeight: 800, color: '#111827', mt: 0.5 }}>
+                                    {stat.value}
+                                </Typography>
                             </Card>
                         </Grid>
                     ))}
                 </Grid>
 
-                <Box mt={6}>
-                    <Paper sx={{
-                        p: 4,
-                        borderRadius: 6,
-                        background: 'rgba(30, 41, 59, 0.3)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255, 255, 255, 0.05)',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-                    }}>
-                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', mb: 3 }}>
-                            Item Sales Performance
+                {/* Item Sales Performance Table */}
+                <Paper
+                    elevation={0}
+                    sx={{
+                        p: 3,
+                        bgcolor: '#ffffff',
+                        borderRadius: 4,
+                        border: '1px solid #e5e7eb'
+                    }}
+                >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#111827' }}>
+                            Top Performing Items
                         </Typography>
-                        <Box sx={{ maxHeight: 600, overflowY: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead>
-                                    <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                                        <th style={{ padding: '12px', color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>ITEM</th>
-                                        <th style={{ padding: '12px', color: 'rgba(255,255,255,0.5)', fontSize: '12px', textAlign: 'center' }}>SOLD</th>
-                                        <th style={{ padding: '12px', color: 'rgba(255,255,255,0.5)', fontSize: '12px', textAlign: 'right' }}>REVENUE</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {itemSales.map((item, idx) => (
-                                        <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <td style={{ padding: '12px' }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                    <Box
-                                                        component="img"
-                                                        src={item.product?.imageUrl}
-                                                        sx={{ width: 32, height: 32, borderRadius: 1, objectFit: 'cover' }}
-                                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/32' }}
-                                                    />
-                                                    <Typography variant="body2" sx={{ color: '#fff', fontWeight: 500 }}>
-                                                        {item.product?.name}
-                                                    </Typography>
-                                                </Box>
-                                            </td>
-                                            <td style={{ padding: '12px', textAlign: 'center' }}>
-                                                <Typography variant="body2" sx={{ color: '#ec4899', fontWeight: 700 }}>
-                                                    {item.totalQuantity}
+                        <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600 }}>
+                            Updated live from database
+                        </Typography>
+                    </Box>
+
+                    <TableContainer>
+                        <Table sx={{ minWidth: 500 }}>
+                            <TableHead sx={{ bgcolor: '#f9fafb' }}>
+                                <TableRow>
+                                    <TableCell sx={{ color: '#6b7280', fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em' }}>ITEM NAME</TableCell>
+                                    <TableCell align="center" sx={{ color: '#6b7280', fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em' }}>UNITS SOLD</TableCell>
+                                    <TableCell align="right" sx={{ color: '#6b7280', fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em' }}>TOTAL REVENUE</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+
+                                {itemSales.length > 0 ? (
+                                    itemSales.map((item, idx) => (
+                                        <TableRow key={idx} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                            <TableCell sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+                                                <Box
+                                                    component="img"
+                                                    src={item.product?.imageUrl}
+                                                    sx={{ width: 36, height: 36, borderRadius: '8px', objectFit: 'cover', bgcolor: '#f3f4f6' }}
+                                                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop' }}
+                                                />
+                                                <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
+                                                    {item.product?.name || 'Campus Menu Item'}
                                                 </Typography>
-                                            </td>
-                                            <td style={{ padding: '12px', textAlign: 'right' }}>
-                                                <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>
-                                                    ₹{parseFloat(item.totalRevenue).toLocaleString()}
-                                                </Typography>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </Box>
-                    </Paper>
-                </Box>
+                                            </TableCell>
+
+                                            <TableCell align="center">
+                                                <Chip
+                                                    label={`${item.totalQuantity} sold`}
+                                                    size="small"
+                                                    sx={{ bgcolor: '#e6f7ed', color: '#006d33', fontWeight: 700, fontSize: '11px' }}
+                                                />
+                                            </TableCell>
+
+                                            <TableCell align="right" sx={{ fontWeight: 800, color: '#111827' }}>
+                                                ₹{parseFloat(item.totalRevenue || 0).toLocaleString('en-IN')}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} align="center" sx={{ color: '#6b7280', py: 4 }}>
+                                            No item sales recorded yet in PostgreSQL database.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Paper>
             </Box>
         </Fade>
     );

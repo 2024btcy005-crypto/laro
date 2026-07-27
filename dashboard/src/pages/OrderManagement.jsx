@@ -72,19 +72,12 @@ export default function OrderManagement() {
             <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
                     <Box>
-                        <Typography
-                            variant="h3"
-                            sx={{
-                                fontWeight: 900,
-                                background: 'linear-gradient(to right, #fff, #f472b6)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent'
-                            }}
-                        >
+                        <Typography variant="h3" fontWeight="900" sx={{ letterSpacing: '-0.02em', mb: 1, color: '#111827' }}>
                             Order Flow
                         </Typography>
-                        <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.5)', mt: 1 }}>
-                            Monitoring <span style={{ color: '#ec4899', fontWeight: 700 }}>{orders.length}</span> active transactions today.
+
+                        <Typography variant="body1" sx={{ color: '#6b7280', mt: 1 }}>
+                            Monitoring <span style={{ color: '#006d33', fontWeight: 700 }}>{orders.length}</span> active transactions today.
                         </Typography>
                     </Box>
 
@@ -94,18 +87,7 @@ export default function OrderManagement() {
                         label="Filter Status"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        InputLabelProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)' } }}
-                        sx={{
-                            width: 200,
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 4,
-                                background: 'rgba(30, 41, 59, 0.5)',
-                                backdropFilter: 'blur(10px)',
-                                border: '1px solid rgba(255, 255, 255, 0.05)',
-                                color: '#fff',
-                                '& fieldset': { border: 'none' }
-                            }
-                        }}
+                        sx={{ width: 200 }}
                     >
                         <MenuItem value="">All Deliveries</MenuItem>
                         <MenuItem value="placed">🎁 Placed</MenuItem>
@@ -118,38 +100,37 @@ export default function OrderManagement() {
                 </Box>
 
                 <TableContainer component={Paper} sx={{
-                    borderRadius: 6,
-                    background: 'rgba(30, 41, 59, 0.3)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                    borderRadius: 4,
+                    bgcolor: '#ffffff',
+                    border: '1px solid #e5e7eb',
                     overflow: 'hidden'
                 }}>
                     {loading ? (
                         <Box sx={{ p: 10, textAlign: 'center' }}>
-                            <CircularProgress sx={{ color: '#ec4899' }} thickness={5} size={50} />
+                            <CircularProgress sx={{ color: '#006d33' }} thickness={5} size={50} />
                         </Box>
                     ) : (
+
                         <Table sx={{ minWidth: 650 }}>
-                            <TableHead sx={{ bgcolor: 'rgba(255, 255, 255, 0.02)' }}>
+                            <TableHead sx={{ bgcolor: '#f9fafb' }}>
                                 <TableRow>
-                                    <TableCell sx={{ color: 'rgba(255, 255, 255, 0.4)', fontWeight: 700, textTransform: 'uppercase', py: 3, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Order ID</TableCell>
-                                    <TableCell sx={{ color: 'rgba(255, 255, 255, 0.4)', fontWeight: 700, textTransform: 'uppercase', py: 3, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Partners</TableCell>
-                                    <TableCell sx={{ color: 'rgba(255, 255, 255, 0.4)', fontWeight: 700, textTransform: 'uppercase', py: 3, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Amount</TableCell>
-                                    <TableCell sx={{ color: 'rgba(255, 255, 255, 0.4)', fontWeight: 700, textTransform: 'uppercase', py: 3, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Track Status</TableCell>
-                                    <TableCell sx={{ color: 'rgba(255, 255, 255, 0.4)', fontWeight: 700, textTransform: 'uppercase', py: 3, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Timeline</TableCell>
-                                    <TableCell align="right" sx={{ color: 'rgba(255, 255, 255, 0.4)', fontWeight: 700, textTransform: 'uppercase', py: 3, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Actions</TableCell>
+                                    <TableCell sx={{ color: '#6b7280', fontWeight: 800, textTransform: 'uppercase', py: 2, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Order ID</TableCell>
+                                    <TableCell sx={{ color: '#6b7280', fontWeight: 800, textTransform: 'uppercase', py: 2, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Partners</TableCell>
+                                    <TableCell sx={{ color: '#6b7280', fontWeight: 800, textTransform: 'uppercase', py: 2, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Amount</TableCell>
+                                    <TableCell sx={{ color: '#6b7280', fontWeight: 800, textTransform: 'uppercase', py: 2, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Track Status</TableCell>
+                                    <TableCell sx={{ color: '#6b7280', fontWeight: 800, textTransform: 'uppercase', py: 2, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Timeline</TableCell>
+                                    <TableCell align="right" sx={{ color: '#6b7280', fontWeight: 800, textTransform: 'uppercase', py: 2, fontSize: '0.75rem', letterSpacing: '0.1em' }}>Actions</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {orders.map((order) => {
                                     const statusConfig = {
-                                        'placed': { label: 'PENDING', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
-                                        'accepted': { label: 'CONFIRMED', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.1)' },
-                                        'preparing': { label: 'KITCHEN', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-                                        'out_for_delivery': { label: 'ON ROAD', color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.1)' },
-                                        'delivered': { label: 'COMPLETED', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
-                                        'cancelled': { label: 'VOID', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' }
+                                        'placed': { label: 'PENDING', color: '#b45309', bg: '#fef3c7' },
+                                        'accepted': { label: 'CONFIRMED', color: '#0284c7', bg: '#e0f2fe' },
+                                        'preparing': { label: 'KITCHEN', color: '#d97706', bg: '#fef3c7' },
+                                        'out_for_delivery': { label: 'ON ROAD', color: '#006d33', bg: '#e6f7ed' },
+                                        'delivered': { label: 'COMPLETED', color: '#006d33', bg: '#e6f7ed' },
+                                        'cancelled': { label: 'VOID', color: '#ef4444', bg: '#fee2e2' }
                                     };
                                     const cfg = statusConfig[order.status] || statusConfig['placed'];
 
@@ -157,28 +138,28 @@ export default function OrderManagement() {
                                         <TableRow
                                             key={order.id}
                                             sx={{
-                                                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' },
+                                                '&:hover': { bgcolor: '#f9fafb' },
                                                 transition: 'background 0.2s',
-                                                '& td, & th': { borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }
+                                                '& td, & th': { borderBottom: '1px solid #f3f4f6' }
                                             }}
                                         >
                                             <TableCell>
-                                                <Typography variant="body2" sx={{ fontWeight: 900, color: '#ec4899' }}>
+                                                <Typography variant="body2" sx={{ fontWeight: 900, color: '#006d33' }}>
                                                     #{String(order.id).substring(0, 8).toUpperCase()}
                                                 </Typography>
                                             </TableCell>
                                             <TableCell>
                                                 <Box>
-                                                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#fff' }}>
+                                                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
                                                         {order.customer?.name || 'Guest User'}
                                                     </Typography>
-                                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.4)' }}>
+                                                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
                                                         from {order.shop?.name || 'Local Outlet'}
                                                     </Typography>
                                                 </Box>
                                             </TableCell>
                                             <TableCell>
-                                                <Typography variant="body2" sx={{ fontWeight: 900, color: '#fff' }}>
+                                                <Typography variant="body2" sx={{ fontWeight: 900, color: '#111827' }}>
                                                     ₹{parseFloat(order.totalAmount).toFixed(2)}
                                                 </Typography>
                                             </TableCell>
@@ -186,19 +167,18 @@ export default function OrderManagement() {
                                                 <Chip
                                                     label={cfg.label}
                                                     sx={{
-                                                        fontWeight: 900,
+                                                        fontWeight: 800,
                                                         borderRadius: 2,
                                                         fontSize: '0.65rem',
                                                         letterSpacing: '0.1em',
                                                         background: cfg.bg,
                                                         color: cfg.color,
-                                                        border: `1px solid ${cfg.color}33`,
                                                         height: 24
                                                     }}
                                                 />
                                             </TableCell>
                                             <TableCell>
-                                                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 600 }}>
+                                                <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600 }}>
                                                     {new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                 </Typography>
                                             </TableCell>
@@ -207,9 +187,9 @@ export default function OrderManagement() {
                                                     <IconButton
                                                         size="small"
                                                         sx={{
-                                                            color: '#ec4899',
-                                                            background: 'rgba(236, 72, 153, 0.1)',
-                                                            '&:hover': { background: 'rgba(236, 72, 153, 0.2)' }
+                                                            color: '#006d33',
+                                                            background: '#e6f7ed',
+                                                            '&:hover': { background: '#38c567', color: '#fff' }
                                                         }}
                                                     >
                                                         <VisibilityIcon fontSize="small" />
@@ -218,8 +198,8 @@ export default function OrderManagement() {
                                                         size="small"
                                                         sx={{
                                                             color: '#ef4444',
-                                                            background: 'rgba(239, 68, 68, 0.1)',
-                                                            '&:hover': { background: 'rgba(239, 68, 68, 0.2)' }
+                                                            background: '#fee2e2',
+                                                            '&:hover': { background: '#ef4444', color: '#fff' }
                                                         }}
                                                         onClick={() => handleDelete(order.id)}
                                                     >

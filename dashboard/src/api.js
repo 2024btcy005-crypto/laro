@@ -56,7 +56,11 @@ export const getAdvertisement = () => api.get('/admin/advertisement');
 export const updateAdvertisement = (data) => api.put('/admin/advertisement', data);
 export const sendBroadcastNotification = (data) => api.post('/admin/notifications/broadcast', data);
 
+export const getFinancialAnalytics = (params) => api.get('/admin/analytics/financial', { params });
+export const exportFinancialCSV = (params) => api.get('/admin/analytics/export-csv', { params, responseType: 'blob' });
+
 export const getAllUniversities = () => api.get('/universities');
+
 
 export const createUniversity = (data) => api.post('/universities', data);
 export const updateUniversity = (id, data) => api.put(`/universities/${id}`, data);

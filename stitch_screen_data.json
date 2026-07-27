@@ -1,0 +1,290 @@
+{
+  "screenshot": {
+    "name": "projects/3423615123615963431/files/8474310159590350471",
+    "downloadUrl": "https://lh3.googleusercontent.com/aida/AP1WRLuFomkThKC8kqce0TrEJ2IE-3tLXTFdc8-XlReJiMGxhnSKe_dFl7OwRAmwLmz5qcvHXtGX-CwVoyXWCdiA797ruKbMnoYKmM5RZ_VIpSa0q2pcupXj4E0jplS7ZbsORpVISQzbzzVCPD_hug30N3IHLb-WDeXmL8UQ1s1FsdFBsXO4ukb9IMuHBIz-SrFwfkspFO3C5Phxmw0WgeVpzi8vkfj6No-zS5JCfrtZ5EyuEH2fI55oD-jQqw"
+  },
+  "htmlCode": {
+    "name": "projects/3423615123615963431/files/17812827993742197550",
+    "downloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzAwMDY1Nzk0MTdlOTY0Y2YwMWE2MzJiNWY4Mzk2YmI5EgsSBxC_rNi00Q8YAZIBIwoKcHJvamVjdF9pZBIVQhMzNDIzNjE1MTIzNjE1OTYzNDMx&filename=&opi=89354086",
+    "mimeType": "text/html"
+  },
+  "id": "0354ac6f936a4721bba1b8e0cc30d4c3",
+  "generatedBy": "figaro_agent",
+  "width": "2560",
+  "height": "2220",
+  "title": "Financial Analytics - Laro Admin",
+  "prompt": "Redesign the Financial Analytics & Reports dashboard for Laro Admin based on {{DATA:IMAGE:IMAGE_4}}. \n\nMaintain the light, high-density professional theme from {{DATA:SCREEN:SCREEN_8}} and {{DATA:SCREEN:SCREEN_5}}. \n\nKey elements to include:\n- A header with \"Financial Analytics\" and an \"Export Financial CSV\" primary button.\n- A filter bar for Time Period (e.g., Last 7 Days) and Campus Selection.\n- Top-level KPI cards: Gross Volume (GMV), Platform Fee (10%), Delivery Pool, and Net Merchant Payout. Use Laro Green for positive trends/values.\n- A card for \"Payment Method Distribution\" showing a breakdown of Laro Coins, Online Gateway, and Cash on Delivery with percentages.\n- A large table for \"Top Merchant Settlements\" with columns for Shop Name, Orders, Gross GMV, and Net Payout (90%).\n- Ensure the Laro Admin sidebar from {{DATA:COMPONENTS:COMPONENTS_6}} is present and correctly highlights 'Analytics'.",
+  "name": "projects/3423615123615963431/screens/0354ac6f936a4721bba1b8e0cc30d4c3",
+  "theme": {
+    "colorMode": "LIGHT",
+    "font": "PLUS_JAKARTA_SANS",
+    "roundness": "ROUND_EIGHT",
+    "customColor": "#43d174",
+    "headlineFont": "PLUS_JAKARTA_SANS",
+    "bodyFont": "PLUS_JAKARTA_SANS",
+    "labelFont": "PLUS_JAKARTA_SANS",
+    "namedColors": {
+      "tertiary_fixed_dim": "#fabd00",
+      "on_secondary": "#ffffff",
+      "surface_container_low": "#f3f4f6",
+      "primary_container": "#43d174",
+      "tertiary_fixed": "#ffdf9e",
+      "secondary_fixed_dim": "#c6c6c6",
+      "outline": "#6d7b6d",
+      "surface_container_lowest": "#ffffff",
+      "surface_container_high": "#e7e8ea",
+      "secondary": "#5e5e5e",
+      "primary_fixed": "#73fd9a",
+      "surface_bright": "#f8f9fb",
+      "on_surface_variant": "#3d4a3e",
+      "on_background": "#191c1e",
+      "on_secondary_fixed_variant": "#474747",
+      "primary": "#006d33",
+      "on_surface": "#191c1e",
+      "surface_variant": "#e1e2e4",
+      "surface_container_highest": "#e1e2e4",
+      "primary_fixed_dim": "#54e081",
+      "secondary_fixed": "#e2e2e2",
+      "on_error": "#ffffff",
+      "on_secondary_fixed": "#1b1b1b",
+      "outline_variant": "#bccaba",
+      "surface": "#f8f9fb",
+      "on_tertiary": "#ffffff",
+      "on_primary_fixed_variant": "#005225",
+      "on_secondary_container": "#646464",
+      "inverse_primary": "#54e081",
+      "on_primary": "#ffffff",
+      "tertiary": "#785900",
+      "error_container": "#ffdad6",
+      "inverse_surface": "#2e3132",
+      "on_primary_fixed": "#00210b",
+      "surface_dim": "#d9dadc",
+      "error": "#ba1a1a",
+      "surface_tint": "#006d33",
+      "on_primary_container": "#005526",
+      "on_tertiary_fixed_variant": "#5b4300",
+      "on_tertiary_fixed": "#261a00",
+      "secondary_container": "#e2e2e2",
+      "on_tertiary_container": "#5d4500",
+      "inverse_on_surface": "#f0f1f3",
+      "on_error_container": "#93000a",
+      "surface_container": "#edeef0",
+      "background": "#f8f9fb",
+      "tertiary_container": "#e8af00"
+    },
+    "colorVariant": "FIDELITY",
+    "overridePrimaryColor": "#43d174",
+    "overrideSecondaryColor": "#000000",
+    "overrideTertiaryColor": "#ffc107",
+    "overrideNeutralColor": "#f3f4f6",
+    "spacingScale": 2,
+    "typography": {
+      "label-bold": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "lineHeight": "16px"
+      },
+      "display-lg": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "40px",
+        "fontWeight": "800",
+        "lineHeight": "48px",
+        "letterSpacing": "-0.02em"
+      },
+      "body-lg": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "16px",
+        "fontWeight": "500",
+        "lineHeight": "24px"
+      },
+      "headline-md": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "18px",
+        "fontWeight": "700",
+        "lineHeight": "24px"
+      },
+      "headline-lg": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "24px",
+        "fontWeight": "700",
+        "lineHeight": "32px",
+        "letterSpacing": "-0.01em"
+      },
+      "price-xl": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "20px",
+        "fontWeight": "800",
+        "lineHeight": "24px"
+      },
+      "label-sm": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "11px",
+        "fontWeight": "600",
+        "lineHeight": "14px"
+      },
+      "body-sm": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "lineHeight": "20px"
+      }
+    },
+    "spacing": {
+      "stack-lg": "24px",
+      "container-max": "1280px",
+      "margin-desktop": "48px",
+      "stack-sm": "8px",
+      "gutter": "16px",
+      "stack-md": "16px",
+      "stack-xs": "4px"
+    },
+    "headlineFontFamily": "Plus Jakarta Sans",
+    "bodyFontFamily": "Plus Jakarta Sans",
+    "labelFontFamily": "Plus Jakarta Sans"
+  },
+  "deviceType": "DESKTOP",
+  "screenType": "DESIGN",
+  "screenMetadata": {
+    "agentType": "PRO_AGENT",
+    "status": "COMPLETE",
+    "displayMode": "HTML"
+  },
+  "designSystem": {
+    "name": "assets/deb47550c692487a9d6a1f2b6309c084",
+    "designSystem": {
+      "displayName": "Laro Hyperlocal System",
+      "styleGuidelines": "## Brand & Style\n\nThe design system is engineered for high-velocity hyperlocal commerce, focusing on speed, efficiency, and freshness. The brand personality is energetic and dependable, mirroring the \"instant\" nature of the service.\n\nThe design style is **Corporate / Modern** with a **High-Density** twist. It prioritizes information density and quick scanning through clear visual anchoring. The UI is characterized by high-contrast surfaces, vibrant accent colors for categorization, and a clean white-label feel that allows product imagery to take center stage. Every element is designed to reduce friction between intent and checkout.\n\n## Layout & Spacing\n\nThis design system is optimized for a **Desktop-First High-Density Grid**.\n\n- **Grid System:** A 12-column fluid grid within a 1280px max-width container. \n- **Product Grids:** Standard product listing pages (PLP) utilize a 6-column grid on desktop, scaling down to 4 on smaller screens. \n- **Horizontal Carousels:** Used for category browsing and \"Frequently Bought Together\" sections to conserve vertical space.\n- **Persistent Header:** A tall, high-visibility header (88px height) contains a centered, wide search bar (min-width: 500px) to facilitate search-driven shopping.\n- **Spacing Rhythm:** An 8px base unit is used. High-density areas (like product grids) use 16px gutters to maximize item count per viewport.\n\n## Elevation & Depth\n\nDepth is used sparingly to maintain a \"flat and fast\" feel, typical of modern commerce apps.\n\n- **Low-Contrast Outlines:** Primary containers (cards) use a 1px solid border in a neutral-light shade (#E5E7EB) instead of heavy shadows.\n- **Active Elevation:** Upon hover, product cards transition to a subtle ambient shadow (0px 4px 20px rgba(0,0,0,0.08)) and a slight 2px vertical lift to indicate interactivity.\n- **Persistent Elements:** The header and bottom \"Cart Bar\" use a crisp 1px bottom/top border and a backdrop blur (12px) if transparency is required, though solid white is preferred for performance.\n\n## Components\n\n### Buttons\n- **Primary:** Solid Primary Green with White text. Bold weight. Minimal 8px padding on sides.\n- **Secondary/Add:** White background with a 1px Primary Green border. When clicked, it transforms into a quantity selector (- 1 +).\n\n### Product Cards\n- A vertical stack: Image container (colored background tint), Product Title (2 lines max), Weight/Quantity, Price Row (Current vs. Struck-through), and a prominent \"ADD\" button.\n\n### Search Bar\n- Full-width desktop search with a leading \"Search for 'milk'\" placeholder. Incorporates a high-contrast search icon and a \"shortcut\" hint (e.g., \"/\") to emphasize efficiency.\n\n### Category Chips\n- Small, circular or square icons with labels underneath, arranged in a horizontal scrolling ribbon. Active categories use a Primary Green border.\n\n### Input Fields\n- High-contrast labels, 8px corner radius, and 1px borders that turn Primary Green on focus. Error states use a vibrant red (#EF4444) but maintain the same structural tokens.",
+      "theme": {
+        "colorMode": "LIGHT",
+        "font": "PLUS_JAKARTA_SANS",
+        "roundness": "ROUND_EIGHT",
+        "customColor": "#43d174",
+        "headlineFont": "PLUS_JAKARTA_SANS",
+        "bodyFont": "PLUS_JAKARTA_SANS",
+        "labelFont": "PLUS_JAKARTA_SANS",
+        "namedColors": {
+          "outline": "#6d7b6d",
+          "surface_dim": "#d9dadc",
+          "on_tertiary_fixed_variant": "#5b4300",
+          "error": "#ba1a1a",
+          "on_secondary_container": "#646464",
+          "background": "#f8f9fb",
+          "secondary_container": "#e2e2e2",
+          "surface_tint": "#006d33",
+          "tertiary_fixed": "#ffdf9e",
+          "secondary_fixed": "#e2e2e2",
+          "tertiary_container": "#e8af00",
+          "surface_container": "#edeef0",
+          "surface_variant": "#e1e2e4",
+          "outline_variant": "#bccaba",
+          "tertiary": "#785900",
+          "surface": "#f8f9fb",
+          "on_error_container": "#93000a",
+          "surface_container_low": "#f3f4f6",
+          "on_primary": "#ffffff",
+          "surface_bright": "#f8f9fb",
+          "inverse_on_surface": "#f0f1f3",
+          "on_tertiary_fixed": "#261a00",
+          "primary": "#006d33",
+          "on_primary_fixed_variant": "#005225",
+          "on_tertiary_container": "#5d4500",
+          "on_secondary": "#ffffff",
+          "on_surface_variant": "#3d4a3e",
+          "on_surface": "#191c1e",
+          "primary_fixed": "#73fd9a",
+          "on_primary_container": "#005526",
+          "inverse_primary": "#54e081",
+          "on_secondary_fixed_variant": "#474747",
+          "primary_container": "#43d174",
+          "surface_container_highest": "#e1e2e4",
+          "surface_container_high": "#e7e8ea",
+          "inverse_surface": "#2e3132",
+          "on_error": "#ffffff",
+          "tertiary_fixed_dim": "#fabd00",
+          "error_container": "#ffdad6",
+          "primary_fixed_dim": "#54e081",
+          "on_secondary_fixed": "#1b1b1b",
+          "on_tertiary": "#ffffff",
+          "surface_container_lowest": "#ffffff",
+          "on_primary_fixed": "#00210b",
+          "secondary_fixed_dim": "#c6c6c6",
+          "on_background": "#191c1e",
+          "secondary": "#5e5e5e"
+        },
+        "designMd": "---\nname: Laro Hyperlocal System\ncolors:\n  surface: '#f8f9fb'\n  surface-dim: '#d9dadc'\n  surface-bright: '#f8f9fb'\n  surface-container-lowest: '#ffffff'\n  surface-container-low: '#f3f4f6'\n  surface-container: '#edeef0'\n  surface-container-high: '#e7e8ea'\n  surface-container-highest: '#e1e2e4'\n  on-surface: '#191c1e'\n  on-surface-variant: '#3d4a3e'\n  inverse-surface: '#2e3132'\n  inverse-on-surface: '#f0f1f3'\n  outline: '#6d7b6d'\n  outline-variant: '#bccaba'\n  surface-tint: '#006d33'\n  primary: '#006d33'\n  on-primary: '#ffffff'\n  primary-container: '#43d174'\n  on-primary-container: '#005526'\n  inverse-primary: '#54e081'\n  secondary: '#5e5e5e'\n  on-secondary: '#ffffff'\n  secondary-container: '#e2e2e2'\n  on-secondary-container: '#646464'\n  tertiary: '#785900'\n  on-tertiary: '#ffffff'\n  tertiary-container: '#e8af00'\n  on-tertiary-container: '#5d4500'\n  error: '#ba1a1a'\n  on-error: '#ffffff'\n  error-container: '#ffdad6'\n  on-error-container: '#93000a'\n  primary-fixed: '#73fd9a'\n  primary-fixed-dim: '#54e081'\n  on-primary-fixed: '#00210b'\n  on-primary-fixed-variant: '#005225'\n  secondary-fixed: '#e2e2e2'\n  secondary-fixed-dim: '#c6c6c6'\n  on-secondary-fixed: '#1b1b1b'\n  on-secondary-fixed-variant: '#474747'\n  tertiary-fixed: '#ffdf9e'\n  tertiary-fixed-dim: '#fabd00'\n  on-tertiary-fixed: '#261a00'\n  on-tertiary-fixed-variant: '#5b4300'\n  background: '#f8f9fb'\n  on-background: '#191c1e'\n  surface-variant: '#e1e2e4'\ntypography:\n  display-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 40px\n    fontWeight: '800'\n    lineHeight: 48px\n    letterSpacing: -0.02em\n  headline-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 24px\n    fontWeight: '700'\n    lineHeight: 32px\n    letterSpacing: -0.01em\n  headline-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 18px\n    fontWeight: '700'\n    lineHeight: 24px\n  price-xl:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 20px\n    fontWeight: '800'\n    lineHeight: 24px\n  body-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 16px\n    fontWeight: '500'\n    lineHeight: 24px\n  body-sm:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 14px\n    fontWeight: '400'\n    lineHeight: 20px\n  label-bold:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 12px\n    fontWeight: '700'\n    lineHeight: 16px\n  label-sm:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 11px\n    fontWeight: '600'\n    lineHeight: 14px\nrounded:\n  sm: 0.25rem\n  DEFAULT: 0.5rem\n  md: 0.75rem\n  lg: 1rem\n  xl: 1.5rem\n  full: 9999px\nspacing:\n  container-max: 1280px\n  gutter: 16px\n  margin-desktop: 48px\n  stack-xs: 4px\n  stack-sm: 8px\n  stack-md: 16px\n  stack-lg: 24px\n---\n\n## Brand & Style\n\nThe design system is engineered for high-velocity hyperlocal commerce, focusing on speed, efficiency, and freshness. The brand personality is energetic and dependable, mirroring the \"instant\" nature of the service.\n\nThe design style is **Corporate / Modern** with a **High-Density** twist. It prioritizes information density and quick scanning through clear visual anchoring. The UI is characterized by high-contrast surfaces, vibrant accent colors for categorization, and a clean white-label feel that allows product imagery to take center stage. Every element is designed to reduce friction between intent and checkout.\n\n## Colors\n\nThis design system utilizes a \"Fresh Vitality\" palette. \n\n- **Primary Green (#43d174):** Used for primary actions, success states, and brand recognition. It represents freshness and growth.\n- **Secondary Black (#000000):** Used for high-contrast typography and primary navigation elements to ensure maximum legibility.\n- **Tertiary Amber (#ffc107):** Reserved for \"Flash\" deals, ratings, and urgency-driven components like delivery countdowns.\n- **Semantic High-Contrast Surfaces:** Category-specific background tints are used behind product imagery to create distinct visual zones without heavy borders. These should remain at 10-15% opacity of their respective hues.\n\n## Typography\n\nThe system uses **Plus Jakarta Sans** across all levels to maintain a contemporary, geometric aesthetic that remains highly readable at small sizes.\n\n- **Headlines:** Use Bold (700) or ExtraBold (800) for section titles and product names.\n- **Price Points:** Prices are treated as critical data. Use `price-xl` with ExtraBold weight and the Primary Green or Secondary Black to ensure they are the first thing a user sees on a card.\n- **Density:** To maintain high density on desktop, body text is slightly tighter than standard web conventions, relying on the generous x-height of Plus Jakarta Sans for clarity.\n\n## Layout & Spacing\n\nThis design system is optimized for a **Desktop-First High-Density Grid**.\n\n- **Grid System:** A 12-column fluid grid within a 1280px max-width container. \n- **Product Grids:** Standard product listing pages (PLP) utilize a 6-column grid on desktop, scaling down to 4 on smaller screens. \n- **Horizontal Carousels:** Used for category browsing and \"Frequently Bought Together\" sections to conserve vertical space.\n- **Persistent Header:** A tall, high-visibility header (88px height) contains a centered, wide search bar (min-width: 500px) to facilitate search-driven shopping.\n- **Spacing Rhythm:** An 8px base unit is used. High-density areas (like product grids) use 16px gutters to maximize item count per viewport.\n\n## Elevation & Depth\n\nDepth is used sparingly to maintain a \"flat and fast\" feel, typical of modern commerce apps.\n\n- **Low-Contrast Outlines:** Primary containers (cards) use a 1px solid border in a neutral-light shade (#E5E7EB) instead of heavy shadows.\n- **Active Elevation:** Upon hover, product cards transition to a subtle ambient shadow (0px 4px 20px rgba(0,0,0,0.08)) and a slight 2px vertical lift to indicate interactivity.\n- **Persistent Elements:** The header and bottom \"Cart Bar\" use a crisp 1px bottom/top border and a backdrop blur (12px) if transparency is required, though solid white is preferred for performance.\n\n## Shapes\n\nThe design system utilizes **ROUND_EIGHT** as the primary radius logic.\n\n- **Product Cards:** Use `rounded-lg` (16px) for the outer container to feel approachable.\n- **Buttons & Inputs:** Use `rounded-md` (8px) for a precise, \"clickable\" look.\n- **Badges/Chips:** Use full pill-shaped rounding for tags like \"New\", \"Organic\", or \"10 Mins\".\n- **Search Bar:** Uses `rounded-md` (8px) to align with the professional, efficient aesthetic of the header.\n\n## Components\n\n### Buttons\n- **Primary:** Solid Primary Green with White text. Bold weight. Minimal 8px padding on sides.\n- **Secondary/Add:** White background with a 1px Primary Green border. When clicked, it transforms into a quantity selector (- 1 +).\n\n### Product Cards\n- A vertical stack: Image container (colored background tint), Product Title (2 lines max), Weight/Quantity, Price Row (Current vs. Struck-through), and a prominent \"ADD\" button.\n\n### Search Bar\n- Full-width desktop search with a leading \"Search for 'milk'\" placeholder. Incorporates a high-contrast search icon and a \"shortcut\" hint (e.g., \"/\") to emphasize efficiency.\n\n### Category Chips\n- Small, circular or square icons with labels underneath, arranged in a horizontal scrolling ribbon. Active categories use a Primary Green border.\n\n### Input Fields\n- High-contrast labels, 8px corner radius, and 1px borders that turn Primary Green on focus. Error states use a vibrant red (#EF4444) but maintain the same structural tokens.",
+        "colorVariant": "FIDELITY",
+        "overridePrimaryColor": "#43d174",
+        "overrideSecondaryColor": "#000000",
+        "overrideTertiaryColor": "#ffc107",
+        "overrideNeutralColor": "#f3f4f6",
+        "spacingScale": 2,
+        "typography": {
+          "label-sm": {
+            "fontFamily": "Plus Jakarta Sans",
+            "fontSize": "11px",
+            "fontWeight": "600",
+            "lineHeight": "14px"
+          },
+          "price-xl": {
+            "fontFamily": "Plus Jakarta Sans",
+            "fontSize": "20px",
+            "fontWeight": "800",
+            "lineHeight": "24px"
+          },
+          "headline-md": {
+            "fontFamily": "Plus Jakarta Sans",
+            "fontSize": "18px",
+            "fontWeight": "700",
+            "lineHeight": "24px"
+          },
+          "headline-lg": {
+            "fontFamily": "Plus Jakarta Sans",
+            "fontSize": "24px",
+            "fontWeight": "700",
+            "lineHeight": "32px",
+            "letterSpacing": "-0.01em"
+          },
+          "body-lg": {
+            "fontFamily": "Plus Jakarta Sans",
+            "fontSize": "16px",
+            "fontWeight": "500",
+            "lineHeight": "24px"
+          },
+          "display-lg": {
+            "fontFamily": "Plus Jakarta Sans",
+            "fontSize": "40px",
+            "fontWeight": "800",
+            "lineHeight": "48px",
+            "letterSpacing": "-0.02em"
+          },
+          "label-bold": {
+            "fontFamily": "Plus Jakarta Sans",
+            "fontSize": "12px",
+            "fontWeight": "700",
+            "lineHeight": "16px"
+          },
+          "body-sm": {
+            "fontFamily": "Plus Jakarta Sans",
+            "fontSize": "14px",
+            "fontWeight": "400",
+            "lineHeight": "20px"
+          }
+        },
+        "spacing": {
+          "margin-desktop": "48px",
+          "stack-md": "16px",
+          "stack-xs": "4px",
+          "container-max": "1280px",
+          "stack-lg": "24px",
+          "gutter": "16px",
+          "stack-sm": "8px"
+        },
+        "headlineFontFamily": "Plus Jakarta Sans",
+        "bodyFontFamily": "Plus Jakarta Sans",
+        "labelFontFamily": "Plus Jakarta Sans"
+      }
+    },
+    "version": "1"
+  }
+}

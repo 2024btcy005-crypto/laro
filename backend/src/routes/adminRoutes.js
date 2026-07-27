@@ -15,7 +15,9 @@ const {
     getAdvertisement,
     updateAdvertisement,
     updateUserRole,
-    broadcastNotification
+    broadcastNotification,
+    getFinancialAnalytics,
+    exportFinancialCSVReport
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middlewares/authMiddleware');
 const { authorize } = require('../middlewares/roleMiddleware');
@@ -42,6 +44,10 @@ router.get('/revenue-chart', getRevenueData);
 router.get('/top-products', getTopProducts);
 router.get('/item-sales', protect, admin, getAllItemSales);
 
+// Analytics routes
+router.get('/analytics/financial', protect, admin, getFinancialAnalytics);
+router.get('/analytics/export-csv', protect, admin, exportFinancialCSVReport);
+
 // Advertisement routes
 router.route('/advertisement')
     .get(protect, admin, getAdvertisement)
@@ -49,6 +55,7 @@ router.route('/advertisement')
 
 // Push Notification broadcast route
 router.post('/notifications/broadcast', protect, admin, broadcastNotification);
+
 
 router.put('/users/:id/status', toggleUserStatus);
 

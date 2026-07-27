@@ -241,9 +241,10 @@ export default function ProductManagement() {
                             px: 3,
                             py: 1.5,
                             fontSize: '0.9rem',
-                            boxShadow: '0 10px 20px rgba(236, 72, 153, 0.2)',
+                            boxShadow: '0 10px 20px rgba(0, 109, 51, 0.2)',
                         }}
                     >
+
                         Add New Product
                     </Button>
                 </Box>
@@ -629,7 +630,8 @@ export default function ProductManagement() {
                                             borderRadius: 2,
                                             py: 2,
                                             fontWeight: 900,
-                                            background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                                            background: '#006d33',
+                                            '&:hover': { background: '#005225' },
                                             mt: 2
                                         }}
                                     >

@@ -38,11 +38,13 @@ const protect = async (req, res, next) => {
 };
 
 const admin = (req, res, next) => {
-    if (req.user && (req.user.role === 'super_admin' || req.user.role === 'campus_admin')) {
+    const adminRoles = ['super_admin', 'campus_admin', 'shop_admin', 'admin'];
+    if (req.user && adminRoles.includes(req.user.role)) {
         next();
     } else {
         res.status(401).json({ message: 'Not authorized as an administrator' });
     }
 };
+
 
 module.exports = { protect, admin };

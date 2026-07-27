@@ -15,6 +15,8 @@ import CouponManagement from './pages/CouponManagement';
 import UniversityManagement from './pages/UniversityManagement';
 import QuestManagement from './pages/QuestManagement';
 import MarketingManagement from './pages/MarketingManagement';
+import FinancialAnalytics from './pages/FinancialAnalytics';
+import RestaurantManagement from './pages/RestaurantManagement';
 
 // A component to protect routes and redirect to login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -39,8 +41,11 @@ function App() {
                         }
                     >
                         <Route index element={<DashboardHome />} />
+                        <Route path="analytics" element={<FinancialAnalytics />} />
+                        <Route path="restaurants" element={<RestaurantManagement />} />
                         <Route path="shops" element={<ShopManagement />} />
                         <Route path="products" element={<ProductManagement />} />
+
                         <Route path="orders" element={<OrderManagement />} />
                         <Route path="users" element={<UserManagement />} />
                         <Route path="marketing" element={<MarketingManagement />} />
@@ -50,6 +55,7 @@ function App() {
                         <Route path="quests" element={<QuestManagement />} />
                         <Route path="settings" element={<Settings />} />
                     </Route>
+
 
                 </Routes>
             </BrowserRouter>
