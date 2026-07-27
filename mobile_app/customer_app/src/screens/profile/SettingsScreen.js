@@ -10,6 +10,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signOut } from '../../store/authSlice';
 import { useTheme } from '../../context/ThemeContext';
 import { authAPI } from '../../services/api';
+import { registerForPushNotificationsAsync } from '../../services/notificationService';
+
 
 const { width } = Dimensions.get('window');
 
@@ -177,8 +179,17 @@ export default function SettingsScreen({ navigation }) {
                             title="Notifications" 
                             isSwitch={true}
                             switchValue={notificationsEnabled}
-                            onSwitchChange={setNotificationsEnabled}
+                            onSwitchChange={async (val) => {
+                                setNotificationsEnabled(val);
+                                if (val) {
+                                    const token = await registerForPushNotificationsAsync();
+                                    if (token) {
+                                        Alert.alert('Notifications Enabled', 'You will now receive real-time campus deals and order updates!');
+                                    }
+                                }
+                            }}
                         />
+
                         <View style={styles.divider} />
                         <SettingItem 
                             icon="globe-outline" 

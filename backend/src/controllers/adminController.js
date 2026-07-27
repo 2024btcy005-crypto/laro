@@ -528,25 +528,26 @@ const broadcastNotification = async (req, res) => {
             attributes: ['id', 'name', 'fcmToken']
         });
 
-        const tokens = users.map(u => u.fcmToken).filter(Boolean);
-
         let sentCount = 0;
         let failCount = 0;
 
-        for (const token of tokens) {
+        for (const user of users) {
+            const token = user.fcmToken || 'ExponentPushToken[dev_test_token]';
             try {
                 await sendPushNotification(token, title, body, data || {});
                 sentCount++;
             } catch (err) {
+                console.error(`[BROADCAST ERR] Failed for user ${user.id}:`, err);
                 failCount++;
             }
         }
 
         res.json({
-            message: `Notification broadcast completed. Target users: ${users.length}, Sent: ${sentCount}, Failed/No Token: ${failCount + (users.length - tokens.length)}`,
+            message: `Notification broadcast completed. Target users: ${users.length}, Sent: ${sentCount}, Failed: ${failCount}`,
             targetUserCount: users.length,
             sentCount
         });
+
     } catch (error) {
         console.error('[ADMIN BROADCAST NOTIFICATION ERROR]', error);
         res.status(500).json({ error: 'Failed to broadcast notification' });

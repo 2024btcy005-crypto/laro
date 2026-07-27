@@ -7,11 +7,13 @@ import api from './api';
 export const registerForPushNotificationsAsync = async () => {
     try {
         let token;
-        
+
         // Dynamic import of expo-notifications if available in standard Expo environment
         let Notifications;
+        let Constants;
         try {
             Notifications = require('expo-notifications');
+            Constants = require('expo-constants').default;
         } catch (e) {
             console.warn('[PushNotifications] expo-notifications package not installed or native module missing.');
         }
@@ -25,6 +27,15 @@ export const registerForPushNotificationsAsync = async () => {
                 }),
             });
 
+            if (Platform.OS === 'android') {
+                await Notifications.setNotificationChannelAsync('default', {
+                    name: 'default',
+                    importance: Notifications.AndroidImportance.MAX,
+                    vibrationPattern: [0, 250, 250, 250],
+                    lightColor: '#006d33',
+                });
+            }
+
             const { status: existingStatus } = await Notifications.getPermissionsAsync();
             let finalStatus = existingStatus;
 
@@ -34,17 +45,18 @@ export const registerForPushNotificationsAsync = async () => {
             }
 
             if (finalStatus !== 'granted') {
-                console.warn('[PushNotifications] Failed to get push token for push notification!');
+                console.warn('[PushNotifications] Permission not granted for push notification!');
                 return null;
             }
 
-            token = (await Notifications.getExpoPushTokenAsync()).data;
+            const projectId = Constants?.expoConfig?.extra?.eas?.projectId || '26511b09-ff05-4cec-a69a-90668ba66022';
+            token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
         } else {
             // Fallback mobile device token generation for test/simulator environments
             token = `mobile_expo_token_${Platform.OS}_${Date.now()}`;
         }
 
-        console.log('[PushNotifications] Device Token:', token);
+        console.log('[PushNotifications] Real Device Token:', token);
 
         // Sync device token to backend User record
         if (token) {

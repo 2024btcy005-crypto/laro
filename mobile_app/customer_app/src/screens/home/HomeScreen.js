@@ -20,8 +20,10 @@ import * as Location from 'expo-location';
 import LaroToast from '../../components/LaroToast';
 import { COLORS, CONSTANTS } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
+import { registerForPushNotificationsAsync } from '../../services/notificationService';
 
 export default function HomeScreen({ navigation }) {
+
     const insets = useSafeAreaInsets();
     const { colors, isDarkMode } = useTheme();
     const dispatch = useDispatch();
@@ -68,12 +70,15 @@ export default function HomeScreen({ navigation }) {
     const categoriesList = ALL_CATEGORIES;
 
     useFocusEffect(
+
         useCallback(() => {
             fetchDefaultAddress();
             getLocationAsync(); // Gets GPS and calls fetchShops
             loadFavourites();
+            registerForPushNotificationsAsync(); // Prompts user for Push Notification permissions
         }, [user, selectedUniversity])
     );
+
 
     const getLocationAsync = async () => {
         try {
