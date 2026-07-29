@@ -482,45 +482,51 @@ export default function HomeScreen({ navigation }) {
             <View style={[styles.headerContainer, { paddingTop: (insets?.top || 0) + 10 }]}>
                 <View style={styles.locationHeader}>
                     <View style={styles.locationContainer}>
-                        <TouchableOpacity 
-                            style={styles.headerStreakPill} 
-                            onPress={() => {
-                                Alert.alert(
-                                    `🔥 ${userSummary?.currentStreak || 0}-Day Streak`,
-                                    userSummary?.currentStreak > 0 
-                                        ? `You have ordered ${userSummary.currentStreak} day(s) in a row!\n\nReach Day ${Math.ceil(((userSummary.currentStreak || 0) + 1) / 10) * 10} to win +${Math.ceil(((userSummary.currentStreak || 0) + 1) / 10) * 10} Laro Coins!`
-                                        : 'Order daily to earn bonus Laro Wallet Coins every 10 days!'
-                                );
-                            }}
-                        >
-                            <Text style={{ fontSize: 18 }}>🔥</Text>
-                            <View style={{ marginLeft: 6 }}>
-                                <Text style={{ fontSize: 9, fontWeight: '900', color: '#d94600', letterSpacing: 0.5 }}>STREAK</Text>
-                                <Text style={{ fontSize: 13, fontWeight: '900', color: '#111827' }}>
-                                    {userSummary?.currentStreak > 0 ? `${userSummary.currentStreak} Days` : '0 Days'}
-                                </Text>
+                        {/* Top Left: Deliver To Selector */}
+                        <TouchableOpacity style={styles.addressSelector} onPress={() => navigation.navigate('ChangeUniversity')}>
+                            <View>
+                                <Text style={styles.deliverToText}>DELIVER TO</Text>
+                                <View style={styles.addressRow}>
+                                    <Text style={styles.addressMainText} numberOfLines={1}>
+                                        {selectedUniversity?.name || 'Engineering Block C'}
+                                    </Text>
+                                    <Ionicons name="chevron-down" size={16} color="#056f36" style={styles.chevronIcon} />
+                                </View>
                             </View>
                         </TouchableOpacity>
 
-                        <View style={{ alignItems: 'flex-end', marginRight: 12, justifyContent: 'center' }}>
-                            <Text style={{ fontSize: 17, fontWeight: '900', color: '#111827', letterSpacing: -0.3 }} numberOfLines={1}>
-                                {user?.name || 'Devi Kumar'}
-                            </Text>
+                        <View style={{ flex: 1 }} />
+
+                        {/* Top Right: Streak Pill & Profile Avatar */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <TouchableOpacity 
+                                style={styles.headerStreakPill} 
+                                onPress={() => {
+                                    Alert.alert(
+                                        `🔥 ${userSummary?.currentStreak || 0}-Day Streak`,
+                                        userSummary?.currentStreak > 0 
+                                            ? `You have ordered ${userSummary.currentStreak} day(s) in a row!\n\nReach Day ${Math.ceil(((userSummary.currentStreak || 0) + 1) / 10) * 10} to win +${Math.ceil(((userSummary.currentStreak || 0) + 1) / 10) * 10} Laro Coins!`
+                                            : 'Order daily to earn bonus Laro Wallet Coins every 10 days!'
+                                    );
+                                }}
+                            >
+                                <Text style={{ fontSize: 15 }}>🔥</Text>
+                                <Text style={{ fontSize: 13, fontWeight: '900', color: '#d94600', marginLeft: 3 }}>
+                                    {userSummary?.currentStreak > 0 ? `${userSummary.currentStreak}d` : '0d'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                onPress={() => navigation.navigate('Profile')} 
+                                style={[styles.profileAvatarWrapper, { backgroundColor: '#f3fbf4', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#dcecdc' }]}
+                            >
+                                {user?.avatarUrl ? (
+                                    <Image source={{ uri: user.avatarUrl }} style={styles.profileAvatar} />
+                                ) : (
+                                    <Ionicons name="person" size={20} color="#056f36" />
+                                )}
+                            </TouchableOpacity>
                         </View>
-
-
-
-
-                        <TouchableOpacity 
-                            onPress={() => navigation.navigate('Profile')} 
-                            style={[styles.profileAvatarWrapper, { backgroundColor: '#f3fbf4', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#dcecdc' }]}
-                        >
-                            {user?.avatarUrl ? (
-                                <Image source={{ uri: user.avatarUrl }} style={styles.profileAvatar} />
-                            ) : (
-                                <Ionicons name="person" size={20} color="#056f36" />
-                            )}
-                        </TouchableOpacity>
                     </View>
                 </View>
 
