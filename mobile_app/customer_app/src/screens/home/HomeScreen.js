@@ -568,55 +568,7 @@ export default function HomeScreen({ navigation }) {
                     )}
                 </View>
 
-                {/* Ordering Streak Banner */}
-                <View style={styles.streakBannerContainer}>
-                    <View style={styles.streakBannerHeader}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-                            <View style={styles.streakIconBox}>
-                                <Text style={{ fontSize: 20 }}>🔥</Text>
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                    <Text style={styles.streakTitle}>
-                                        {userSummary?.currentStreak > 0 ? `${userSummary.currentStreak}-Day Streak!` : 'Start Ordering Streak!'}
-                                    </Text>
-                                    {userSummary?.currentStreak > 0 && (
-                                        <View style={styles.streakActiveBadge}>
-                                            <Text style={styles.streakActiveText}>ACTIVE</Text>
-                                        </View>
-                                    )}
-                                </View>
-                                <Text style={styles.streakSubtext} numberOfLines={1}>
-                                    {userSummary?.currentStreak > 0 
-                                        ? `Next milestone: Day ${Math.ceil(((userSummary.currentStreak || 0) + 1) / 10) * 10} (+${Math.ceil(((userSummary.currentStreak || 0) + 1) / 10) * 10} Ł)`
-                                        : 'Order daily to earn bonus Laro Coins every 10 days!'}
-                                </Text>
-                            </View>
-                        </View>
-                        <View style={styles.streakCoinBadge}>
-                            <Text style={styles.streakCoinBadgeAmount}>+{(Math.floor((userSummary?.currentStreak || 0) / 10) + 1) * 10}</Text>
-                            <Text style={styles.streakCoinBadgeLabel}>Ł BONUS</Text>
-                        </View>
-                    </View>
 
-                    {/* Progress Bar */}
-                    <View style={styles.streakProgressTrack}>
-                        <View 
-                            style={[
-                                styles.streakProgressFill, 
-                                { width: `${Math.min(100, ((((userSummary?.currentStreak || 0) % 10) || (userSummary?.currentStreak > 0 ? 10 : 0)) / 10) * 100)}%` }
-                            ]} 
-                        />
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                        <Text style={styles.streakProgressLabel}>
-                            Day {((userSummary?.currentStreak || 0) % 10)} of 10
-                        </Text>
-                        <Text style={styles.streakProgressLabelBold}>
-                            {10 - ((userSummary?.currentStreak || 0) % 10)} days left for next bonus
-                        </Text>
-                    </View>
-                </View>
 
 
                 <View style={{ marginBottom: 15 }}>
