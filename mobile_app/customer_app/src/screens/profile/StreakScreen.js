@@ -24,9 +24,12 @@ export default function StreakScreen({ navigation }) {
             const res = await api.get('/orders/user-summary');
             if (res.data) {
                 setUserSummary(res.data);
+            } else {
+                setUserSummary({ currentStreak: 0, longestStreak: 0, totalStreakCoins: 0 });
             }
         } catch (err) {
-            console.error('[StreakScreen] Failed to load streak summary:', err);
+            console.warn('[StreakScreen] Failed to load streak summary:', err.message);
+            setUserSummary({ currentStreak: 0, longestStreak: 0, totalStreakCoins: 0 });
         } finally {
             setLoading(false);
         }

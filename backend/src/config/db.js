@@ -9,6 +9,17 @@ const connectDB = async () => {
     try {
         await sequelize.authenticate();
         console.log('✅ PostgreSQL Database connected successfully.');
+
+        // Auto-migrate new schema columns if missing
+        try {
+            await sequelize.query('ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "currentStreak" INTEGER DEFAULT 0;');
+            await sequelize.query('ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "longestStreak" INTEGER DEFAULT 0;');
+            await sequelize.query('ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "lastOrderDate" DATE;');
+            await sequelize.query('ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "totalStreakCoins" INTEGER DEFAULT 0;');
+        } catch (migErr) {
+            console.warn('[DB AUTO-MIGRATE WARNING]', migErr.message);
+        }
+
         return true;
     } catch (error) {
         console.warn('⚠️  Database connection failed. Running without DB (mock/test mode).');
