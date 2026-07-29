@@ -257,6 +257,62 @@ const createOrder = async (req, res) => {
             console.log('[DEBUG] Coupon usage incremented');
         }
 
+        // --- ORDERING STREAK LOGIC ---
+        try {
+            const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            let updatedStreak = user.currentStreak || 0;
+            let streakCoinsAwarded = 0;
+
+            if (!user.lastOrderDate) {
+                // First order ever
+                updatedStreak = 1;
+            } else {
+                const lastDate = new Date(user.lastOrderDate);
+                const todayDate = new Date(todayStr);
+                const diffTime = Math.abs(todayDate - lastDate);
+                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 1) {
+                    // Ordered on consecutive day
+                    updatedStreak += 1;
+                } else if (diffDays > 1) {
+                    // Missed one or more days, reset streak
+                    updatedStreak = 1;
+                }
+                // If diffDays === 0 (same day), updatedStreak remains unchanged
+            }
+
+            user.currentStreak = updatedStreak;
+            if (updatedStreak > (user.longestStreak || 0)) {
+                user.longestStreak = updatedStreak;
+            }
+            user.lastOrderDate = todayStr;
+
+            // Check 10-day milestone bonus: every 10 streak days (10, 20, 30, 40...)
+            if (updatedStreak > 0 && updatedStreak % 10 === 0) {
+                // Award 'updatedStreak' coins (e.g. 10 coins for 10-day streak, 20 coins for 20-day streak, 30 for 30-day streak, etc.)
+                streakCoinsAwarded = updatedStreak;
+                user.laroCurrency = (user.laroCurrency || 0) + streakCoinsAwarded;
+                user.totalStreakCoins = (user.totalStreakCoins || 0) + streakCoinsAwarded;
+
+                await WalletTransaction.create({
+                    userId: req.user.id,
+                    orderId: order.id,
+                    amount: streakCoinsAwarded,
+                    type: 'credit',
+                    description: `🔥 ${updatedStreak}-Day Streak Milestone Bonus!`,
+                    balanceAfter: user.laroCurrency
+                }, { transaction: t });
+
+                console.log(`[STREAK BONUS] User ${user.id} hit ${updatedStreak}-day streak! Awarded +${streakCoinsAwarded} Laro Coins.`);
+            }
+
+            await user.save({ transaction: t });
+            console.log(`[STREAK] User ${user.id} currentStreak: ${user.currentStreak}, lastOrderDate: ${user.lastOrderDate}`);
+        } catch (streakErr) {
+            console.error('[STREAK ERROR] Non-fatal streak processing error:', streakErr.message);
+        }
+
         await t.commit();
         console.log('[DEBUG] Transaction committed');
 
@@ -430,7 +486,11 @@ const getUserSummary = async (req, res) => {
             rating: parseFloat((averageRating && averageRating[0] && averageRating[0].avgRating) || 0).toFixed(1),
             loyaltyPoints: user?.loyaltyPoints || 0,
             laroCurrency: user?.laroCurrency || 0,
-            loyaltyLevel: user?.loyaltyLevel || 'Learner'
+            loyaltyLevel: user?.loyaltyLevel || 'Learner',
+            currentStreak: user?.currentStreak || 0,
+            longestStreak: user?.longestStreak || 0,
+            lastOrderDate: user?.lastOrderDate || null,
+            totalStreakCoins: user?.totalStreakCoins || 0
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

@@ -59,9 +59,15 @@ const OrderSuccessOverlay = ({ visible, onTrackOrder, onHome }) => {
                     <Ionicons name="checkmark" size={80} color="#fff" />
                 </Animated.View>
 
-                <Animated.View style={{ opacity: textOpacity, alignItems: 'center', marginTop: 30 }}>
+                <Animated.View style={{ opacity: textOpacity, alignItems: 'center', marginTop: 24 }}>
                     <Text style={styles.title}>Order Placed!</Text>
                     <Text style={styles.subtitle}>Your delicious meal is being prepared.</Text>
+
+                    {/* Streak Celebration Badge */}
+                    <View style={styles.streakBadgeContainer}>
+                        <Text style={{ fontSize: 18 }}>🔥</Text>
+                        <Text style={styles.streakBadgeText}>Ordering Streak Extended!</Text>
+                    </View>
                 </Animated.View>
 
                 <Animated.View style={[styles.buttonContainer, { transform: [{ scale: buttonScale }] }]}>
@@ -139,6 +145,23 @@ const styles = StyleSheet.create({
         color: '#64748b',
         fontSize: 16,
         fontWeight: '800'
+    },
+    streakBadgeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: '#fff4eb',
+        borderWidth: 1,
+        borderColor: '#ffd8be',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 25,
+        marginTop: 16,
+    },
+    streakBadgeText: {
+        color: '#d94600',
+        fontSize: 14,
+        fontWeight: '900',
     }
 });
 

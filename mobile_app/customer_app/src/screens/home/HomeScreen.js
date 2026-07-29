@@ -49,6 +49,7 @@ export default function HomeScreen({ navigation }) {
     const [userCoords, setUserCoords] = useState(null);
 
     const [quests, setQuests] = useState([]);
+    const [userSummary, setUserSummary] = useState(null);
     const pulseAnim = useRef(new Animated.Value(0.6)).current;
 
 
@@ -316,11 +317,16 @@ export default function HomeScreen({ navigation }) {
             const finalLng = lng || userCoords?.lng || 82.9999;
             const uniId = selectedUniversity?.id || '';
 
-            const [shopsRes, ordersRes, questsRes] = await Promise.all([
+            const [shopsRes, ordersRes, questsRes, summaryRes] = await Promise.all([
                 api.get(`/shops?lat=${finalLat}&lng=${finalLng}&universityId=${uniId}&t=${Date.now()}`),
                 api.get('/orders'),
-                api.get('/quests/active')
+                api.get('/quests/active'),
+                api.get('/orders/user-summary')
             ].map(p => p.catch(e => e))); // catch individual errors so partial load works
+
+            if (summaryRes && summaryRes.data && !summaryRes.isAxiosError) {
+                setUserSummary(summaryRes.data);
+            }
 
             if (questsRes && questsRes.data && !questsRes.isAxiosError) {
                 setQuests(questsRes.data);
@@ -546,6 +552,56 @@ export default function HomeScreen({ navigation }) {
                             <Ionicons name="mic" size={20} color="#006d33" />
                         </TouchableOpacity>
                     )}
+                </View>
+
+                {/* Ordering Streak Banner */}
+                <View style={styles.streakBannerContainer}>
+                    <View style={styles.streakBannerHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                            <View style={styles.streakIconBox}>
+                                <Text style={{ fontSize: 20 }}>🔥</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <Text style={styles.streakTitle}>
+                                        {userSummary?.currentStreak > 0 ? `${userSummary.currentStreak}-Day Streak!` : 'Start Ordering Streak!'}
+                                    </Text>
+                                    {userSummary?.currentStreak > 0 && (
+                                        <View style={styles.streakActiveBadge}>
+                                            <Text style={styles.streakActiveText}>ACTIVE</Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <Text style={styles.streakSubtext} numberOfLines={1}>
+                                    {userSummary?.currentStreak > 0 
+                                        ? `Next milestone: Day ${Math.ceil(((userSummary.currentStreak || 0) + 1) / 10) * 10} (+${Math.ceil(((userSummary.currentStreak || 0) + 1) / 10) * 10} Ł)`
+                                        : 'Order daily to earn bonus Laro Coins every 10 days!'}
+                                </Text>
+                            </View>
+                        </View>
+                        <View style={styles.streakCoinBadge}>
+                            <Text style={styles.streakCoinBadgeAmount}>+{(Math.floor((userSummary?.currentStreak || 0) / 10) + 1) * 10}</Text>
+                            <Text style={styles.streakCoinBadgeLabel}>Ł BONUS</Text>
+                        </View>
+                    </View>
+
+                    {/* Progress Bar */}
+                    <View style={styles.streakProgressTrack}>
+                        <View 
+                            style={[
+                                styles.streakProgressFill, 
+                                { width: `${Math.min(100, ((((userSummary?.currentStreak || 0) % 10) || (userSummary?.currentStreak > 0 ? 10 : 0)) / 10) * 100)}%` }
+                            ]} 
+                        />
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                        <Text style={styles.streakProgressLabel}>
+                            Day {((userSummary?.currentStreak || 0) % 10)} of 10
+                        </Text>
+                        <Text style={styles.streakProgressLabelBold}>
+                            {10 - ((userSummary?.currentStreak || 0) % 10)} days left for next bonus
+                        </Text>
+                    </View>
                 </View>
 
 
@@ -2025,5 +2081,95 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '750',
         marginTop: 2,
+    },
+    streakBannerContainer: {
+        backgroundColor: '#fff4eb',
+        borderRadius: 16,
+        padding: 14,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#ffd8be',
+        shadowColor: '#ff6b00',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        elevation: 2,
+    },
+    streakBannerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    streakIconBox: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#ffe3d1',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    streakTitle: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#d94600',
+    },
+    streakSubtext: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#7c3a00',
+        marginTop: 1,
+    },
+    streakActiveBadge: {
+        backgroundColor: '#ff6b00',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    streakActiveText: {
+        color: '#fff',
+        fontSize: 9,
+        fontWeight: '900',
+        letterSpacing: 0.5,
+    },
+    streakCoinBadge: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#ffc5a1',
+    },
+    streakCoinBadgeAmount: {
+        color: '#d94600',
+        fontSize: 14,
+        fontWeight: '900',
+    },
+    streakCoinBadgeLabel: {
+        color: '#994d00',
+        fontSize: 8,
+        fontWeight: '800',
+    },
+    streakProgressTrack: {
+        height: 8,
+        backgroundColor: '#ffe4d6',
+        borderRadius: 4,
+        overflow: 'hidden',
+    },
+    streakProgressFill: {
+        height: '100%',
+        backgroundColor: '#ff6b00',
+        borderRadius: 4,
+    },
+    streakProgressLabel: {
+        fontSize: 10,
+        color: '#8a4b18',
+        fontWeight: '600',
+    },
+    streakProgressLabelBold: {
+        fontSize: 10,
+        color: '#d94600',
+        fontWeight: '800',
     },
 });

@@ -56,6 +56,22 @@ const User = sequelize.define('User', {
         type: DataTypes.INTEGER,
         defaultValue: 0,
     },
+    currentStreak: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+    },
+    longestStreak: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+    },
+    lastOrderDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+    },
+    totalStreakCoins: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+    },
     vehicleType: {
         type: DataTypes.STRING, // e.g., 'bicycle', 'scooter', 'car'
         allowNull: true,
