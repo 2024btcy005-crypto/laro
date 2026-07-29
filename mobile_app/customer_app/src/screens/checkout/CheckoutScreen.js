@@ -23,7 +23,7 @@ export default function CheckoutScreen({ navigation }) {
     const dispatch = useDispatch();
     
     // States
-    const [paymentMethod, setPaymentMethod] = useState('online'); // UPI is selected by default in mockup
+    const [paymentMethod, setPaymentMethod] = useState('cod');
     const [loading, setLoading] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [selectedAddress, setSelectedAddress] = useState({
@@ -201,23 +201,8 @@ export default function CheckoutScreen({ navigation }) {
                 console.log('[DEBUG] Cloud address sync failed:', cloudErr.message);
             }
 
-            if (paymentMethod === 'cod' || paymentMethod === 'laro_coins') {
-                dispatch(clearCart());
-                setOrderSuccess(true);
-            } else {
-                const paymentResponse = await api.post('/payments/create', { orderId: createdOrder.id });
-                setAlertConfig({
-                    visible: true,
-                    title: 'Online Payment',
-                    message: `Razorpay transaction created successfully.\n\nIntegrate Razorpay SDK to complete payment.`,
-                    confirmText: 'Pay Now (Mock)',
-                    onConfirm: () => {
-                        setAlertConfig(prev => ({ ...prev, visible: false }));
-                        dispatch(clearCart());
-                        setOrderSuccess(true);
-                    }
-                });
-            }
+            dispatch(clearCart());
+            setOrderSuccess(true);
         } catch (err) {
             console.error('Order error:', err.response?.data || err.message);
             setAlertConfig({
@@ -287,22 +272,6 @@ export default function CheckoutScreen({ navigation }) {
 
                         {/* Payment Method Section */}
                         <Text style={styles.sectionTitle}>Payment Method</Text>
-
-                        {/* UPI */}
-                        <TouchableOpacity
-                            style={[styles.paymentCard, paymentMethod === 'online' && styles.paymentCardActive]}
-                            onPress={() => setPaymentMethod('online')}
-                        >
-                            <View style={[styles.paymentIconBox, paymentMethod === 'online' && styles.paymentIconBoxActive]}>
-                                <Ionicons name="card" size={20} color={paymentMethod === 'online' ? '#fff' : '#666'} />
-                            </View>
-                            <View style={styles.paymentDetails}>
-                                <Text style={styles.paymentNameText}>UPI (PhonePe, Google Pay, etc.)</Text>
-                            </View>
-                            <View style={styles.radioButton}>
-                                {paymentMethod === 'online' && <View style={styles.radioButtonSelected} />}
-                            </View>
-                        </TouchableOpacity>
 
                         {/* Laro Coins */}
                         <TouchableOpacity

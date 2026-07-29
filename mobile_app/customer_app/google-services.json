@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "244501791989",
+    "project_id": "laro-deb67",
+    "storage_bucket": "laro-deb67.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:244501791989:android:f7df9de4ffd3d3ee9d71bc",
+        "android_client_info": {
+          "package_name": "com.zippit.laro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0OaYTBEN54wJqwm3OGwP9nKg2ZBSEcT8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

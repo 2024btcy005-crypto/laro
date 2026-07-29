@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Laro",
-    "slug": "customer-app",
+    "slug": "laro",
     "owner": "devikumar",
     "scheme": "laro",
     "version": "1.0.4",
@@ -13,6 +13,7 @@
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.zippit.laro",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -20,7 +21,8 @@
     },
     "plugins": [
       "expo-asset",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {

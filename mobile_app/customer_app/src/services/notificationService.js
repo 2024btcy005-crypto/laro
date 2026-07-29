@@ -47,10 +47,22 @@ export const registerForPushNotificationsAsync = async () => {
 
                 if (finalStatus === 'granted') {
                     const projectId = Constants?.expoConfig?.extra?.eas?.projectId || '26511b09-ff05-4cec-a69a-90668ba66022';
-                    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+                    try {
+                        token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+                        console.log('[PushNotifications] Expo Push Token obtained:', token);
+                    } catch (expoPushErr) {
+                        console.warn('[PushNotifications] getExpoPushTokenAsync failed. Attempting native device push token:', expoPushErr.message);
+                        try {
+                            const deviceTokenObj = await Notifications.getDevicePushTokenAsync();
+                            token = deviceTokenObj?.data || (typeof deviceTokenObj === 'string' ? deviceTokenObj : null);
+                            console.log('[PushNotifications] Native Device Push Token obtained:', token);
+                        } catch (devicePushErr) {
+                            console.warn('[PushNotifications] getDevicePushTokenAsync failed:', devicePushErr.message);
+                        }
+                    }
                 }
             } catch (tokenErr) {
-                console.warn('[PushNotifications] Running in Expo Go SDK 54 sandbox (remote push requires standalone APK / Dev Build). Using fallback token:', tokenErr.message);
+                console.warn('[PushNotifications] Error obtaining push token:', tokenErr.message);
                 token = `mobile_expo_token_${Platform.OS}_${Date.now()}`;
             }
         } else {

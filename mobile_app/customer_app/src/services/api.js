@@ -6,15 +6,19 @@ import { signOut } from '../store/authSlice';
 // PRODUCTION URL
 const PRODUCTION_URL = 'https://laro.onrender.com/api';
 
-// Replace with your local machine's IP address when testing on physical device
-// Run 'ipconfig' in terminal and find 'IPv4 Address' under your Wi-Fi/Ethernet.
-const LOCAL_IP = '10.149.78.250'; // Your current machine IP
-export const API_BASE_URL = PRODUCTION_URL; // Using production backend
+// Current machine Wi-Fi IPv4 Address (from ipconfig)
+const LOCAL_IP = '10.62.227.250';
+const LOCAL_URL = `http://${LOCAL_IP}:5000/api`;
+
+// Set to true if testing with local backend (node src/server.js), false for production on Render
+const USE_LOCAL_SERVER = false;
+
+export const API_BASE_URL = USE_LOCAL_SERVER ? LOCAL_URL : PRODUCTION_URL;
 console.log('[API] Initialized with Base URL:', API_BASE_URL);
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 30000,
+    timeout: 60000,
 });
 
 export const resolveImageUrl = (url) => {
