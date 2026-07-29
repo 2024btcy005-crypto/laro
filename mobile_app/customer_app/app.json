@@ -19,10 +19,20 @@
         "backgroundColor": "#ffffff"
       }
     },
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#006d33"
+    },
     "plugins": [
       "expo-asset",
       "expo-web-browser",
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#006d33"
+        }
+      ]
     ],
     "extra": {
       "eas": {
