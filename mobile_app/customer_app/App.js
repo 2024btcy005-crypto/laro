@@ -60,6 +60,7 @@ import LaroCurrencyScreen from './src/screens/profile/LaroCurrencyScreen';
 import SendCoinsScreen from './src/screens/profile/SendCoinsScreen';
 import MyQRScreen from './src/screens/profile/MyQRScreen';
 import TransactionDetailScreen from './src/screens/profile/TransactionDetailScreen';
+import StreakScreen from './src/screens/profile/StreakScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -311,6 +312,7 @@ function RootNavigator() {
                     <Stack.Screen name="ChangeUniversity" component={UniversitySelectionScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Quest" component={QuestScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="QuestsList" component={QuestsTabScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Streak" component={StreakScreen} options={{ headerShown: false }} />
                 </>
             ) : (
                 <>

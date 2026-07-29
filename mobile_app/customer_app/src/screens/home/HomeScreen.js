@@ -501,14 +501,7 @@ export default function HomeScreen({ navigation }) {
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             <TouchableOpacity 
                                 style={styles.headerStreakPill} 
-                                onPress={() => {
-                                    Alert.alert(
-                                        `🔥 ${userSummary?.currentStreak || 0}-Day Streak`,
-                                        userSummary?.currentStreak > 0 
-                                            ? `You have ordered ${userSummary.currentStreak} day(s) in a row!\n\nReach Day ${Math.ceil(((userSummary.currentStreak || 0) + 1) / 10) * 10} to win +${Math.ceil(((userSummary.currentStreak || 0) + 1) / 10) * 10} Laro Coins!`
-                                            : 'Order daily to earn bonus Laro Wallet Coins every 10 days!'
-                                    );
-                                }}
+                                onPress={() => navigation.navigate('Streak')}
                             >
                                 <Text style={{ fontSize: 15 }}>🔥</Text>
                                 <Text style={{ fontSize: 13, fontWeight: '900', color: '#d94600', marginLeft: 3 }}>
