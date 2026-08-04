@@ -12,13 +12,13 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#006d33"
+      "backgroundColor": "#254e2b"
     },
     "android": {
       "package": "com.zippit.delivery",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#006d33"
+        "backgroundColor": "#254e2b"
       }
     },
     "web": {

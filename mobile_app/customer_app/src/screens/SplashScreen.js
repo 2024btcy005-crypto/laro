@@ -1,11 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, StatusBar } from 'react-native';
+import { View, Image, StyleSheet, StatusBar } from 'react-native';
 
 export default function SplashScreen() {
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#006d33" />
-            <Text style={styles.brandTitle}>LARO</Text>
+            <StatusBar barStyle="light-content" backgroundColor="#254e2b" />
+            <Image 
+                source={require('../../assets/splash.png')} 
+                style={styles.splashImage}
+                resizeMode="cover"
+            />
         </View>
     );
 }
@@ -13,14 +17,12 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#006d33',
+        backgroundColor: '#254e2b',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    brandTitle: {
-        fontSize: 48,
-        fontWeight: '900',
-        color: '#FFFFFF',
-        letterSpacing: 6,
+    splashImage: {
+        width: '100%',
+        height: '100%',
     }
 });
