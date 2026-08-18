@@ -215,7 +215,7 @@ export default function CartScreen({ navigation }) {
                     <View style={styles.billRow}>
                         <Text style={styles.billLabel}>Delivery Fee</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={styles.billDeliveryStruck}>{CONSTANTS.CURRENCY}1.50</Text>
+                            <Text style={styles.billDeliveryStruck}>{CONSTANTS.CURRENCY}25.00</Text>
                             <Text style={styles.billDeliveryFree}>FREE</Text>
                         </View>
                     </View>
@@ -249,7 +249,7 @@ export default function CartScreen({ navigation }) {
 
                 {/* Savings Banner */}
                 <View style={styles.savingsBanner}>
-                    <Text style={styles.savingsBannerText}>You're saving {CONSTANTS.CURRENCY}1.50 on this order!</Text>
+                    <Text style={styles.savingsBannerText}>You're saving {CONSTANTS.CURRENCY}25.00 on this order!</Text>
                 </View>
             </ScrollView>
 

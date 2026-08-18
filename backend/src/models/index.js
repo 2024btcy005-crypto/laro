@@ -83,6 +83,10 @@ Product.belongsTo(Category, { foreignKey: 'categoryId', as: 'categoryModel' });
 University.hasMany(User, { foreignKey: 'universityId', as: 'users' });
 User.belongsTo(University, { foreignKey: 'universityId', as: 'university' });
 
+// Dedicated Delivery Shop Assignment
+User.belongsTo(Shop, { foreignKey: 'assignedShopId', as: 'assignedShop' });
+Shop.hasMany(User, { foreignKey: 'assignedShopId', as: 'assignedDeliveryPartners' });
+
 University.hasMany(Shop, { foreignKey: 'universityId', as: 'shops' });
 Shop.belongsTo(University, { foreignKey: 'universityId', as: 'university' });
 

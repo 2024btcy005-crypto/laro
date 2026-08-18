@@ -300,28 +300,57 @@ export default function OrderDetailScreen({ route, navigation }) {
                 </View>
 
                 {/* Payment Summary Card */}
-                <View style={styles.card}>
-                    <Text style={styles.cardHeaderLabel}>PAYMENT SUMMARY</Text>
-                    <View style={styles.paymentSummaryRow}>
-                        <Text style={styles.paymentLabel}>Item Total</Text>
-                        <Text style={styles.paymentValue}>{CONSTANTS.CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}</Text>
-                    </View>
-                    
-                    <View style={styles.paymentSummaryRow}>
-                        <Text style={styles.paymentLabel}>Delivery Fee</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={styles.deliveryStruckText}>{CONSTANTS.CURRENCY}1.50</Text>
-                            <Text style={styles.deliveryFreeText}>FREE</Text>
+                {(() => {
+                    const itemSubtotal = order.items?.reduce((acc, curr) => acc + (parseFloat(curr.priceAtTime || 0) * (curr.quantity || 1)), 0) || parseFloat(order.totalAmount || 0);
+                    const taxes = Math.round(itemSubtotal * 0.05);
+                    const handlingCharge = 2.00;
+                    const discount = parseFloat(order.discountAmount || 0);
+                    const grandTotal = parseFloat(order.totalAmount || 0);
+
+                    return (
+                        <View style={styles.card}>
+                            <Text style={styles.cardHeaderLabel}>PAYMENT SUMMARY</Text>
+                            <View style={styles.paymentSummaryRow}>
+                                <Text style={styles.paymentLabel}>Item Total</Text>
+                                <Text style={styles.paymentValue}>{CONSTANTS.CURRENCY}{itemSubtotal.toFixed(2)}</Text>
+                            </View>
+
+                            <View style={styles.paymentSummaryRow}>
+                                <Text style={styles.paymentLabel}>Delivery Fee</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={styles.deliveryStruckText}>{CONSTANTS.CURRENCY}25.00</Text>
+                                    <Text style={styles.deliveryFreeText}>FREE</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.paymentSummaryRow}>
+                                <Text style={styles.paymentLabel}>Campus Handling Fee</Text>
+                                <Text style={styles.paymentValue}>{CONSTANTS.CURRENCY}{handlingCharge.toFixed(2)}</Text>
+                            </View>
+
+                            {taxes > 0 && (
+                                <View style={styles.paymentSummaryRow}>
+                                    <Text style={styles.paymentLabel}>Govt Taxes & Charges</Text>
+                                    <Text style={styles.paymentValue}>{CONSTANTS.CURRENCY}{taxes.toFixed(2)}</Text>
+                                </View>
+                            )}
+
+                            {discount > 0 && (
+                                <View style={styles.paymentSummaryRow}>
+                                    <Text style={[styles.paymentLabel, { color: '#056f36', fontWeight: 'bold' }]}>Coupon Discount</Text>
+                                    <Text style={[styles.paymentValue, { color: '#056f36', fontWeight: 'bold' }]}>-{CONSTANTS.CURRENCY}{discount.toFixed(2)}</Text>
+                                </View>
+                            )}
+
+                            <View style={styles.summaryDivider} />
+
+                            <View style={styles.paymentSummaryRow}>
+                                <Text style={styles.totalLabel}>Total</Text>
+                                <Text style={styles.totalValue}>{CONSTANTS.CURRENCY}{grandTotal.toFixed(2)}</Text>
+                            </View>
                         </View>
-                    </View>
-
-                    <View style={styles.summaryDivider} />
-
-                    <View style={styles.paymentSummaryRow}>
-                        <Text style={styles.totalLabel}>Total</Text>
-                        <Text style={styles.totalValue}>{CONSTANTS.CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}</Text>
-                    </View>
-                </View>
+                    );
+                })()}
 
                 {order.status === 'placed' && (
                     <TouchableOpacity

@@ -31,7 +31,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PeopleIcon from '@mui/icons-material/People';
 import EditIcon from '@mui/icons-material/Edit';
-import { getAllUsers, toggleUserStatus, updateUserRole, getAllUniversities } from '../api';
+import { getAllUsers, toggleUserStatus, updateUserRole, getAllUniversities, getAllShops, assignShopToDeliveryPartner } from '../api';
 
 const roleColors = {
     'super_admin': { label: 'SUPER ADMIN', color: '#dc2626', bg: '#fee2e2' },
@@ -45,6 +45,7 @@ export default function UserManagement() {
     const theme = useTheme();
     const [users, setUsers] = useState([]);
     const [universities, setUniversities] = useState([]);
+    const [shops, setShops] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Edit Dialog State
@@ -52,6 +53,7 @@ export default function UserManagement() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [newRole, setNewRole] = useState('');
     const [newUni, setNewUni] = useState('');
+    const [newShop, setNewShop] = useState('');
     const [updating, setUpdating] = useState(false);
 
     // Filter state
@@ -64,12 +66,14 @@ export default function UserManagement() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [usersRes, unisRes] = await Promise.all([
+            const [usersRes, unisRes, shopsRes] = await Promise.all([
                 getAllUsers(),
-                getAllUniversities()
+                getAllUniversities(),
+                getAllShops()
             ]);
             setUsers(usersRes.data || []);
             setUniversities(unisRes.data || []);
+            setShops(shopsRes.data || []);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -95,6 +99,7 @@ export default function UserManagement() {
         setSelectedUser(user);
         setNewRole(user.role);
         setNewUni(user.universityId || '');
+        setNewShop(user.assignedShopId || '');
         setEditOpen(true);
     };
 
@@ -105,10 +110,17 @@ export default function UserManagement() {
                 role: newRole,
                 universityId: newRole === 'campus_admin' ? newUni : null
             });
+
+            if (newRole === 'delivery') {
+                await assignShopToDeliveryPartner(selectedUser.id, {
+                    assignedShopId: newShop || null
+                });
+            }
+
             await fetchData();
             setEditOpen(false);
         } catch (error) {
-            alert(error.response?.data?.message || 'Error updating role');
+            alert(error.response?.data?.message || 'Error updating role or shop assignment');
         } finally {
             setUpdating(false);
         }
@@ -213,6 +225,7 @@ export default function UserManagement() {
                                     <TableCell sx={{ color: '#6b7280', fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', py: 2 }}>EMAIL / PHONE</TableCell>
                                     <TableCell sx={{ color: '#6b7280', fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', py: 2 }}>ROLE</TableCell>
                                     <TableCell sx={{ color: '#6b7280', fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', py: 2 }}>CAMPUS</TableCell>
+                                    <TableCell sx={{ color: '#6b7280', fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', py: 2 }}>ASSIGNED SHOP</TableCell>
                                     <TableCell sx={{ color: '#6b7280', fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', py: 2 }}>STATUS</TableCell>
                                     <TableCell align="right" sx={{ color: '#6b7280', fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', py: 2 }}>ACTIONS</TableCell>
                                 </TableRow>
@@ -273,6 +286,23 @@ export default function UserManagement() {
                                             <TableCell sx={{ color: '#4b5563', fontSize: '13px' }}>
                                                 {user.university?.name || '-'}
                                             </TableCell>
+                                            <TableCell sx={{ color: '#4b5563', fontSize: '13px' }}>
+                                                {user.role === 'delivery' ? (
+                                                    user.assignedShop?.name ? (
+                                                        <Chip
+                                                            label={user.assignedShop.name}
+                                                            size="small"
+                                                            sx={{ bgcolor: '#fef3c7', color: '#d97706', fontWeight: 800, fontSize: '10px' }}
+                                                        />
+                                                    ) : (
+                                                        <Chip
+                                                            label="ALL SHOPS (GLOBAL)"
+                                                            size="small"
+                                                            sx={{ bgcolor: '#f3f4f6', color: '#6b7280', fontWeight: 700, fontSize: '10px' }}
+                                                        />
+                                                    )
+                                                ) : '-'}
+                                            </TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                     <Box sx={{
@@ -327,7 +357,7 @@ export default function UserManagement() {
                     PaperProps={{ sx: { borderRadius: 4, p: 2, bgcolor: '#ffffff', border: '1px solid #e5e7eb' } }}
                 >
                     <DialogTitle sx={{ fontWeight: 800, color: '#111827' }}>
-                        Edit User Permissions: {selectedUser?.name}
+                        Edit User Permissions & Shop Assignment: {selectedUser?.name}
                     </DialogTitle>
                     <DialogContent sx={{ pt: 2 }}>
                         <FormControl fullWidth sx={{ mt: 2, mb: 3 }}>
@@ -344,6 +374,24 @@ export default function UserManagement() {
                                 <MenuItem value="super_admin">Super Admin (Global)</MenuItem>
                             </Select>
                         </FormControl>
+
+                        {newRole === 'delivery' && (
+                            <FormControl fullWidth sx={{ mb: 3 }}>
+                                <InputLabel>Assigned Restaurant / Shop</InputLabel>
+                                <Select
+                                    value={newShop}
+                                    onChange={(e) => setNewShop(e.target.value)}
+                                    label="Assigned Restaurant / Shop"
+                                >
+                                    <MenuItem value="">All Shops & Restaurants (Global Rider)</MenuItem>
+                                    {shops.map(s => (
+                                        <MenuItem key={s.id} value={s.id}>
+                                            {s.name} ({s.shopType || s.category || 'Shop'})
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        )}
 
                         {newRole === 'campus_admin' && (
                             <FormControl fullWidth sx={{ mb: 2 }}>

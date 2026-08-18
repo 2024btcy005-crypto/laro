@@ -243,6 +243,12 @@ const getAvailableOrders = async (req, res) => {
         }
 
         const whereClause = { status: 'placed', universityId: partner.universityId };
+        
+        // If partner is assigned to a specific shop/restaurant, only show orders from that shop
+        if (partner.assignedShopId) {
+            whereClause.shopId = partner.assignedShopId;
+        }
+
         console.log(`[DEBUG] Querying available orders with whereClause:`, JSON.stringify(whereClause));
 
         const orders = await Order.findAll({

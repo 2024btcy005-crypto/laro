@@ -15,6 +15,7 @@ const {
     getAdvertisement,
     updateAdvertisement,
     updateUserRole,
+    assignShopToDeliveryPartner,
     broadcastNotification,
     getFinancialAnalytics,
     exportFinancialCSVReport
@@ -60,6 +61,7 @@ router.post('/notifications/broadcast', protect, admin, broadcastNotification);
 router.put('/users/:id/status', toggleUserStatus);
 
 router.put('/users/:id/role', updateUserRole);
+router.put('/users/:id/assign-shop', assignShopToDeliveryPartner);
 
 // Quest admin routes
 router.post('/quests', createQuest);

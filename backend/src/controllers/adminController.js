@@ -88,11 +88,18 @@ const getAllUsers = async (req, res) => {
         const users = await User.findAll({
             where: uniFilter,
             attributes: { exclude: ['password'] },
-            include: [{
-                model: require('../models').University,
-                as: 'university',
-                attributes: ['id', 'name']
-            }],
+            include: [
+                {
+                    model: require('../models').University,
+                    as: 'university',
+                    attributes: ['id', 'name']
+                },
+                {
+                    model: require('../models').Shop,
+                    as: 'assignedShop',
+                    attributes: ['id', 'name', 'category', 'shopType']
+                }
+            ],
             order: [['createdAt', 'DESC']]
         });
         res.json(users);
@@ -506,6 +513,44 @@ const updateUserRole = async (req, res) => {
     }
 };
 
+// @desc    Assign delivery partner to a specific shop/restaurant
+// @route   PUT /api/admin/users/:id/assign-shop
+// @access  Private/Admin
+const assignShopToDeliveryPartner = async (req, res) => {
+    try {
+        const { assignedShopId } = req.body;
+        const user = await User.findByPk(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const shopIdToSave = (assignedShopId === 'null' || assignedShopId === '' || !assignedShopId) ? null : assignedShopId;
+
+        if (shopIdToSave) {
+            const shop = await Shop.findByPk(shopIdToSave);
+            if (!shop) {
+                return res.status(404).json({ message: 'Specified shop not found' });
+            }
+        }
+
+        await user.update({ assignedShopId: shopIdToSave });
+
+        const updatedUser = await User.findByPk(user.id, {
+            attributes: { exclude: ['password'] },
+            include: [
+                { model: Shop, as: 'assignedShop', attributes: ['id', 'name', 'category', 'shopType'] },
+                { model: University, as: 'university', attributes: ['id', 'name'] }
+            ]
+        });
+
+        res.json({ message: 'Delivery partner shop assignment updated successfully', user: updatedUser });
+    } catch (error) {
+        console.error('[ADMIN ASSIGN SHOP ERROR]', error);
+        res.status(500).json({ error: 'Failed to assign shop to delivery partner' });
+    }
+};
+
 // @desc    Send broadcast push notification
 // @route   POST /api/admin/notifications/broadcast
 // @access  Private/Admin
@@ -721,6 +766,7 @@ module.exports = {
     getAdvertisement,
     updateAdvertisement,
     updateUserRole,
+    assignShopToDeliveryPartner,
     broadcastNotification,
     getFinancialAnalytics,
     exportFinancialCSVReport

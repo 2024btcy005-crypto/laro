@@ -44,6 +44,7 @@ export const getAllItemSales = () => api.get('/admin/item-sales');
 export const deleteOrder = (id) => api.delete(`/orders/${id}`);
 export const toggleUserStatus = (id) => api.put(`/admin/users/${id}/status`);
 export const updateUserRole = (id, data) => api.put(`/admin/users/${id}/role`, data);
+export const assignShopToDeliveryPartner = (id, data) => api.put(`/admin/users/${id}/assign-shop`, data);
 export const getAllCoupons = () => api.get('/coupons');
 export const createCoupon = (data) => api.post('/coupons', data);
 export const deleteCoupon = (id) => api.delete(`/coupons/${id}`);

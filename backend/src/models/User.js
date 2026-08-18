@@ -92,6 +92,14 @@ const User = sequelize.define('User', {
             key: 'id'
         }
     },
+    assignedShopId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+            model: 'shops',
+            key: 'id'
+        }
+    },
 }, {
     tableName: 'users',
     timestamps: true,
