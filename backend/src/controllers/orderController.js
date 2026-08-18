@@ -2,6 +2,7 @@ const { Order, OrderItem, Product, Shop, User, Delivery, Review, WalletTransacti
 const { sequelize } = require('../config/db');
 const { Sequelize } = require('sequelize');
 const { notifyDeliveryPartnersNewOrder } = require('../services/socketService');
+const { notifyEligibleRidersNewOrder } = require('../services/notificationService');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -316,7 +317,7 @@ const createOrder = async (req, res) => {
         await t.commit();
         console.log('[DEBUG] Transaction committed');
 
-        // Real-time notify delivery partners
+        // Real-time notify delivery partners via Socket & Push Notifications
         try {
             notifyDeliveryPartnersNewOrder({
                 id: order.id,
@@ -326,8 +327,11 @@ const createOrder = async (req, res) => {
                 status: order.status,
                 deliveryOtp: order.deliveryOtp
             });
+
+            // Trigger Push Notification to eligible riders
+            notifyEligibleRidersNewOrder(order);
         } catch (socketErr) {
-            console.error('[DEBUG] Socket notification failed but order is placed:', socketErr.message);
+            console.error('[DEBUG] Rider notification failed but order is placed:', socketErr.message);
         }
 
         return res.status(201).json(order);

@@ -116,6 +116,9 @@ export default function PartnerHomeScreen({ navigation }) {
         setLoading(false);
     };
 
+    // Ref to track previous orders for new order notification alerts
+    const prevOrderIdsRef = React.useRef(new Set());
+
     useEffect(() => {
         let interval;
 
@@ -133,6 +136,30 @@ export default function PartnerHomeScreen({ navigation }) {
             if (interval) clearInterval(interval);
         };
     }, [isOnline, refreshTrigger]);
+
+    // Trigger alert notification when new delivery order arrives
+    useEffect(() => {
+        if (!isOnline || orders.length === 0) return;
+
+        const currentIds = new Set(orders.map(o => o.id));
+        const newArrivals = orders.filter(o => !prevOrderIdsRef.current.has(o.id));
+
+        if (prevOrderIdsRef.current.size > 0 && newArrivals.length > 0) {
+            const latest = newArrivals[0];
+            setAlertConfig({
+                visible: true,
+                title: '🚀 NEW DELIVERY ORDER AVAILABLE!',
+                message: `New order from ${latest.shopName} (₹${parseFloat(latest.totalAmount || 0).toFixed(2)})!\n\nDeliver to: ${latest.deliveryAddress || 'Campus Block'}`,
+                confirmType: 'success',
+                confirmText: 'Accept Order',
+                onConfirm: () => {
+                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                    handleAcceptOrder(latest);
+                }
+            });
+        }
+        prevOrderIdsRef.current = currentIds;
+    }, [orders, isOnline]);
 
     const handleAcceptOrder = (order) => {
         setAlertConfig({

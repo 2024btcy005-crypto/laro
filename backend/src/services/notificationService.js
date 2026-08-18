@@ -74,6 +74,68 @@ const sendPushNotification = async (token, title, body, data = {}) => {
     }
 };
 
+/**
+ * Notify eligible delivery partners via push notification when a new order is placed
+ * @param {object} order - The created order instance with shop info
+ */
+const notifyEligibleRidersNewOrder = async (order) => {
+    try {
+        const { User, Shop } = require('../models');
+        const shop = await Shop.findByPk(order.shopId);
+        const shopName = shop ? shop.name : 'Campus Store';
+        const isRestaurant = shop ? shop.shopType === 'RESTAURANT' : false;
+
+        // Fetch active delivery partners
+        const whereClause = {
+            role: 'delivery',
+            isActive: true
+        };
+        if (order.universityId) {
+            whereClause.universityId = order.universityId;
+        }
+
+        const riders = await User.findAll({ where: whereClause });
+
+        const title = `🚀 New Delivery Order Available!`;
+        const body = `New order from ${shopName} (₹${parseFloat(order.totalAmount || 0).toFixed(2)}). Tap to view and accept delivery!`;
+
+        let notifiedCount = 0;
+        for (const rider of riders) {
+            let isEligible = false;
+
+            if (rider.deliveryScope === 'ALL' || !rider.deliveryScope) {
+                isEligible = true;
+            } else if (isRestaurant && rider.deliveryScope === 'RESTAURANTS_ONLY') {
+                isEligible = true;
+            } else if (!isRestaurant && rider.deliveryScope === 'GROCERIES_ONLY') {
+                isEligible = true;
+            } else if (rider.deliveryScope === 'SPECIFIC_SHOP' && rider.assignedShopId === order.shopId) {
+                isEligible = true;
+            } else if (rider.assignedShopId === order.shopId) {
+                isEligible = true;
+            }
+
+            if (isEligible) {
+                notifiedCount++;
+                if (rider.fcmToken) {
+                    try {
+                        await sendPushNotification(rider.fcmToken, title, body, {
+                            orderId: order.id,
+                            type: 'NEW_DELIVERY_ORDER'
+                        });
+                    } catch (pushErr) {
+                        console.error(`[RIDER PUSH ERR] Failed for rider ${rider.id}:`, pushErr.message);
+                    }
+                }
+            }
+        }
+        console.log(`[RIDER PUSH] Notified ${notifiedCount} eligible delivery partners for order #${order.id}`);
+    } catch (err) {
+        console.error('[RIDER PUSH ERROR]', err.message);
+    }
+};
+
 module.exports = {
-    sendPushNotification
+    sendPushNotification,
+    notifyEligibleRidersNewOrder
 };
