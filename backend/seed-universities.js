@@ -8,25 +8,11 @@ async function seed() {
 
         const unis = [
             {
-                name: 'Cochin University (CUSAT)',
-                address: 'Kalamassery, Kochi, Kerala',
-                latitude: 10.0465,
-                longitude: 76.3268,
-                radius: 2.0
-            },
-            {
-                name: 'IIT Madras',
-                address: 'Chennai, Tamil Nadu',
-                latitude: 12.9915,
-                longitude: 80.2336,
-                radius: 3.5
-            },
-            {
-                name: 'Delhi University (North Campus)',
-                address: 'New Delhi, Delhi',
-                latitude: 28.6892,
-                longitude: 77.2106,
-                radius: 2.5
+                name: 'Joyy University',
+                address: 'Kanyakumari, Tamil Nadu',
+                latitude: 8.0883,
+                longitude: 77.5385,
+                radius: 3.0
             }
         ];
 

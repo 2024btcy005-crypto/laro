@@ -19,10 +19,15 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
 // @access  Public
 const getShops = async (req, res) => {
     try {
-        const { lat, lng, universityId, all } = req.query;
+        const { lat, lng, universityId, all, shopType, type } = req.query;
 
         // If 'all=true' is passed, we might be in admin mode
         let whereClause = {};
+
+        const filterType = shopType || type;
+        if (filterType) {
+            whereClause.shopType = filterType.toUpperCase();
+        }
 
         // Non-admin callers only see active shops by default
         if (all !== 'true') {

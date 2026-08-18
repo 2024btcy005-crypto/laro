@@ -21,6 +21,11 @@ const Shop = sequelize.define('Shop', {
     category: {
         type: DataTypes.STRING(50),
     },
+    shopType: {
+        type: DataTypes.ENUM('RESTAURANT', 'GROCERY', 'STATIONERY'),
+        defaultValue: 'RESTAURANT',
+        allowNull: false,
+    },
     imageUrl: {
         type: DataTypes.STRING,
     },

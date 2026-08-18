@@ -17,6 +17,7 @@ async function seedRestaurants() {
             {
                 name: 'The Campus Pizzeria & Italian Bistro',
                 category: 'Food & Canteen',
+                shopType: 'RESTAURANT',
                 description: 'Freshly baked wood-fired pizzas, cheesy garlic breads, and authentic pastas delivered straight to your hostel.',
                 imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop',
                 isOpen: true,
@@ -37,6 +38,7 @@ async function seedRestaurants() {
             {
                 name: 'Block B Burger Joint & Fries',
                 category: 'Food & Canteen',
+                shopType: 'RESTAURANT',
                 description: 'Juicy grilled smash burgers, peri peri fries, and thick milkshakes for late night hostel cravings.',
                 imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop',
                 isOpen: true,
@@ -48,15 +50,15 @@ async function seedRestaurants() {
                 closingTime: '01:00:00',
                 universityId: uniId,
                 items: [
-                    { name: 'Classic Crispy Veg Burger', price: 79, originalPrice: 99, category: 'Burgers', imageUrl: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&auto=format&fit=crop' },
-                    { name: 'Spicy Peri Peri Crinkle Fries', price: 89, originalPrice: 109, category: 'Fries', imageUrl: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=500&auto=format&fit=crop' },
-                    { name: 'Double Cheese Chicken Smash Burger', price: 159, originalPrice: 199, category: 'Burgers', imageUrl: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500&auto=format&fit=crop' },
-                    { name: 'Oreo Thickshake', price: 99, originalPrice: 119, category: 'Beverages', imageUrl: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=500&auto=format&fit=crop' }
+                    { name: 'Smoky BBQ Cheese Smash Burger', price: 129, originalPrice: 159, category: 'Burgers', imageUrl: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&auto=format&fit=crop' },
+                    { name: 'Crispy Peri Peri French Fries', price: 79, originalPrice: 99, category: 'Sides', imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500&auto=format&fit=crop' },
+                    { name: 'Thick Oreo Chocolate Milkshake', price: 89, originalPrice: 110, category: 'Beverages', imageUrl: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=500&auto=format&fit=crop' }
                 ]
             },
             {
                 name: 'Night Study Brew & Cafe',
                 category: 'Bakery & Cafe',
+                shopType: 'RESTAURANT',
                 description: 'Rich espresso, iced cold coffee, grilled sandwiches, and fresh pastries for exam study sessions.',
                 imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&auto=format&fit=crop',
                 isOpen: true,
@@ -75,8 +77,9 @@ async function seedRestaurants() {
                 ]
             },
             {
-                name: 'Hostel Central Canteen & Thali',
+                name: 'Annapoorna Campus Dhaba & Thalis',
                 category: 'Food & Canteen',
+                shopType: 'RESTAURANT',
                 description: 'Homely North & South Indian meals, paneer dishes, garlic naans, and authentic biryanis.',
                 imageUrl: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600&auto=format&fit=crop',
                 isOpen: true,
@@ -97,6 +100,7 @@ async function seedRestaurants() {
             {
                 name: 'Fresh Juice & Smoothie Bar',
                 category: 'Food & Canteen',
+                shopType: 'RESTAURANT',
                 description: '100% natural cold pressed juices, energy fruit bowls, and protein shakes for active campus life.',
                 imageUrl: 'https://images.unsplash.com/photo-1622597467836-f3285f2131b7?w=600&auto=format&fit=crop',
                 isOpen: true,
@@ -111,6 +115,26 @@ async function seedRestaurants() {
                     { name: 'Fresh Mango & Passion Fruit Smoothie', price: 79, originalPrice: 99, category: 'Smoothies', imageUrl: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=500&auto=format&fit=crop' },
                     { name: 'Cold Pressed Watermelon Mint Juice', price: 59, originalPrice: 79, category: 'Juices', imageUrl: 'https://images.unsplash.com/photo-1589733955941-5eeaf752f6dd?w=500&auto=format&fit=crop' },
                     { name: 'High Protein Peanut Butter Banana Shake', price: 99, originalPrice: 120, category: 'Protein Shakes', imageUrl: 'https://images.unsplash.com/photo-1577805947697-89e18249d767?w=500&auto=format&fit=crop' }
+                ]
+            },
+            {
+                name: 'Campus Daily Supermart & Groceries',
+                category: 'Groceries',
+                shopType: 'GROCERY',
+                description: 'Daily fresh dairy, instant snacks, cold beverages, toiletries, and instant campus essentials delivered in 10 mins.',
+                imageUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&auto=format&fit=crop',
+                isOpen: true,
+                rating: 4.9,
+                ratingCount: '1150',
+                deliveryTime: '10 min',
+                costForTwo: '₹150 for two',
+                openingTime: '06:00:00',
+                closingTime: '23:59:00',
+                universityId: uniId,
+                items: [
+                    { name: 'Amul Taaza Toned Milk (500ml)', price: 27, originalPrice: 28, category: 'Dairy', imageUrl: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=500&auto=format&fit=crop' },
+                    { name: 'Lays Magic Masala Chips (50g)', price: 20, originalPrice: 20, category: 'Snacks', imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=500&auto=format&fit=crop' },
+                    { name: 'Maggi 2-Minute Masala Noodles (4-Pack)', price: 56, originalPrice: 60, category: 'Instant Food', imageUrl: 'https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=500&auto=format&fit=crop' }
                 ]
             }
         ];

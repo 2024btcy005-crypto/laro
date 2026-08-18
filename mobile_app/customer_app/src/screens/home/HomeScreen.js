@@ -333,8 +333,17 @@ export default function HomeScreen({ navigation }) {
             }
 
             if (shopsRes && shopsRes.data) {
-                setShops(shopsRes.data);
-                const allProds = shopsRes.data.flatMap(s =>
+                // Focus Home Screen on Daily Groceries, Essentials, and Stationery (Restaurants are in Food tab)
+                const groceryShops = shopsRes.data.filter(s => 
+                    s.shopType === 'GROCERY' || 
+                    s.shopType === 'STATIONERY' || 
+                    (s.category && !['food & canteen', 'restaurant', 'cafe', 'pizzeria'].includes(s.category.toLowerCase())) ||
+                    s.isWarehouse
+                );
+                setShops(groceryShops.length > 0 ? groceryShops : shopsRes.data);
+                
+                const targetShops = groceryShops.length > 0 ? groceryShops : shopsRes.data;
+                const allProds = targetShops.flatMap(s =>
                     (s.products || []).map(p => ({ ...p, shopCategory: s.category || '' }))
                 );
                 setProducts(allProds);

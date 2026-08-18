@@ -46,11 +46,12 @@ export default function FoodDeliveryScreen({ navigation }) {
         setLoading(true);
         try {
             const uniId = selectedUniversity?.id || '';
-            const res = await api.get(`/shops?universityId=${uniId}`);
+            const res = await api.get(`/shops?shopType=RESTAURANT&universityId=${uniId}`);
             if (res.data) {
-                // filter out stationery shops
+                // Filter strictly RESTAURANT shopType or non-stationery food places
                 const foodShops = res.data.filter(s => 
-                    !s.category || !STATIONERY_SHOP_MODES.some(m => s.category.toLowerCase().includes(m))
+                    s.shopType === 'RESTAURANT' || 
+                    (!s.shopType && !STATIONERY_SHOP_MODES.some(m => (s.category || '').toLowerCase().includes(m)))
                 );
                 setShops(foodShops);
             }
@@ -140,16 +141,20 @@ export default function FoodDeliveryScreen({ navigation }) {
 
             {/* Sticky Header */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={24} color={colors.black} />
-                </TouchableOpacity>
+                {navigation.canGoBack() ? (
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color={colors.black} />
+                    </TouchableOpacity>
+                ) : (
+                    <View style={{ width: 16 }} />
+                )}
                 <View style={styles.headerInfo}>
                     <Text style={styles.headerLabel}>CAMPUS FOOD DELIVERY</Text>
                     <Text style={[styles.universityLabel, { color: colors.primary }]} numberOfLines={1}>
                         {selectedUniversity?.name || 'Select Campus'}
                     </Text>
                 </View>
-                <View style={{ width: 40 }} />
+                {navigation.canGoBack() && <View style={{ width: 40 }} />}
             </View>
 
             {/* List with elements */}

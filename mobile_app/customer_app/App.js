@@ -91,6 +91,9 @@ function TabNavigator() {
                     if (route.name === 'Home') {
                         iconName = focused ? 'home' : 'home-outline';
                         label = 'Home';
+                    } else if (route.name === 'Food') {
+                        iconName = focused ? 'fast-food' : 'fast-food-outline';
+                        label = 'Food';
                     } else if (route.name === 'Orders') {
                         iconName = focused ? 'receipt' : 'receipt-outline';
                         label = 'Orders';
@@ -123,6 +126,11 @@ function TabNavigator() {
             <Tab.Screen
                 name="Home"
                 component={HomeScreen}
+                listeners={{ tabPress: () => Haptics.selectionAsync() }}
+            />
+            <Tab.Screen
+                name="Food"
+                component={FoodDeliveryScreen}
                 listeners={{ tabPress: () => Haptics.selectionAsync() }}
             />
             <Tab.Screen
