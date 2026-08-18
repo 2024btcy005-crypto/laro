@@ -525,16 +525,23 @@ const assignShopToDeliveryPartner = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const shopIdToSave = (assignedShopId === 'null' || assignedShopId === '' || !assignedShopId) ? null : assignedShopId;
+        let shopIdToSave = null;
+        let scopeToSave = 'ALL';
 
-        if (shopIdToSave) {
-            const shop = await Shop.findByPk(shopIdToSave);
+        if (assignedShopId === 'ALL_RESTAURANTS') {
+            scopeToSave = 'RESTAURANTS_ONLY';
+        } else if (assignedShopId === 'ALL_GROCERIES' || assignedShopId === 'ALL_SHOPS') {
+            scopeToSave = 'GROCERIES_ONLY';
+        } else if (assignedShopId && assignedShopId !== 'null' && assignedShopId !== '') {
+            const shop = await Shop.findByPk(assignedShopId);
             if (!shop) {
                 return res.status(404).json({ message: 'Specified shop not found' });
             }
+            shopIdToSave = assignedShopId;
+            scopeToSave = 'SPECIFIC_SHOP';
         }
 
-        await user.update({ assignedShopId: shopIdToSave });
+        await user.update({ assignedShopId: shopIdToSave, deliveryScope: scopeToSave });
 
         const updatedUser = await User.findByPk(user.id, {
             attributes: { exclude: ['password'] },

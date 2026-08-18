@@ -244,8 +244,16 @@ const getAvailableOrders = async (req, res) => {
 
         const whereClause = { status: 'placed', universityId: partner.universityId };
         
-        // If partner is assigned to a specific shop/restaurant, only show orders from that shop
-        if (partner.assignedShopId) {
+        // Filter orders by Delivery Partner Scope
+        if (partner.deliveryScope === 'RESTAURANTS_ONLY') {
+            const foodShops = await Shop.findAll({ where: { shopType: 'RESTAURANT' }, attributes: ['id'] });
+            const foodShopIds = foodShops.map(s => s.id);
+            whereClause.shopId = { [Op.in]: foodShopIds };
+        } else if (partner.deliveryScope === 'GROCERIES_ONLY') {
+            const groceryShops = await Shop.findAll({ where: { shopType: { [Op.ne]: 'RESTAURANT' } }, attributes: ['id'] });
+            const groceryShopIds = groceryShops.map(s => s.id);
+            whereClause.shopId = { [Op.in]: groceryShopIds };
+        } else if (partner.assignedShopId) {
             whereClause.shopId = partner.assignedShopId;
         }
 

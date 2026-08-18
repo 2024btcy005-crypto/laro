@@ -99,7 +99,13 @@ export default function UserManagement() {
         setSelectedUser(user);
         setNewRole(user.role);
         setNewUni(user.universityId || '');
-        setNewShop(user.assignedShopId || '');
+        if (user.deliveryScope === 'RESTAURANTS_ONLY') {
+            setNewShop('ALL_RESTAURANTS');
+        } else if (user.deliveryScope === 'GROCERIES_ONLY') {
+            setNewShop('ALL_GROCERIES');
+        } else {
+            setNewShop(user.assignedShopId || '');
+        }
         setEditOpen(true);
     };
 
@@ -288,17 +294,29 @@ export default function UserManagement() {
                                             </TableCell>
                                             <TableCell sx={{ color: '#4b5563', fontSize: '13px' }}>
                                                 {user.role === 'delivery' ? (
-                                                    user.assignedShop?.name ? (
+                                                    user.deliveryScope === 'RESTAURANTS_ONLY' ? (
+                                                        <Chip
+                                                            label="All Restaurants"
+                                                            size="small"
+                                                            sx={{ bgcolor: '#ffedd5', color: '#c2410c', fontWeight: 800, fontSize: '11px' }}
+                                                        />
+                                                    ) : user.deliveryScope === 'GROCERIES_ONLY' ? (
+                                                        <Chip
+                                                            label="All Shops"
+                                                            size="small"
+                                                            sx={{ bgcolor: '#dbeafe', color: '#1e40af', fontWeight: 800, fontSize: '11px' }}
+                                                        />
+                                                    ) : user.assignedShop?.name ? (
                                                         <Chip
                                                             label={user.assignedShop.name}
                                                             size="small"
-                                                            sx={{ bgcolor: '#fef3c7', color: '#d97706', fontWeight: 800, fontSize: '10px' }}
+                                                            sx={{ bgcolor: '#fef3c7', color: '#d97706', fontWeight: 800, fontSize: '11px' }}
                                                         />
                                                     ) : (
                                                         <Chip
-                                                            label="ALL SHOPS (GLOBAL)"
+                                                            label="All Shops & Restaurants"
                                                             size="small"
-                                                            sx={{ bgcolor: '#f3f4f6', color: '#6b7280', fontWeight: 700, fontSize: '10px' }}
+                                                            sx={{ bgcolor: '#f3f4f6', color: '#6b7280', fontWeight: 700, fontSize: '11px' }}
                                                         />
                                                     )
                                                 ) : '-'}
@@ -357,7 +375,7 @@ export default function UserManagement() {
                     PaperProps={{ sx: { borderRadius: 4, p: 2, bgcolor: '#ffffff', border: '1px solid #e5e7eb' } }}
                 >
                     <DialogTitle sx={{ fontWeight: 800, color: '#111827' }}>
-                        Edit User Permissions & Shop Assignment: {selectedUser?.name}
+                        Edit Delivery Partner Assignment: {selectedUser?.name}
                     </DialogTitle>
                     <DialogContent sx={{ pt: 2 }}>
                         <FormControl fullWidth sx={{ mt: 2, mb: 3 }}>
@@ -377,16 +395,18 @@ export default function UserManagement() {
 
                         {newRole === 'delivery' && (
                             <FormControl fullWidth sx={{ mb: 3 }}>
-                                <InputLabel>Assigned Restaurant / Shop</InputLabel>
+                                <InputLabel>Assign Delivery Scope / Outlet</InputLabel>
                                 <Select
                                     value={newShop}
                                     onChange={(e) => setNewShop(e.target.value)}
-                                    label="Assigned Restaurant / Shop"
+                                    label="Assign Delivery Scope / Outlet"
                                 >
-                                    <MenuItem value="">All Shops & Restaurants (Global Rider)</MenuItem>
+                                    <MenuItem value="ALL_SHOPS">🛍️ All Shops (Grocery & Essentials)</MenuItem>
+                                    <MenuItem value="ALL_RESTAURANTS">🍕 All Restaurants (Food & Canteen)</MenuItem>
+                                    <MenuItem value="">🌐 All Shops & Restaurants (Global)</MenuItem>
                                     {shops.map(s => (
                                         <MenuItem key={s.id} value={s.id}>
-                                            {s.name} ({s.shopType || s.category || 'Shop'})
+                                            📍 {s.name} ({s.shopType === 'RESTAURANT' ? 'Restaurant' : 'Shop'})
                                         </MenuItem>
                                     ))}
                                 </Select>

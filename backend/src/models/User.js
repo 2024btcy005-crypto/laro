@@ -100,6 +100,10 @@ const User = sequelize.define('User', {
             key: 'id'
         }
     },
+    deliveryScope: {
+        type: DataTypes.ENUM('ALL', 'RESTAURANTS_ONLY', 'GROCERIES_ONLY', 'SPECIFIC_SHOP'),
+        defaultValue: 'ALL'
+    },
 }, {
     tableName: 'users',
     timestamps: true,

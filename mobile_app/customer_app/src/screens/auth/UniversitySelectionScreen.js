@@ -84,12 +84,8 @@ export default function UniversitySelectionScreen({ navigation, route }) {
         const isSelected = selectedUni && (selectedUni.id === item.id || selectedUni._id === item._id);
         
         // Custom location mapping if not provided in database
-        let locationText = item.address || 'California, USA';
-        if (item.name.toLowerCase().includes('stanford')) locationText = 'Stanford, CA';
-        else if (item.name.toLowerCase().includes('mit')) locationText = 'Cambridge, MA';
-        else if (item.name.toLowerCase().includes('berkeley')) locationText = 'Berkeley, CA';
-        else if (item.name.toLowerCase().includes('harvard')) locationText = 'Cambridge, MA';
-        else if (item.name.toLowerCase().includes('joy')) locationText = 'Delhi NCR, India';
+        let locationText = item.address || 'Kanyakumari, Tamil Nadu';
+        if (item.name.toLowerCase().includes('joy')) locationText = item.address || 'Kanyakumari, Tamil Nadu';
 
         // Logo initials or icon container
         const initials = item.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
@@ -146,7 +142,7 @@ export default function UniversitySelectionScreen({ navigation, route }) {
                     <Ionicons name="search-outline" size={20} color="#056f36" style={{ marginRight: 10 }} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Stanford Univers"
+                        placeholder="Search university..."
                         placeholderTextColor="#999"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
