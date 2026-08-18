@@ -194,13 +194,15 @@ export default function RestaurantManagement() {
     const handleSaveRestaurant = async (e) => {
         e.preventDefault();
         try {
+            const payload = {
+                ...formData,
+                shopType: 'RESTAURANT',
+                isWarehouse: false
+            };
             if (editMode && currentId) {
-                await api.put(`/shops/${currentId}`, formData);
+                await api.put(`/shops/${currentId}`, payload);
             } else {
-                await api.post('/shops', {
-                    ...formData,
-                    isWarehouse: false
-                });
+                await api.post('/shops', payload);
             }
             setOpenModal(false);
             fetchInitialData();

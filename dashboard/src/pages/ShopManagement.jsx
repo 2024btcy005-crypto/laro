@@ -173,6 +173,7 @@ export default function ShopManagement() {
         // Sanitize data: convert empty strings to null for fields that expect specific types
         const dataToSave = {
             ...formData,
+            shopType: formData.shopType || 'GROCERY',
             universityId: formData.universityId === '' ? null : formData.universityId,
             latitude: 0, // Removed from UI, set to default
             longitude: 0, // Removed from UI, set to default
