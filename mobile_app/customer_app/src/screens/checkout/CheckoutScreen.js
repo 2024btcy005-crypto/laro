@@ -405,7 +405,7 @@ export default function CheckoutScreen({ navigation }) {
 
                             {taxes > 0 && (
                                 <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Govt Taxes & Charges</Text>
+                                    <Text style={styles.billLabel}>Platform Tax</Text>
                                     <Text style={styles.billValue}>{CONSTANTS.CURRENCY}{taxes.toFixed(2)}</Text>
                                 </View>
                             )}

@@ -51,7 +51,14 @@ export default function OrderDetailScreen({ route, navigation }) {
         if (phone) {
             Linking.openURL(`tel:${phone}`);
         } else {
-            Linking.openURL(`tel:+919876543210`);
+            setAlertConfig({
+                visible: true,
+                title: 'Rider Not Assigned Yet',
+                message: 'A delivery partner has not accepted your order yet. The call button will directly dial your rider as soon as a delivery partner accepts!',
+                confirmText: 'Got It',
+                confirmType: 'primary',
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
         }
     };
 
@@ -178,11 +185,64 @@ export default function OrderDetailScreen({ route, navigation }) {
                             <Text style={styles.overlayStatusTitle}>{statusText}</Text>
                             <Text style={styles.overlayArrivalText}>{arrivalText}</Text>
                         </View>
-                        <TouchableOpacity style={styles.callRiderBtn} onPress={() => handleCallRider(rider?.phoneNumber)}>
-                            <Text style={styles.callRiderText}>Call</Text>
+                        <TouchableOpacity 
+                            style={[styles.callRiderBtn, !rider?.phoneNumber && { backgroundColor: '#d1d5db', elevation: 0 }]} 
+                            onPress={() => handleCallRider(rider?.phoneNumber)}
+                            activeOpacity={rider?.phoneNumber ? 0.7 : 0.9}
+                        >
+                            <Ionicons name="call" size={13} color="#fff" style={{ marginRight: 4 }} />
+                            <Text style={styles.callRiderText}>{rider?.phoneNumber ? 'Call Rider' : 'Call'}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
+
+                {/* Delivery Partner Card */}
+                {!['delivered', 'cancelled'].includes(order.status) && (
+                    <View style={styles.card}>
+                        <Text style={styles.cardHeaderLabel}>DELIVERY PARTNER</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <View style={{
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 22,
+                                    backgroundColor: rider ? '#e6f7ed' : '#f3f4f6',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginRight: 12
+                                }}>
+                                    <Ionicons name={rider ? "person" : "hourglass-outline"} size={22} color={rider ? "#056f36" : "#9ca3af"} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#111827' }}>
+                                        {rider ? rider.name : 'Finding Delivery Partner...'}
+                                    </Text>
+                                    <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                                        {rider ? `${rider.vehicleType ? rider.vehicleType.toUpperCase() : 'SCOOTER'} • ${rider.vehicleNumber || 'Campus Fleet'}` : 'Rider will be assigned shortly'}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                style={{
+                                    backgroundColor: rider?.phoneNumber ? '#056f36' : '#e5e7eb',
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 9,
+                                    borderRadius: 20,
+                                    flexDirection: 'row',
+                                    alignItems: 'center'
+                                }}
+                                onPress={() => handleCallRider(rider?.phoneNumber)}
+                                activeOpacity={rider?.phoneNumber ? 0.7 : 0.9}
+                            >
+                                <Ionicons name="call" size={14} color={rider?.phoneNumber ? "#ffffff" : "#9ca3af"} style={{ marginRight: 6 }} />
+                                <Text style={{ color: rider?.phoneNumber ? "#ffffff" : "#9ca3af", fontWeight: '800', fontSize: 13 }}>
+                                    {rider?.phoneNumber ? 'Call Rider' : 'Call'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
 
                 {/* Delivery OTP Card */}
                 {!['delivered', 'cancelled'].includes(order.status) && (
@@ -330,7 +390,7 @@ export default function OrderDetailScreen({ route, navigation }) {
 
                             {taxes > 0 && (
                                 <View style={styles.paymentSummaryRow}>
-                                    <Text style={styles.paymentLabel}>Govt Taxes & Charges</Text>
+                                    <Text style={styles.paymentLabel}>Platform Tax</Text>
                                     <Text style={styles.paymentValue}>{CONSTANTS.CURRENCY}{taxes.toFixed(2)}</Text>
                                 </View>
                             )}
@@ -457,12 +517,8 @@ export default function OrderDetailScreen({ route, navigation }) {
                                             <Text style={styles.receiptTotalValue}>{CONSTANTS.CURRENCY}{subtotal.toFixed(2)}</Text>
                                         </View>
                                         <View style={styles.receiptTotalRow}>
-                                            <Text style={styles.receiptTotalLabel}>CGST (2.5%):</Text>
-                                            <Text style={styles.receiptTotalValue}>{CONSTANTS.CURRENCY}{cgst.toFixed(2)}</Text>
-                                        </View>
-                                        <View style={styles.receiptTotalRow}>
-                                            <Text style={styles.receiptTotalLabel}>SGST (2.5%):</Text>
-                                            <Text style={styles.receiptTotalValue}>{CONSTANTS.CURRENCY}{sgst.toFixed(2)}</Text>
+                                            <Text style={styles.receiptTotalLabel}>Platform Tax (5%):</Text>
+                                            <Text style={styles.receiptTotalValue}>{CONSTANTS.CURRENCY}{totalTax.toFixed(2)}</Text>
                                         </View>
                                         <View style={styles.receiptTotalRow}>
                                             <Text style={styles.receiptTotalLabel}>Platform Handling Fee:</Text>
