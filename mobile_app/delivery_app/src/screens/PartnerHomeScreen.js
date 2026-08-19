@@ -131,7 +131,7 @@ export default function PartnerHomeScreen({ navigation }) {
                     
                     Notifications.setNotificationHandler({
                         handleNotification: async () => ({
-                            shouldShowAlert: true,
+                            shouldShowAlert: false,
                             shouldPlaySound: true,
                             shouldSetBadge: true,
                         }),

@@ -22,7 +22,7 @@ try {
     const Notifications = require('expo-notifications');
     Notifications.setNotificationHandler({
         handleNotification: async () => ({
-            shouldShowAlert: true,
+            shouldShowAlert: false,
             shouldPlaySound: true,
             shouldSetBadge: true,
         }),
@@ -268,8 +268,6 @@ function RootNavigator() {
             if (Notifications) {
                 const subReceived = Notifications.addNotificationReceivedListener(notification => {
                     console.log('[PUSH RECEIVED FOREGROUND]:', notification);
-                    const { title, body } = notification.request.content;
-                    Alert.alert(title || 'Zippit Alert 🔔', body || 'You have a new update!');
                 });
 
                 const subResponse = Notifications.addNotificationResponseReceivedListener(response => {
