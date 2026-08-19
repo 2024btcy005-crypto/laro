@@ -14,8 +14,15 @@ const Category = require('./Category');
 const Advertisement = require('./Advertisement');
 const University = require('./University');
 const Quest = require('./Quest');
+const Referral = require('./Referral');
 
 // === Define Associations ===
+
+// Referral Associations
+User.hasMany(Referral, { foreignKey: 'referrerId', as: 'givenReferrals' });
+User.hasOne(Referral, { foreignKey: 'refereeId', as: 'receivedReferral' });
+Referral.belongsTo(User, { foreignKey: 'referrerId', as: 'referrer' });
+Referral.belongsTo(User, { foreignKey: 'refereeId', as: 'referee' });
 
 // Users -> Orders (Customer)
 User.hasMany(Order, { foreignKey: 'customerId', as: 'orders' });
@@ -119,6 +126,7 @@ module.exports = {
     Category,
     Advertisement,
     University,
-    Quest
+    Quest,
+    Referral
 };
 

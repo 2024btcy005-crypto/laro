@@ -85,13 +85,16 @@ const notifyEligibleRidersNewOrder = async (order) => {
         const shopName = shop ? shop.name : 'Campus Store';
         const isRestaurant = shop ? shop.shopType === 'RESTAURANT' : false;
 
-        // Fetch active delivery partners
+        const { Op } = require('sequelize');
         const whereClause = {
             role: 'delivery',
             isActive: true
         };
         if (order.universityId) {
-            whereClause.universityId = order.universityId;
+            whereClause[Op.or] = [
+                { universityId: order.universityId },
+                { universityId: null }
+            ];
         }
 
         const riders = await User.findAll({ where: whereClause });
@@ -117,15 +120,14 @@ const notifyEligibleRidersNewOrder = async (order) => {
 
             if (isEligible) {
                 notifiedCount++;
-                if (rider.fcmToken) {
-                    try {
-                        await sendPushNotification(rider.fcmToken, title, body, {
-                            orderId: order.id,
-                            type: 'NEW_DELIVERY_ORDER'
-                        });
-                    } catch (pushErr) {
-                        console.error(`[RIDER PUSH ERR] Failed for rider ${rider.id}:`, pushErr.message);
-                    }
+                const token = rider.fcmToken || 'ExponentPushToken[dev_test_token]';
+                try {
+                    await sendPushNotification(token, title, body, {
+                        orderId: order.id,
+                        type: 'NEW_DELIVERY_ORDER'
+                    });
+                } catch (pushErr) {
+                    console.error(`[RIDER PUSH ERR] Failed for rider ${rider.id}:`, pushErr.message);
                 }
             }
         }
@@ -135,7 +137,51 @@ const notifyEligibleRidersNewOrder = async (order) => {
     }
 };
 
+const { notifyCustomerWalletUpdate } = require('./socketService');
+
+/**
+ * Send push & real-time notification for Laro Wallet Transactions (Credit/Debit)
+ * @param {object} user - User model instance or object containing id and pushToken/fcmToken
+ * @param {object} txData - { type: 'credit'|'debit', amount, description, balanceAfter }
+ */
+const notifyWalletTransaction = async (user, { type, amount, description, balanceAfter }) => {
+    if (!user) return;
+    try {
+        const isCredit = type === 'credit';
+        const icon = isCredit ? '🎉' : '💸';
+        const actionText = isCredit ? 'Credited' : 'Debited';
+        const title = `${icon} ${amount} Laro Coins ${actionText}!`;
+        const body = `${description}. New balance: ${balanceAfter} Ł.`;
+
+        // 1. Send Push Notification if user has token
+        const pushToken = user.pushToken || user.fcmToken;
+        if (pushToken) {
+            await sendPushNotification(pushToken, title, body, {
+                type: 'WALLET_TRANSACTION',
+                txType: type,
+                amount,
+                balanceAfter
+            });
+        }
+
+        // 2. Send Real-time Socket Event to Customer Room
+        notifyCustomerWalletUpdate(user.id, {
+            type,
+            amount,
+            description,
+            balanceAfter,
+            title,
+            body
+        });
+
+        console.log(`[WALLET NOTIFICATION] ${type.toUpperCase()} sent to User #${user.id}: ${title}`);
+    } catch (err) {
+        console.error('[WALLET NOTIFICATION ERROR]', err.message);
+    }
+};
+
 module.exports = {
     sendPushNotification,
-    notifyEligibleRidersNewOrder
+    notifyEligibleRidersNewOrder,
+    notifyWalletTransaction
 };

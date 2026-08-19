@@ -9,7 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { restoreToken } from './src/store/authSlice';
 import { setStoreCart } from './src/store/cartSlice';
-import { View, ActivityIndicator, Text, Alert } from 'react-native';
+import { View, ActivityIndicator, Text, Alert, Animated, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from './src/theme';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -61,9 +61,51 @@ import SendCoinsScreen from './src/screens/profile/SendCoinsScreen';
 import MyQRScreen from './src/screens/profile/MyQRScreen';
 import TransactionDetailScreen from './src/screens/profile/TransactionDetailScreen';
 import StreakScreen from './src/screens/profile/StreakScreen';
+import ReferralScreen from './src/screens/profile/ReferralScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+function AnimatedTabButton(props) {
+    const { accessibilityState, children, onPress } = props;
+    const focused = accessibilityState?.selected;
+
+    const scaleAnim = React.useRef(new Animated.Value(focused ? 1.06 : 0.94)).current;
+
+    React.useEffect(() => {
+        Animated.spring(scaleAnim, {
+            toValue: focused ? 1.1 : 0.94,
+            friction: 5,
+            tension: 120,
+            useNativeDriver: true,
+        }).start();
+    }, [focused]);
+
+    return (
+        <TouchableOpacity
+            {...props}
+            onPress={(e) => {
+                if (onPress) onPress(e);
+            }}
+            activeOpacity={0.85}
+            style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
+            <Animated.View
+                style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transform: [{ scale: scaleAnim }],
+                    paddingHorizontal: 12,
+                    paddingVertical: 3,
+                    borderRadius: 16,
+                    backgroundColor: focused ? '#edf7f0' : 'transparent',
+                }}
+            >
+                {children}
+            </Animated.View>
+        </TouchableOpacity>
+    );
+}
 
 function TabNavigator() {
     return (
@@ -71,6 +113,8 @@ function TabNavigator() {
             screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarShowLabel: false,
+
+                tabBarButton: (props) => <AnimatedTabButton {...props} />,
                 tabBarStyle: {
                     backgroundColor: '#ffffff',
                     borderTopWidth: 1,
@@ -111,9 +155,9 @@ function TabNavigator() {
                             />
                             <Text style={{
                                 fontSize: 10,
-                                fontWeight: focused ? '700' : '500',
+                                fontWeight: focused ? '800' : '500',
                                 color: focused ? '#056f36' : '#aaaaaa',
-                                marginTop: 3,
+                                marginTop: 2,
                             }}>
                                 {label}
                             </Text>
@@ -122,27 +166,10 @@ function TabNavigator() {
                 },
             })}
         >
-
-            <Tab.Screen
-                name="Home"
-                component={HomeScreen}
-                listeners={{ tabPress: () => Haptics.selectionAsync() }}
-            />
-            <Tab.Screen
-                name="Food"
-                component={FoodDeliveryScreen}
-                listeners={{ tabPress: () => Haptics.selectionAsync() }}
-            />
-            <Tab.Screen
-                name="Orders"
-                component={OrdersScreen}
-                listeners={{ tabPress: () => Haptics.selectionAsync() }}
-            />
-            <Tab.Screen
-                name="Profile"
-                component={ProfileScreen}
-                listeners={{ tabPress: () => Haptics.selectionAsync() }}
-            />
+            <Tab.Screen name="Home" component={HomeScreen} />
+            <Tab.Screen name="Food" component={FoodDeliveryScreen} />
+            <Tab.Screen name="Orders" component={OrdersScreen} />
+            <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
     );
 }
@@ -300,6 +327,7 @@ function RootNavigator() {
                     <Stack.Screen name="UniversitySelection" component={UniversitySelectionScreen} options={{ headerShown: false }} />
 
                     <Stack.Screen name="ShopDetails" component={ShopDetailsScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="ShopDetail" component={ShopDetailsScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="FoodDelivery" component={FoodDeliveryScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Cart" component={CartScreen} options={{ headerShown: false }} />
@@ -321,6 +349,7 @@ function RootNavigator() {
                     <Stack.Screen name="Quest" component={QuestScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="QuestsList" component={QuestsTabScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Streak" component={StreakScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Referral" component={ReferralScreen} options={{ headerShown: false }} />
                 </>
             ) : (
                 <>

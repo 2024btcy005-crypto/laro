@@ -11,18 +11,22 @@
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#254e2b"
+      "resizeMode": "cover",
+      "backgroundColor": "#056f36"
     },
     "android": {
       "package": "com.zippit.delivery",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#254e2b"
+        "backgroundColor": "#056f36"
       }
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "notification": {
+      "icon": "./assets/notification.png",
+      "color": "#006d33"
     },
     "plugins": [
       "expo-font",

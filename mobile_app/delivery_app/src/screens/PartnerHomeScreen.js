@@ -4,6 +4,7 @@ import {
     Switch, SafeAreaView, ActivityIndicator, Alert, Modal, ScrollView
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../api/api';
@@ -118,6 +119,58 @@ export default function PartnerHomeScreen({ navigation }) {
 
     // Ref to track previous orders for new order notification alerts
     const prevOrderIdsRef = React.useRef(new Set());
+
+    // Register Push Token for Rider Notifications
+    useEffect(() => {
+        const registerRiderNotifications = async () => {
+            try {
+                let token;
+                try {
+                    const Notifications = require('expo-notifications');
+                    const Constants = require('expo-constants').default;
+                    
+                    Notifications.setNotificationHandler({
+                        handleNotification: async () => ({
+                            shouldShowAlert: true,
+                            shouldPlaySound: true,
+                            shouldSetBadge: true,
+                        }),
+                    });
+
+                    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+                    let finalStatus = existingStatus;
+                    if (existingStatus !== 'granted') {
+                        const { status } = await Notifications.requestPermissionsAsync();
+                        finalStatus = status;
+                    }
+
+                    if (finalStatus === 'granted') {
+                        const projectId = Constants?.expoConfig?.extra?.eas?.projectId || '26511b09-ff05-4cec-a69a-90668ba66022';
+                        token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+                    }
+                } catch (e) {
+                    console.warn('[RiderPush] Native notification permission check:', e.message);
+                }
+
+                if (!token) {
+                    const partnerStr = await AsyncStorage.getItem('deliveryPartner');
+                    if (partnerStr) {
+                        const p = JSON.parse(partnerStr);
+                        token = `mobile_expo_token_rider_${p.id ? p.id.substring(0, 8) : 'default'}`;
+                    }
+                }
+
+                if (token) {
+                    await api.post('/auth/fcm-token', { fcmToken: token });
+                    console.log('[RiderPush] Successfully registered rider push token:', token);
+                }
+            } catch (err) {
+                console.error('[RiderPush] Error registering push token:', err.message);
+            }
+        };
+
+        registerRiderNotifications();
+    }, []);
 
     useEffect(() => {
         let interval;

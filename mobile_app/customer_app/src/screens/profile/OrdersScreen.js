@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Image, StatusBar, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Image, StatusBar, Dimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, CONSTANTS } from '../../theme';
 import { orderAPI } from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
+import { OrderCardSkeleton } from '../../components/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 
@@ -16,6 +17,21 @@ export default function OrdersScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState('active'); // 'active' | 'past'
+    const [containerWidth, setContainerWidth] = useState(0);
+
+    const slideAnim = useRef(new Animated.Value(0)).current;
+
+    const handleTabChange = (tab) => {
+        Haptics.selectionAsync();
+        setActiveTab(tab);
+        Animated.spring(slideAnim, {
+            toValue: tab === 'active' ? 0 : 1,
+            useNativeDriver: true,
+            tension: 68,
+            friction: 9
+        }).start();
+    };
+
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
         title: '',
@@ -104,12 +120,12 @@ export default function OrdersScreen({ navigation }) {
         }
     };
 
-    const getProgressValue = (status) => {
+    const getStepState = (status) => {
         switch (status) {
-            case 'placed': return 0.2;
-            case 'accepted': return 0.5;
-            case 'out_for_delivery': return 0.8;
-            default: return 0.5;
+            case 'placed': return { step: 1, label: 'Order Confirmed', color: '#d97706', sub: 'Preparing soon' };
+            case 'accepted': return { step: 2, label: 'Kitchen Preparing', color: '#0284c7', sub: 'Food being cooked' };
+            case 'out_for_delivery': return { step: 3, label: 'Out for Delivery', color: '#056f36', sub: 'Rider is on the way!' };
+            default: return { step: 1, label: 'Order Placed', color: '#056f36', sub: 'Processing...' };
         }
     };
 
@@ -120,46 +136,103 @@ export default function OrdersScreen({ navigation }) {
         const isLive = item.status !== 'delivered' && item.status !== 'cancelled';
 
         if (isLive) {
-            const progress = getProgressValue(item.status);
+            const stepInfo = getStepState(item.status);
+            const currentStep = stepInfo.step;
+
             return (
-                <View style={[styles.liveCard, { borderColor: '#eef5ee' }]}>
-                    <View style={styles.liveCardHeader}>
-                        <View style={styles.liveStoreInfo}>
-                            <View style={styles.storeIconWrapper}>
-                                <Ionicons name="cafe" size={22} color="#fff" />
-                            </View>
-                            <View style={styles.storeTextWrapper}>
-                                <Text style={styles.liveStoreName}>{item.store}</Text>
-                                <Text style={styles.liveStoreSub}>{item.storeCategory} • {item.itemCount} {item.itemCount === 1 ? 'item' : 'items'}</Text>
-                                <View style={styles.liveStatusRow}>
-                                    <View style={styles.greenDot} />
-                                    <Text style={styles.liveStatusText}>{item.statusLabel}</Text>
-                                </View>
-                            </View>
+                <View style={[
+                    styles.liveCard, 
+                    { 
+                        backgroundColor: isDarkMode ? '#0f172a' : '#ffffff', 
+                        borderColor: isDarkMode ? '#334155' : '#e2e8f0' 
+                    }
+                ]}>
+                    {/* Top Header Row */}
+                    <View style={styles.liveCardHeaderRow}>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <Text style={[styles.liveStoreName, { color: isDarkMode ? '#fff' : '#111827' }]} numberOfLines={1}>
+                                {item.store}
+                            </Text>
+                            <Text style={{ fontSize: 12, color: isDarkMode ? '#94a3b8' : '#64748b', fontWeight: '600', marginTop: 2 }}>
+                                {item.storeCategory} • {item.itemCount} {item.itemCount === 1 ? 'item' : 'items'}
+                            </Text>
                         </View>
-                        <Text style={styles.livePrice}>{item.total}</Text>
-                    </View>
 
-                    {/* Progress Tracker */}
-                    <View style={styles.progressSection}>
-                        <View style={styles.progressBarWrapper}>
-                            <View style={styles.progressTrackBackground} />
-                            <View style={[styles.progressTrackActive, { width: `${progress * 100}%` }]} />
-                            <View style={[styles.progressIndicatorCircle, { left: `${progress * 100}%` }]} />
-                        </View>
-                        <View style={styles.progressLabelRow}>
-                            <Text style={[styles.progressLabel, progress >= 0.2 && styles.activeProgressLabel]}>Ordered</Text>
-                            <Text style={[styles.progressLabel, progress >= 0.5 && styles.activeProgressLabel]}>Preparing</Text>
-                            <Text style={[styles.progressLabel, progress >= 0.8 && styles.activeProgressLabel]}>Arriving</Text>
+                        <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={{ fontSize: 17, fontWeight: '900', color: '#056f36' }}>{item.total}</Text>
+                            <Text style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : '#9ca3af', fontWeight: '700', marginTop: 1 }}>
+                                #{item.id.split('-')[0].toUpperCase()}
+                            </Text>
                         </View>
                     </View>
 
+                    {/* Live Status Pill Header */}
+                    <View style={[styles.statusPillHeader, { backgroundColor: `${stepInfo.color}15`, borderColor: `${stepInfo.color}30` }]}>
+                        <View style={[styles.pulseDotLive, { backgroundColor: stepInfo.color }]} />
+                        <Text style={[styles.statusPillText, { color: stepInfo.color }]}>
+                            {stepInfo.label}
+                        </Text>
+                        <Text style={[styles.statusPillSub, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>
+                            • {stepInfo.sub}
+                        </Text>
+                    </View>
+
+                    {/* Modern 3-Node Stepper Progress Bar */}
+                    <View style={styles.stepperContainer}>
+                        {/* Background Track */}
+                        <View style={[styles.stepperTrackBg, { backgroundColor: isDarkMode ? '#334155' : '#e2e8f0' }]} />
+                        {/* Active Track */}
+                        <View style={[
+                            styles.stepperTrackActive, 
+                            { width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%' }
+                        ]} />
+
+                        {/* Step 1 Node: Ordered */}
+                        <View style={styles.stepperNodeCol}>
+                            <View style={[
+                                styles.stepperNode, 
+                                currentStep >= 1 ? styles.stepperNodeActive : [styles.stepperNodeInactive, { backgroundColor: isDarkMode ? '#1e293b' : '#f1f5f9' }]
+                            ]}>
+                                <Ionicons name="checkmark-sharp" size={12} color={currentStep >= 1 ? "#fff" : "#94a3b8"} />
+                            </View>
+                            <Text style={[styles.stepperNodeLabel, currentStep >= 1 && styles.stepperNodeLabelActive]}>Ordered</Text>
+                        </View>
+
+                        {/* Step 2 Node: Preparing */}
+                        <View style={styles.stepperNodeCol}>
+                            <View style={[
+                                styles.stepperNode, 
+                                currentStep >= 2 ? styles.stepperNodeActive : [styles.stepperNodeInactive, { backgroundColor: isDarkMode ? '#1e293b' : '#f1f5f9' }]
+                            ]}>
+                                <MaterialCommunityIcons name="chef-hat" size={13} color={currentStep >= 2 ? "#fff" : "#94a3b8"} />
+                            </View>
+                            <Text style={[styles.stepperNodeLabel, currentStep >= 2 && styles.stepperNodeLabelActive]}>Preparing</Text>
+                        </View>
+
+                        {/* Step 3 Node: Arriving */}
+                        <View style={styles.stepperNodeCol}>
+                            <View style={[
+                                styles.stepperNode, 
+                                currentStep >= 3 ? styles.stepperNodeActive : [styles.stepperNodeInactive, { backgroundColor: isDarkMode ? '#1e293b' : '#f1f5f9' }]
+                            ]}>
+                                <Ionicons name="bicycle" size={13} color={currentStep >= 3 ? "#fff" : "#94a3b8"} />
+                            </View>
+                            <Text style={[styles.stepperNodeLabel, currentStep >= 3 && styles.stepperNodeLabelActive]}>On The Way</Text>
+                        </View>
+                    </View>
+
+                    {/* Primary CTA Button */}
                     <TouchableOpacity 
                         style={styles.trackButton}
-                        onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                            navigation.navigate('OrderDetail', { orderId: item.id });
+                        }}
+                        activeOpacity={0.88}
                     >
-                        <Ionicons name="map" size={18} color="#fff" style={{ marginRight: 8 }} />
-                        <Text style={styles.trackButtonText}>Track Order</Text>
+                        <Ionicons name="navigate-circle-outline" size={20} color="#fff" style={{ marginRight: 6 }} />
+                        <Text style={styles.trackButtonText}>Track Live Order</Text>
+                        <Ionicons name="chevron-forward" size={16} color="#fff" style={{ marginLeft: 4 }} />
                     </TouchableOpacity>
                 </View>
             );
@@ -213,32 +286,100 @@ export default function OrdersScreen({ navigation }) {
                 </TouchableOpacity>
             </View>
 
-            {/* Custom Tabs */}
-            <View style={styles.tabBar}>
+            {/* Ultra-Premium Segmented Tab Selector with Spring Slide Animation */}
+            <View 
+                style={[
+                    styles.segmentContainer, 
+                    { backgroundColor: isDarkMode ? '#1e293b' : '#f0fdf4', borderColor: isDarkMode ? '#334155' : '#dcfce7' }
+                ]}
+                onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+            >
+                {containerWidth > 0 && (
+                    <Animated.View 
+                        style={[
+                            styles.animatedSlidingPill,
+                            {
+                                width: (containerWidth - 10) / 2,
+                                backgroundColor: activeTab === 'active' ? '#056f36' : (isDarkMode ? '#0f172a' : '#ffffff'),
+                                borderColor: activeTab === 'active' ? '#056f36' : (isDarkMode ? '#334155' : '#e2e8f0'),
+                                transform: [{
+                                    translateX: slideAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: [0, (containerWidth - 10) / 2]
+                                    })
+                                }]
+                            }
+                        ]}
+                    />
+                )}
+
                 <TouchableOpacity 
-                    style={[styles.tabButton, activeTab === 'active' && styles.activeTabButton]}
-                    onPress={() => {
-                        Haptics.selectionAsync();
-                        setActiveTab('active');
-                    }}
+                    style={styles.segmentBtn}
+                    onPress={() => handleTabChange('active')}
+                    activeOpacity={0.85}
                 >
-                    <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>Active</Text>
+                    {activeTab === 'active' ? (
+                        <View style={styles.pulseDot} />
+                    ) : (
+                        <Ionicons name="time-outline" size={16} color={isDarkMode ? "#94a3b8" : "#475569"} />
+                    )}
+                    <Text style={[
+                        styles.segmentText, 
+                        { color: isDarkMode ? '#94a3b8' : '#475569' }, 
+                        activeTab === 'active' && styles.segmentTextActivePrimary
+                    ]}>
+                        Active Orders
+                    </Text>
+                    <View style={[
+                        styles.badge, 
+                        activeTab === 'active' ? styles.activeBadgePrimary : styles.inactiveBadge
+                    ]}>
+                        <Text style={[
+                            styles.badgeText, 
+                            activeTab === 'active' ? styles.activeBadgeTextPrimary : styles.inactiveBadgeText
+                        ]}>
+                            {activeOrders.length}
+                        </Text>
+                    </View>
                 </TouchableOpacity>
+
                 <TouchableOpacity 
-                    style={[styles.tabButton, activeTab === 'past' && styles.activeTabButton]}
-                    onPress={() => {
-                        Haptics.selectionAsync();
-                        setActiveTab('past');
-                    }}
+                    style={styles.segmentBtn}
+                    onPress={() => handleTabChange('past')}
+                    activeOpacity={0.85}
                 >
-                    <Text style={[styles.tabText, activeTab === 'past' && styles.activeTabText]}>Past</Text>
+                    <Ionicons 
+                        name={activeTab === 'past' ? "receipt" : "receipt-outline"} 
+                        size={16} 
+                        color={activeTab === 'past' ? "#056f36" : (isDarkMode ? "#94a3b8" : "#475569")} 
+                    />
+                    <Text style={[
+                        styles.segmentText, 
+                        { color: isDarkMode ? '#94a3b8' : '#475569' }, 
+                        activeTab === 'past' && styles.segmentTextActiveSecondary
+                    ]}>
+                        Past History
+                    </Text>
+                    <View style={[
+                        styles.badge, 
+                        activeTab === 'past' ? styles.activeBadgeSecondary : styles.inactiveBadge
+                    ]}>
+                        <Text style={[
+                            styles.badgeText, 
+                            activeTab === 'past' ? styles.activeBadgeTextSecondary : styles.inactiveBadgeText
+                        ]}>
+                            {pastOrders.length}
+                        </Text>
+                    </View>
                 </TouchableOpacity>
             </View>
 
             {/* Content list */}
             {loading ? (
-                <View style={styles.centerContainer}>
-                    <ActivityIndicator size="large" color="#056f36" />
+                <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+                    <OrderCardSkeleton />
+                    <OrderCardSkeleton />
+                    <OrderCardSkeleton />
                 </View>
             ) : (
                 <FlatList
@@ -301,87 +442,210 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 24, fontWeight: '900', color: '#056f36' },
     cartIcon: { padding: 4 },
     
-    tabBar: {
+    segmentContainer: {
         flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: '#edf2ed',
-        backgroundColor: '#fcfdfc',
-        paddingHorizontal: 10,
+        borderRadius: 24,
+        padding: 5,
+        marginHorizontal: 20,
+        marginVertical: 12,
+        borderWidth: 1,
+        position: 'relative',
+        overflow: 'hidden',
     },
-    tabButton: {
+    animatedSlidingPill: {
+        position: 'absolute',
+        top: 4,
+        bottom: 4,
+        left: 5,
+        borderRadius: 20,
+        borderWidth: 1,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+    },
+    segmentBtn: {
         flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 15,
-        borderBottomWidth: 3,
-        borderBottomColor: 'transparent',
+        justifyContent: 'center',
+        paddingVertical: 11,
+        borderRadius: 20,
+        gap: 7,
+        zIndex: 2,
     },
-    activeTabButton: {
-        borderBottomColor: '#056f36',
+    segmentBtnActivePrimary: {
+        backgroundColor: '#056f36',
     },
-    tabText: { fontSize: 16, fontWeight: '700', color: '#666' },
-    activeTabText: { color: '#056f36' },
+    segmentBtnActiveSecondary: {
+        backgroundColor: '#ffffff',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    pulseDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#4ade80',
+        borderWidth: 1.5,
+        borderColor: '#ffffff',
+    },
+    segmentText: {
+        fontSize: 13.5,
+        fontWeight: '700',
+        letterSpacing: -0.1,
+    },
+    segmentTextActivePrimary: {
+        color: '#ffffff',
+        fontWeight: '900',
+    },
+    segmentTextActiveSecondary: {
+        color: '#056f36',
+        fontWeight: '900',
+    },
+    badge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 12,
+    },
+    activeBadgePrimary: {
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    },
+    activeBadgeSecondary: {
+        backgroundColor: '#e6f7ed',
+    },
+    inactiveBadge: {
+        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    },
+    badgeText: {
+        fontSize: 11,
+        fontWeight: '900',
+    },
+    activeBadgeTextPrimary: {
+        color: '#ffffff',
+    },
+    activeBadgeTextSecondary: {
+        color: '#056f36',
+    },
+    inactiveBadgeText: {
+        color: '#64748b',
+    },
 
     listContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 },
     sectionTitle: { fontSize: 18, fontWeight: '900', color: '#111', marginBottom: 15 },
     
     liveCard: {
-        backgroundColor: '#fff',
         borderRadius: 20,
-        padding: 20,
+        padding: 18,
         borderWidth: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.03,
-        shadowRadius: 10,
         elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
         marginBottom: 20,
+        overflow: 'hidden',
     },
-    liveCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-    liveStoreInfo: { flexDirection: 'row', flex: 1 },
-    storeIconWrapper: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: '#34d399',
+    liveCardHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+    },
+    liveStoreName: { fontSize: 16, fontWeight: '900' },
+    statusPillHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        marginBottom: 18,
+        alignSelf: 'flex-start',
+    },
+    pulseDotLive: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 6,
+    },
+    statusPillText: {
+        fontSize: 12.5,
+        fontWeight: '900',
+    },
+    statusPillSub: {
+        fontSize: 12,
+        fontWeight: '600',
+        marginLeft: 4,
+    },
+    stepperContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'relative',
+        marginBottom: 20,
+        marginHorizontal: 10,
+    },
+    stepperTrackBg: {
+        position: 'absolute',
+        top: 13,
+        left: 20,
+        right: 20,
+        height: 4,
+        borderRadius: 2,
+    },
+    stepperTrackActive: {
+        position: 'absolute',
+        top: 13,
+        left: 20,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#056f36',
+    },
+    stepperNodeCol: {
+        alignItems: 'center',
+        zIndex: 2,
+    },
+    stepperNode: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
+        marginBottom: 6,
     },
-    storeTextWrapper: { marginLeft: 12, flex: 1 },
-    liveStoreName: { fontSize: 16, fontWeight: '900', color: '#111' },
-    liveStoreSub: { fontSize: 13, color: '#666', marginTop: 2 },
-    liveStatusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
-    greenDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#056f36', marginRight: 6 },
-    liveStatusText: { fontSize: 13, fontWeight: '700', color: '#056f36' },
-    livePrice: { fontSize: 16, fontWeight: '900', color: '#056f36' },
-
-    progressSection: { marginVertical: 20 },
-    progressBarWrapper: { height: 6, backgroundColor: '#edf2ed', borderRadius: 3, position: 'relative', overflow: 'visible', marginHorizontal: 10 },
-    progressTrackBackground: { ...StyleSheet.absoluteFillObject },
-    progressTrackActive: { height: '100%', backgroundColor: '#50e3c2', borderRadius: 3 },
-    progressIndicatorCircle: {
-        width: 14,
-        height: 14,
-        borderRadius: 7,
+    stepperNodeActive: {
         backgroundColor: '#056f36',
-        position: 'absolute',
-        top: -4,
-        marginLeft: -7,
-        borderWidth: 2,
-        borderColor: '#fff',
+        elevation: 3,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
     },
-    progressLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-    progressLabel: { fontSize: 11, fontWeight: '700', color: '#999' },
-    activeProgressLabel: { color: '#056f36' },
+    stepperNodeInactive: {
+        borderWidth: 1,
+        borderColor: '#cbd5e1',
+    },
+    stepperNodeLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#94a3b8',
+    },
+    stepperNodeLabelActive: {
+        color: '#056f36',
+        fontWeight: '900',
+    },
 
     trackButton: {
         backgroundColor: '#056f36',
-        borderRadius: 12,
-        height: 48,
+        borderRadius: 14,
+        height: 46,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    trackButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+    trackButtonText: { color: '#fff', fontSize: 14, fontWeight: '900' },
 
     pastCard: {
         backgroundColor: '#fff',
@@ -390,6 +654,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#f0f4f0',
         marginBottom: 15,
+        overflow: 'hidden',
     },
     pastCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     pastStoreInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },

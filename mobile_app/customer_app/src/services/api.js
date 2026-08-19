@@ -96,5 +96,8 @@ export const walletAPI = {
     getRecentRecipients: () => api.get('/orders/recent-recipients'),
 };
 
+export const referralAPI = {
+    getStats: () => api.get('/referral/stats'),
+};
 
 export default api;

@@ -34,6 +34,7 @@ export default function RegisterScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [referralCode, setReferralCode] = useState('');
     const [agreeTerms, setAgreeTerms] = useState(false);
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
@@ -75,6 +76,7 @@ export default function RegisterScreen({ navigation }) {
                 name,
                 email,
                 password,
+                referralCode,
                 role: 'customer'
             });
 
@@ -184,6 +186,21 @@ export default function RegisterScreen({ navigation }) {
                                     secureTextEntry
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
+                                />
+                            </View>
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Referral Code (Optional)</Text>
+                            <View style={styles.inputContainer}>
+                                <Ionicons name="gift-outline" size={20} color={PRIMARY_GREEN} style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="e.g. LARO-ABC12"
+                                    placeholderTextColor="#999"
+                                    autoCapitalize="characters"
+                                    value={referralCode}
+                                    onChangeText={setReferralCode}
                                 />
                             </View>
                         </View>

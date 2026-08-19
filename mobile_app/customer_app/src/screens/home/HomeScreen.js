@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
     View, Text, StyleSheet, TouchableOpacity,
     Image, TextInput, ScrollView, RefreshControl, StatusBar, Alert,
-    Animated, Dimensions, ActivityIndicator, Modal, Linking, FlatList
+    Animated, Dimensions, ActivityIndicator, Modal, Linking, FlatList, Platform
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -21,6 +21,7 @@ import LaroToast from '../../components/LaroToast';
 import { COLORS, CONSTANTS } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { registerForPushNotificationsAsync } from '../../services/notificationService';
+import { HomeScreenSkeleton } from '../../components/SkeletonLoader';
 
 export default function HomeScreen({ navigation }) {
 
@@ -491,15 +492,25 @@ export default function HomeScreen({ navigation }) {
             <View style={[styles.headerContainer, { paddingTop: (insets?.top || 0) + 10 }]}>
                 <View style={styles.locationHeader}>
                     <View style={styles.locationContainer}>
-                        {/* Top Left: Deliver To Selector */}
-                        <TouchableOpacity style={styles.addressSelector} onPress={() => navigation.navigate('ChangeUniversity')}>
-                            <View>
+                        {/* Top Left: Deliver To User Address Selector */}
+                        <TouchableOpacity 
+                            style={styles.addressSelector} 
+                            onPress={() => {
+                                Haptics.selectionAsync();
+                                navigation.navigate('AddressBook');
+                            }}
+                            activeOpacity={0.8}
+                        >
+                            <View style={{ maxWidth: width * 0.58 }}>
                                 <Text style={styles.deliverToText}>DELIVER TO</Text>
                                 <View style={styles.addressRow}>
+                                    <Ionicons name="location-sharp" size={13} color="#056f36" style={{ marginRight: 3 }} />
                                     <Text style={styles.addressMainText} numberOfLines={1}>
-                                        {selectedUniversity?.name || 'Engineering Block C'}
+                                        {defaultAddress?.title && defaultAddress?.title !== 'Set up delivery address'
+                                            ? `${defaultAddress.title}${defaultAddress.subtitle ? ` • ${defaultAddress.subtitle}` : ''}`
+                                            : (user?.address || selectedUniversity?.name || 'Set Delivery Location')}
                                     </Text>
-                                    <Ionicons name="chevron-down" size={16} color="#056f36" style={styles.chevronIcon} />
+                                    <Ionicons name="chevron-down" size={15} color="#056f36" style={styles.chevronIcon} />
                                 </View>
                             </View>
                         </TouchableOpacity>
@@ -573,11 +584,14 @@ export default function HomeScreen({ navigation }) {
 
 
 
+
+
+                {/* Filter Pills */}
                 <View style={{ marginBottom: 15 }}>
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingRight: 20, gap: 12 }}
+                        contentContainerStyle={{ paddingRight: 20, gap: 10 }}
                     >
                         {categoriesList.map((cat, index) => (
                             <TouchableOpacity
@@ -609,29 +623,6 @@ export default function HomeScreen({ navigation }) {
                         ))}
                     </ScrollView>
                 </View>
-
-                {/* Dedicated Food Delivery Promo Banner */}
-                <TouchableOpacity
-                    style={styles.foodDeliveryPromoBanner}
-                    activeOpacity={0.9}
-                    onPress={() => {
-                        Haptics.selectionAsync();
-                        navigation.navigate('FoodDelivery');
-                    }}
-                >
-                    <Image
-                        source={{ uri: 'https://img.freepik.com/free-psd/food-delivery-social-media-banner-template_23-2149028042.jpg' }}
-                        style={styles.foodDeliveryPromoImage}
-                    />
-                    <View style={styles.foodDeliveryPromoOverlay}>
-                        <View style={styles.foodDeliveryPromoHeader}>
-                            <MaterialCommunityIcons name="silverware-fork-knife" size={14} color="#fff" />
-                            <Text style={styles.foodDeliveryPromoTag}>FOOD DELIVERY NOW LIVE</Text>
-                        </View>
-                        <Text style={styles.foodDeliveryPromoTitle}>Campus Food Spots</Text>
-                        <Text style={styles.foodDeliveryPromoSubtitle}>Craving snacks, drinks, or biryani? Order now & track live! ➔</Text>
-                    </View>
-                </TouchableOpacity>
             </View>
         );
     };
@@ -1009,30 +1000,54 @@ export default function HomeScreen({ navigation }) {
                 message={toastMessage}
                 onHide={() => setToastVisible(false)}
             />
-            <FlatList
-                ListHeaderComponent={
-                    <View>
-                        {renderHeader()}
-                        {renderQuestsWidget()}
-                        <View style={{ height: 10 }} />
-                    </View>
-                }
-                data={sections}
-                keyExtractor={(item) => item.title}
-                renderItem={renderSection}
-                contentContainerStyle={{ paddingBottom: 150 }}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                    !loading && (
-                        <View style={{ padding: 40, alignItems: 'center' }}>
-                            <Text style={{ color: '#999' }}>No items found in this category.</Text>
+            {loading && shops.length === 0 ? (
+                <HomeScreenSkeleton />
+            ) : (
+                <FlatList
+                    ListHeaderComponent={
+                        <View>
+                            {renderHeader()}
+                            {renderQuestsWidget()}
+                            <View style={{ height: 10 }} />
                         </View>
-                    )
-                }
-                refreshControl={
-                    <RefreshControl refreshing={loading} onRefresh={fetchShops} tintColor={colors.primary} />
-                }
-            />
+                    }
+                    data={sections}
+                    keyExtractor={(item) => item.title}
+                    renderItem={renderSection}
+                    contentContainerStyle={{ paddingBottom: 150 }}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        !loading && (
+                            <View style={{ padding: 40, alignItems: 'center' }}>
+                                <Text style={{ color: '#999' }}>No items found in this category.</Text>
+                            </View>
+                        )
+                    }
+                    ListFooterComponent={
+                        <View style={{ alignItems: 'center', marginVertical: 32, paddingHorizontal: 20 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                <Ionicons name="sparkles" size={14} color="#056f36" />
+                                <Text style={{ fontSize: 13, fontWeight: '900', color: '#056f36', letterSpacing: 1.5 }}>
+                                    LARO
+                                </Text>
+                                <Ionicons name="sparkles" size={14} color="#056f36" />
+                            </View>
+                            <Text style={{
+                                fontSize: 13,
+                                fontWeight: '700',
+                                color: '#64748b',
+                                textAlign: 'center',
+                                letterSpacing: 0.3
+                            }}>
+                                Hostel Life Made Easy 💚
+                            </Text>
+                        </View>
+                    }
+                    refreshControl={
+                        <RefreshControl refreshing={loading} onRefresh={fetchShops} tintColor={colors.primary} />
+                    }
+                />
+            )}
 
             {/* Smart Cart FAB */}
             <Animated.View style={[

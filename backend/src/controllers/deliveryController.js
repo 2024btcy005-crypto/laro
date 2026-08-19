@@ -1,6 +1,6 @@
-const { Order, Delivery, User, Shop, OrderItem, Product, WalletTransaction, University, Quest } = require('../models');
+const { Order, Delivery, User, Shop, OrderItem, Product, WalletTransaction, University, Quest, Referral } = require('../models');
 const { notifyCustomerOrderStatus } = require('../services/socketService');
-const { sendPushNotification } = require('../services/notificationService');
+const { sendPushNotification, notifyWalletTransaction } = require('../services/notificationService');
 
 // Helper to progress university quests upon order delivery completion
 const processQuestProgress = async (order) => {
@@ -214,6 +214,65 @@ const updateDeliveryStatus = async (req, res) => {
                     await processQuestProgress(order);
                 } catch (questErr) {
                     console.error('[QUEST] Error processing quest progress:', questErr);
+                }
+
+                // Process Referral Reward on 1st Order Completion
+                try {
+                    if (customer && customer.referredBy && !customer.hasRedeemedFirstOrderReferral) {
+                        const referrer = await User.findByPk(customer.referredBy);
+                        if (referrer) {
+                            const REWARD_AMOUNT = 10;
+
+                            // 1. Credit 10 Laro Coins to Referee (New Customer)
+                            const refereeNewCurrency = (customer.laroCurrency || 0) + REWARD_AMOUNT;
+                            await customer.update({
+                                laroCurrency: refereeNewCurrency,
+                                hasRedeemedFirstOrderReferral: true
+                            });
+                            await WalletTransaction.create({
+                                userId: customer.id,
+                                amount: REWARD_AMOUNT,
+                                type: 'credit',
+                                description: `Welcome Referral Bonus (1st Order Completed)`,
+                                balanceAfter: refereeNewCurrency
+                            });
+                            notifyWalletTransaction(customer, {
+                                type: 'credit',
+                                amount: REWARD_AMOUNT,
+                                description: `Welcome Referral Bonus (1st Order Completed)`,
+                                balanceAfter: refereeNewCurrency
+                            });
+
+                            // 2. Credit 10 Laro Coins to Referrer (Friend)
+                            const referrerNewCurrency = (referrer.laroCurrency || 0) + REWARD_AMOUNT;
+                            await referrer.update({
+                                laroCurrency: referrerNewCurrency
+                            });
+                            await WalletTransaction.create({
+                                userId: referrer.id,
+                                amount: REWARD_AMOUNT,
+                                type: 'credit',
+                                description: `Friend Referral Bonus: ${customer.name} completed 1st order`,
+                                balanceAfter: referrerNewCurrency
+                            });
+                            notifyWalletTransaction(referrer, {
+                                type: 'credit',
+                                amount: REWARD_AMOUNT,
+                                description: `Friend Referral Bonus: ${customer.name} completed 1st order`,
+                                balanceAfter: referrerNewCurrency
+                            });
+
+                            // 3. Update Referral Record Status
+                            await Referral.update(
+                                { status: 'completed', completedAt: new Date() },
+                                { where: { refereeId: customer.id, status: 'pending' } }
+                            );
+
+                            console.log(`[REFERRAL SUCCESS] Awarded 10 Ł each to referee ${customer.name} & referrer ${referrer.name}`);
+                        }
+                    }
+                } catch (refErr) {
+                    console.error('[REFERRAL] Error processing referral completion reward:', refErr);
                 }
             }
 

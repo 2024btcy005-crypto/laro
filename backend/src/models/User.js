@@ -104,6 +104,23 @@ const User = sequelize.define('User', {
         type: DataTypes.ENUM('ALL', 'RESTAURANTS_ONLY', 'GROCERIES_ONLY', 'SPECIFIC_SHOP'),
         defaultValue: 'ALL'
     },
+    referralCode: {
+        type: DataTypes.STRING(12),
+        allowNull: true,
+        unique: true
+    },
+    referredBy: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
+    },
+    hasRedeemedFirstOrderReferral: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
 }, {
     tableName: 'users',
     timestamps: true,

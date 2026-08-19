@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
-    Image, TextInput, ActivityIndicator, StatusBar, Dimensions
+    Image, TextInput, ActivityIndicator, StatusBar, Dimensions, Animated, Platform
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import api, { resolveImageUrl } from '../../services/api';
 import { COLORS } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
+import { FoodStoreCardSkeleton } from '../../components/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 
@@ -17,8 +18,19 @@ const FOOD_CUISINES = [
     { name: 'All Cuisines', icon: 'food-variant' },
     { name: 'Burgers', icon: 'hamburger' },
     { name: 'Pizza', icon: 'pizza' },
-    { name: 'Cafe', icon: 'coffee' },
-    { name: 'Desserts', icon: 'cake-variant' },
+    { name: 'Biryani & Meals', icon: 'rice' },
+    { name: 'Cafe & Drinks', icon: 'coffee' },
+    { name: 'Desserts & Sweets', icon: 'cake-variant' },
+    { name: 'Snacks & Fast Food', icon: 'food-croissant' },
+];
+
+const FOOD_SEARCH_SUGGESTIONS = [
+    "Search 'Cheesy Pizza'",
+    "Search 'Crispy Burgers'",
+    "Search 'Cold Coffee & Shakes'",
+    "Search 'Chicken Biryani'",
+    "Search 'Hot Paneer Roll'",
+    "Search 'Momos & Chutney'"
 ];
 
 const STATIONERY_SHOP_MODES = ['stationery', 'books', 'xerox', 'printing', 'stationary'];
@@ -34,66 +46,97 @@ export default function FoodDeliveryScreen({ navigation }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCuisine, setSelectedCuisine] = useState('All Cuisines');
 
+    // Animated Search Bar Suggestions
+    const [placeholderIndex, setPlaceholderIndex] = useState(0);
+    const searchFadeAnim = useRef(new Animated.Value(1)).current;
+    const searchTranslateY = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            Animated.parallel([
+                Animated.timing(searchFadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+                Animated.timing(searchTranslateY, { toValue: -12, duration: 250, useNativeDriver: true }),
+            ]).start(() => {
+                setPlaceholderIndex((prev) => (prev + 1) % FOOD_SEARCH_SUGGESTIONS.length);
+                searchTranslateY.setValue(12);
+                Animated.parallel([
+                    Animated.timing(searchFadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+                    Animated.timing(searchTranslateY, { toValue: 0, duration: 300, useNativeDriver: true }),
+                ]).start();
+            });
+        }, 2800);
+        return () => clearInterval(interval);
+    }, []);
+
     useEffect(() => {
         fetchFoodShops();
     }, [selectedUniversity]);
 
-    useEffect(() => {
-        applyFilters();
-    }, [searchQuery, selectedCuisine, shops]);
-
     const fetchFoodShops = async () => {
-        setLoading(true);
         try {
-            const uniId = selectedUniversity?.id || '';
-            const res = await api.get(`/shops?shopType=RESTAURANT&universityId=${uniId}`);
-            if (res.data) {
-                // Filter strictly RESTAURANT shopType or non-stationery food places
-                const foodShops = res.data.filter(s => 
-                    s.shopType === 'RESTAURANT' || 
-                    (!s.shopType && !STATIONERY_SHOP_MODES.some(m => (s.category || '').toLowerCase().includes(m)))
-                );
-                setShops(foodShops);
-            }
-        } catch (err) {
-            console.warn('[FoodDeliveryScreen] Fetch shops error:', err);
+            setLoading(true);
+            const univId = selectedUniversity?.id;
+            const res = await api.get('/shops', {
+                params: {
+                    shopType: 'RESTAURANT',
+                    universityId: univId || undefined
+                }
+            });
+
+            const data = Array.isArray(res.data) ? res.data : (res.data?.shops || []);
+            setShops(data);
+            setFilteredShops(data);
+        } catch (error) {
+            console.error('[FOOD SHOPS FETCH ERROR]', error.response?.data || error.message);
         } finally {
             setLoading(false);
         }
     };
 
-    const applyFilters = () => {
-        let result = shops;
+    // Filtering logic based on search query and cuisine chip
+    useEffect(() => {
+        let result = [...shops];
 
-        // Search text
-        if (searchQuery.trim()) {
+        if (searchQuery.trim() !== '') {
             const query = searchQuery.toLowerCase();
-            result = result.filter(s => 
-                s.name.toLowerCase().includes(query) ||
-                (s.category && s.category.toLowerCase().includes(query))
+            result = result.filter(shop => 
+                shop.name?.toLowerCase().includes(query) ||
+                shop.category?.toLowerCase().includes(query) ||
+                shop.description?.toLowerCase().includes(query)
             );
         }
 
-        // Cuisine chip
         if (selectedCuisine !== 'All Cuisines') {
-            result = result.filter(s => s.category && s.category.toLowerCase().includes(selectedCuisine.toLowerCase()));
+            const cuisineLower = selectedCuisine.split(' ')[0].toLowerCase();
+            result = result.filter(shop => 
+                shop.category?.toLowerCase().includes(cuisineLower) ||
+                shop.name?.toLowerCase().includes(cuisineLower) ||
+                shop.description?.toLowerCase().includes(cuisineLower)
+            );
         }
 
         setFilteredShops(result);
-    };
+    }, [searchQuery, selectedCuisine, shops]);
 
     const renderRestaurantCard = ({ item }) => {
+        const isClosed = item.isOpen === false;
+        
         return (
             <TouchableOpacity 
-                style={[styles.card, { backgroundColor: colors.white, borderColor: colors.border }]}
-                activeOpacity={0.9}
-                onPress={() => {
-                    Haptics.selectionAsync();
-                    navigation.navigate('ShopDetails', { shop: item });
-                }}
+                style={[
+                    styles.card, 
+                    { backgroundColor: colors.white, borderColor: colors.border },
+                    isClosed && { opacity: 0.6 }
+                ]}
+                activeOpacity={0.88}
+                onPress={() => navigation.navigate('ShopDetails', { shopId: item.id })}
             >
                 <View style={styles.imageWrapper}>
-                    <Image source={{ uri: resolveImageUrl(item.imageUrl) }} style={styles.cardImage} />
+                    <Image 
+                        source={{ uri: resolveImageUrl(item.imageUrl) }} 
+                        style={styles.cardImage}
+                        resizeMode="cover"
+                    />
                     {item.discount && (
                         <View style={styles.discountBadge}>
                             <Text style={styles.discountText}>{item.discount}</Text>
@@ -166,37 +209,47 @@ export default function FoodDeliveryScreen({ navigation }) {
                 showsVerticalScrollIndicator={false}
                 ListHeaderComponent={
                     <View>
-                        {/* Search Input */}
+                        {/* Animated Search Input */}
                         <View style={[styles.searchBarContainer, { backgroundColor: colors.white, borderColor: colors.border }]}>
-                            <Ionicons name="search" size={20} color={colors.gray} style={styles.searchIcon} />
-                            <TextInput
-                                placeholder="Search dishes, cafes, or snack joints..."
-                                placeholderTextColor="#aaaaaa"
-                                style={[styles.searchInput, { color: colors.black }]}
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                            />
-                            {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                            <Ionicons name="search" size={20} color="#056f36" style={styles.searchIcon} />
+                            <View style={{ flex: 1, justifyContent: 'center', height: 42, position: 'relative' }}>
+                                {!searchQuery && (
+                                    <Animated.View
+                                        pointerEvents="none"
+                                        style={{
+                                            position: 'absolute',
+                                            left: 0,
+                                            right: 0,
+                                            opacity: searchFadeAnim,
+                                            transform: [{ translateY: searchTranslateY }]
+                                        }}
+                                    >
+                                        <Text style={{ color: '#888888', fontSize: 14, fontWeight: '500' }}>
+                                            {FOOD_SEARCH_SUGGESTIONS[placeholderIndex]}
+                                        </Text>
+                                    </Animated.View>
+                                )}
+                                <TextInput
+                                    placeholder=""
+                                    placeholderTextColor="transparent"
+                                    style={[styles.searchInput, { color: colors.black, width: '100%' }]}
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                />
+                            </View>
+                            {searchQuery.length > 0 ? (
+                                <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
                                     <Ionicons name="close-circle" size={18} color={colors.gray} />
+                                </TouchableOpacity>
+                            ) : (
+                                <TouchableOpacity style={{ padding: 4 }}>
+                                    <Ionicons name="mic" size={20} color="#056f36" />
                                 </TouchableOpacity>
                             )}
                         </View>
 
-                        {/* Banner Ads Carousel Mock */}
-                        <View style={styles.promoBanner}>
-                            <Image 
-                                source={{ uri: 'https://img.freepik.com/free-psd/food-delivery-social-media-banner-template_23-2149028042.jpg' }} 
-                                style={styles.bannerImage}
-                            />
-                            <View style={styles.promoTextContainer}>
-                                <Text style={styles.promoTitle}>Laro Student Special</Text>
-                                <Text style={styles.promoSub}>Get flat 20% off at campus cafeterias!</Text>
-                            </View>
-                        </View>
-
                         {/* Cuisines Categories List */}
-                        <Text style={[styles.secTitle, { color: colors.black }]}>Popular Cuisines</Text>
+                        <Text style={[styles.secTitle, { color: colors.black }]}>Explore Cuisines</Text>
                         <FlatList
                             data={FOOD_CUISINES}
                             horizontal
@@ -207,22 +260,33 @@ export default function FoodDeliveryScreen({ navigation }) {
                                 const active = selectedCuisine === item.name;
                                 return (
                                     <TouchableOpacity
-                                        style={[
-                                            styles.cuisineChip, 
-                                            { backgroundColor: active ? colors.primary : colors.white, borderColor: colors.border }
-                                        ]}
+                                        style={[{
+                                            alignItems: 'center',
+                                            paddingHorizontal: 16,
+                                            paddingVertical: 8,
+                                            borderRadius: 12,
+                                            backgroundColor: active ? (isDarkMode ? '#056f3620' : '#edf5ed') : (isDarkMode ? '#1e293b' : '#f8fafc'),
+                                            borderWidth: 1,
+                                            borderColor: active ? (isDarkMode ? '#056f36' : '#d5edd5') : (isDarkMode ? '#334155' : '#e2e8f0'),
+                                            flexDirection: 'row',
+                                            gap: 6
+                                        }]}
                                         onPress={() => {
                                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                             setSelectedCuisine(item.name);
                                         }}
+                                        activeOpacity={0.8}
                                     >
                                         <MaterialCommunityIcons 
                                             name={item.icon} 
                                             size={16} 
-                                            color={active ? '#fff' : colors.primary} 
-                                            style={styles.cuisineIcon}
+                                            color={active ? '#056f36' : (isDarkMode ? '#94a3b8' : '#666')} 
                                         />
-                                        <Text style={[styles.cuisineChipText, { color: active ? '#fff' : colors.black }]}>
+                                        <Text style={{
+                                            fontSize: 13,
+                                            fontWeight: '700',
+                                            color: active ? '#056f36' : (isDarkMode ? '#cbd5e1' : '#666')
+                                        }}>
                                             {item.name}
                                         </Text>
                                     </TouchableOpacity>
@@ -237,8 +301,10 @@ export default function FoodDeliveryScreen({ navigation }) {
                 }
                 ListEmptyComponent={
                     loading ? (
-                        <View style={styles.centerContainer}>
-                            <ActivityIndicator size="large" color={colors.primary} />
+                        <View style={{ paddingHorizontal: 16, gap: 16, marginTop: 10 }}>
+                            <FoodStoreCardSkeleton />
+                            <FoodStoreCardSkeleton />
+                            <FoodStoreCardSkeleton />
                         </View>
                     ) : (
                         <View style={styles.emptyContainer}>
@@ -247,6 +313,28 @@ export default function FoodDeliveryScreen({ navigation }) {
                             <Text style={styles.emptySub}>We couldn't find any food joints matching your description.</Text>
                         </View>
                     )
+                }
+                ListFooterComponent={
+                    filteredShops.length > 0 ? (
+                        <View style={{ alignItems: 'center', marginVertical: 32, paddingHorizontal: 20 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                <Ionicons name="sparkles" size={14} color="#056f36" />
+                                <Text style={{ fontSize: 13, fontWeight: '900', color: '#056f36', letterSpacing: 1.5 }}>
+                                    LARO
+                                </Text>
+                                <Ionicons name="sparkles" size={14} color="#056f36" />
+                            </View>
+                            <Text style={{
+                                fontSize: 13,
+                                fontWeight: '700',
+                                color: '#64748b',
+                                textAlign: 'center',
+                                letterSpacing: 0.3
+                            }}>
+                                Delivering Happiness to Every Hostel Room ❤️
+                            </Text>
+                        </View>
+                    ) : null
                 }
             />
         </View>
@@ -301,18 +389,8 @@ const styles = StyleSheet.create({
     promoTitle: { color: '#fff', fontSize: 15, fontWeight: '900' },
     promoSub: { color: '#eee', fontSize: 12, fontWeight: '600', marginTop: 2 },
 
-    secTitle: { fontSize: 17, fontWeight: '900', marginBottom: 12, letterSpacing: -0.2 },
-    cuisinesScroll: { gap: 10, paddingBottom: 15 },
-    cuisineChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 12,
-        borderWidth: 1,
-    },
-    cuisineIcon: { marginRight: 6 },
-    cuisineChipText: { fontSize: 13, fontWeight: '800' },
+    secTitle: { fontSize: 16, fontWeight: '900', marginBottom: 12, letterSpacing: -0.2 },
+    cuisinesScroll: { gap: 10, paddingBottom: 15, paddingRight: 20 },
 
     card: {
         borderRadius: 20,

@@ -184,6 +184,14 @@ export default function LaroCurrencyScreen({ navigation }) {
                     </View>
                 </Animated.View>
 
+                {/* Min ₹100 Order Redemption Rule Banner */}
+                <View style={styles.ruleBannerCard}>
+                    <Ionicons name="information-circle" size={20} color="#056f36" style={{ marginRight: 8 }} />
+                    <Text style={styles.ruleBannerText}>
+                        <Text style={{ fontWeight: '800' }}>Redemption Rule:</Text> Laro Coins can be redeemed as payment on campus orders of <Text style={{ fontWeight: '800', color: '#056f36' }}>₹100 or above</Text>.
+                    </Text>
+                </View>
+
                 {/* Quick Actions Panel */}
                 <View style={styles.quickActionsContainer}>
                     <TouchableOpacity
@@ -497,5 +505,21 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '900',
         color: '#056f36'
+    },
+    ruleBannerCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f0fdf4',
+        borderWidth: 1,
+        borderColor: '#bbf7d0',
+        borderRadius: 16,
+        padding: 14,
+        marginBottom: 16,
+    },
+    ruleBannerText: {
+        flex: 1,
+        fontSize: 13,
+        color: '#166534',
+        lineHeight: 18,
     }
 });

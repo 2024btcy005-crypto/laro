@@ -24,9 +24,16 @@ const notifyDeliveryPartnersNewOrder = (orderData) => {
     }
 };
 
+const notifyCustomerWalletUpdate = (customerId, walletData) => {
+    if (io) {
+        io.to(`customer_${customerId}`).emit('wallet_update', walletData);
+    }
+};
+
 module.exports = {
     setIo,
     notifyShopNewOrder,
     notifyCustomerOrderStatus,
-    notifyDeliveryPartnersNewOrder
+    notifyDeliveryPartnersNewOrder,
+    notifyCustomerWalletUpdate
 };

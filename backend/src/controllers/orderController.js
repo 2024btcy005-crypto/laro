@@ -2,7 +2,7 @@ const { Order, OrderItem, Product, Shop, User, Delivery, Review, WalletTransacti
 const { sequelize } = require('../config/db');
 const { Sequelize } = require('sequelize');
 const { notifyDeliveryPartnersNewOrder } = require('../services/socketService');
-const { notifyEligibleRidersNewOrder } = require('../services/notificationService');
+const { notifyEligibleRidersNewOrder, notifyWalletTransaction } = require('../services/notificationService');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -220,8 +220,17 @@ const createOrder = async (req, res) => {
 
         // Handle Laro Coins Payment Deduction
         if (paymentMethod === 'laro_coins') {
+            const MIN_LARO_ORDER_AMOUNT = 100;
+            if (itemsTotal < MIN_LARO_ORDER_AMOUNT) {
+                await t.rollback();
+                return res.status(400).json({
+                    message: `Laro Coins can only be used on orders of ₹${MIN_LARO_ORDER_AMOUNT} or above. Your cart subtotal is ₹${itemsTotal.toFixed(2)}.`
+                });
+            }
+
             if (user.laroCurrency < totalAmount) {
-                throw new Error('Insufficient Laro Coins balance');
+                await t.rollback();
+                return res.status(400).json({ message: 'Insufficient Laro Coins balance' });
             }
 
             const oldBalance = user.laroCurrency;
@@ -237,6 +246,13 @@ const createOrder = async (req, res) => {
                 description: `Payment for order #${order.id.substring(0, 8)}`,
                 balanceAfter: user.laroCurrency
             }, { transaction: t });
+
+            notifyWalletTransaction(user, {
+                type: 'debit',
+                amount: totalAmount,
+                description: `Payment for order #${order.id.substring(0, 8)}`,
+                balanceAfter: user.laroCurrency
+            });
 
             console.log('[DEBUG] Laro Coins deducted. Old:', oldBalance, 'New:', user.laroCurrency);
         }
@@ -657,6 +673,21 @@ const transferCoins = async (req, res) => {
         }, { transaction: t });
 
         await t.commit();
+
+        // Send Push & Real-time Notifications to Sender and Recipient
+        notifyWalletTransaction(sender, {
+            type: 'debit',
+            amount: transferAmount,
+            description: `Sent ${transferAmount} Ł to ${recipient.name}`,
+            balanceAfter: senderNewBalance
+        });
+
+        notifyWalletTransaction(recipient, {
+            type: 'credit',
+            amount: transferAmount,
+            description: `Received ${transferAmount} Ł from ${sender.name}`,
+            balanceAfter: recipientNewBalance
+        });
 
         res.json({
             message: `Successfully sent ${transferAmount} Ł to ${recipient.name}`,

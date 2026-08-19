@@ -11,6 +11,8 @@ import { orderAPI } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { FavouriteService } from '../../services/FavouriteService';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
+import { ProfileScreenSkeleton } from '../../components/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 
@@ -119,35 +121,93 @@ export default function ProfileScreen({ navigation }) {
             </View>
 
             {loading ? (
-                <View style={styles.centerContainer}>
-                    <ActivityIndicator size="large" color="#056f36" />
-                </View>
+                <ProfileScreenSkeleton />
             ) : (
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                     
-                    {/* Profile Avatar (No Mock Image - Clean Person Vector Icon) */}
-                    <View style={styles.avatarSection}>
-                        <View style={styles.avatarBorder}>
-                            <View style={styles.avatarIconBg}>
-                                <Ionicons name="person" size={54} color="#056f36" />
+                    {/* Flagship Emerald Hero Card */}
+                    <View style={styles.flagshipHeroCard}>
+                        {/* Decorative Ambient Radial Orbs */}
+                        <View style={styles.heroGlowCircle1} />
+                        <View style={styles.heroGlowCircle2} />
+
+                        <View style={styles.flagshipHeroContent}>
+                            {/* Avatar Ring */}
+                            <View style={styles.flagshipAvatarRing}>
+                                <View style={styles.flagshipAvatarInner}>
+                                    <Ionicons name="person" size={32} color="#056f36" />
+                                </View>
+                                <TouchableOpacity 
+                                    style={styles.flagshipEditBtn} 
+                                    onPress={() => navigation.navigate('Settings')}
+                                    activeOpacity={0.8}
+                                >
+                                    <Ionicons name="pencil" size={11} color="#056f36" />
+                                </TouchableOpacity>
                             </View>
-                            <TouchableOpacity style={styles.editBadge} onPress={() => navigation.navigate('Settings')}>
-                                <Ionicons name="pencil" size={14} color="#fff" />
-                            </TouchableOpacity>
+
+                            {/* User Info Column */}
+                            <View style={styles.flagshipUserCol}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <Text style={styles.flagshipUserName} numberOfLines={1}>
+                                        {user?.name || 'Guest User'}
+                                    </Text>
+                                    <Ionicons name="checkmark-circle" size={16} color="#4ade80" />
+                                </View>
+                                <Text style={styles.flagshipUserEmail} numberOfLines={1}>
+                                    {user?.email || 'student@campus.edu'}
+                                </Text>
+                                
+                                <TouchableOpacity 
+                                    style={styles.flagshipBadgePill}
+                                    onPress={() => {
+                                        Haptics.selectionAsync();
+                                        navigation.navigate('ChangeUniversity');
+                                    }}
+                                    activeOpacity={0.8}
+                                >
+                                    <Ionicons name="school" size={12} color="#ffffff" />
+                                    <Text style={styles.flagshipBadgeText}>Joyy University • Change ➔</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                        <Text style={styles.userName}>{user?.name || 'Guest User'}</Text>
                     </View>
 
-                    {/* Stats Boxes */}
+                    {/* Premium Twin Stat Pod Cards */}
                     <View style={styles.statsRow}>
-                        <View style={styles.statCard}>
-                            <Text style={styles.statGreenValue}>{stats.orderCount || 0}</Text>
-                            <Text style={styles.statLabel}>Total Orders</Text>
-                        </View>
-                        <View style={styles.statCard}>
-                            <Text style={styles.statBlackValue}>{stats.laroCurrency || 0}</Text>
-                            <Text style={styles.statLabel}>Laro Coins</Text>
-                        </View>
+                        <TouchableOpacity 
+                            style={[styles.statPodCard, { backgroundColor: isDarkMode ? '#1e293b' : '#f0fdf4', borderColor: isDarkMode ? '#334155' : '#dcfce7' }]} 
+                            onPress={() => navigation.navigate('Orders')}
+                            activeOpacity={0.85}
+                        >
+                            <View style={styles.statPodHeader}>
+                                <View style={[styles.statPodIconBg, { backgroundColor: '#056f36' }]}>
+                                    <Ionicons name="bag-handle" size={16} color="#ffffff" />
+                                </View>
+                                <View style={styles.statPodBadgeGreen}>
+                                    <Text style={styles.statPodBadgeTextGreen}>Orders 📦</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.statPodValueGreen}>{stats.orderCount || 0}</Text>
+                            <Text style={[styles.statPodSubLabel, { color: isDarkMode ? '#94a3b8' : '#475569' }]}>Total Orders Placed</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            style={[styles.statPodCard, { backgroundColor: isDarkMode ? '#1e293b' : '#fffbeb', borderColor: isDarkMode ? '#334155' : '#fef3c7' }]} 
+                            onPress={() => navigation.navigate('LaroCurrency')}
+                            activeOpacity={0.85}
+                        >
+                            <View style={styles.statPodHeader}>
+                                <View style={[styles.statPodIconBg, { backgroundColor: '#d97706' }]}>
+                                    <Ionicons name="sparkles" size={16} color="#ffffff" />
+                                </View>
+                                <View style={styles.statPodBadgeGold}>
+                                    <Text style={styles.statPodBadgeTextGold}>Coins 🪙</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.statPodValueGold}>{stats.laroCurrency || 0}</Text>
+                            <Text style={[styles.statPodSubLabel, { color: isDarkMode ? '#94a3b8' : '#78350f' }]}>Laro Balance</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Wallet Card */}
@@ -268,6 +328,37 @@ export default function ProfileScreen({ navigation }) {
 
                     {/* Navigation Menu Links */}
                     <View style={styles.menuLinksContainer}>
+                        <TouchableOpacity 
+                            style={styles.menuLinkItem} 
+                            onPress={() => {
+                                Haptics.selectionAsync();
+                                navigation.navigate('Referral');
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="gift-outline" size={22} color="#056f36" style={{ marginRight: 15 }} />
+                                <Text style={[styles.menuLinkLabel, { color: '#056f36', fontWeight: '800' }]}>Refer & Earn (10 Ł)</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#056f36' }}>Get 10 Ł</Text>
+                                <Ionicons name="chevron-forward" size={18} color="#056f36" />
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            style={styles.menuLinkItem} 
+                            onPress={() => {
+                                Haptics.selectionAsync();
+                                navigation.navigate('ChangeUniversity');
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="school-outline" size={22} color="#056f36" style={{ marginRight: 15 }} />
+                                <Text style={[styles.menuLinkLabel, { color: isDarkMode ? '#fff' : '#111827', fontWeight: '700' }]}>Change Campus / University</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color="#056f36" />
+                        </TouchableOpacity>
+
                         <TouchableOpacity style={styles.menuLinkItem} onPress={() => navigation.navigate('QuestsList')}>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <Ionicons name="compass-outline" size={22} color="#056f36" style={{ marginRight: 15 }} />
@@ -355,57 +446,176 @@ const styles = StyleSheet.create({
 
     scrollContent: { paddingHorizontal: 24, paddingBottom: 110 },
 
-    avatarSection: { alignItems: 'center', marginTop: 10, marginBottom: 20 },
-    avatarBorder: {
+    flagshipHeroCard: {
+        backgroundColor: '#056f36',
+        borderRadius: 24,
+        padding: 20,
+        marginVertical: 10,
+        position: 'relative',
+        overflow: 'hidden',
+        elevation: 6,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+    },
+    heroGlowCircle1: {
+        position: 'absolute',
+        top: -30,
+        right: -30,
+        width: 140,
+        height: 140,
+        borderRadius: 70,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    },
+    heroGlowCircle2: {
+        position: 'absolute',
+        bottom: -40,
+        left: -20,
         width: 120,
         height: 120,
         borderRadius: 60,
-        borderWidth: 3,
-        borderColor: '#27c96c',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative'
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
     },
-    avatarIconBg: {
-        width: 106,
-        height: 106,
-        borderRadius: 53,
-        backgroundColor: '#e6efe6',
-        justifyContent: 'center',
-        alignItems: 'center'
-    },
-    editBadge: {
-        position: 'absolute',
-        bottom: 4,
-        right: 4,
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: '#056f36',
-        justifyContent: 'center',
+    flagshipHeroContent: {
+        flexDirection: 'row',
         alignItems: 'center',
+        zIndex: 2,
+    },
+    flagshipAvatarRing: {
+        width: 68,
+        height: 68,
+        borderRadius: 34,
         borderWidth: 2,
-        borderColor: '#f2f7f2'
-    },
-    userName: { fontSize: 22, fontWeight: '900', color: '#111', marginTop: 12 },
-
-    statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-    statCard: {
-        flex: 1,
-        backgroundColor: '#fff',
-        borderRadius: 18,
-        paddingVertical: 18,
+        borderColor: 'rgba(255, 255, 255, 0.4)',
+        backgroundColor: '#ffffff',
+        justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: 5,
+        position: 'relative',
+    },
+    flagshipAvatarInner: {
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        backgroundColor: '#e6f7ed',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    flagshipEditBtn: {
+        position: 'absolute',
+        bottom: -2,
+        right: -2,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: '#ffffff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 3,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.02,
-        shadowRadius: 5,
-        elevation: 1
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
     },
-    statGreenValue: { fontSize: 24, fontWeight: '900', color: '#056f36' },
-    statBlackValue: { fontSize: 24, fontWeight: '900', color: '#111' },
-    statLabel: { fontSize: 13, color: '#666', fontWeight: '700', marginTop: 4 },
+    flagshipUserCol: {
+        marginLeft: 16,
+        flex: 1,
+    },
+    flagshipUserName: {
+        fontSize: 19,
+        fontWeight: '900',
+        color: '#ffffff',
+    },
+    flagshipUserEmail: {
+        fontSize: 12.5,
+        fontWeight: '500',
+        color: 'rgba(255, 255, 255, 0.8)',
+        marginTop: 2,
+    },
+    flagshipBadgePill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        marginTop: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.18)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 14,
+        alignSelf: 'flex-start',
+    },
+    flagshipBadgeText: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#ffffff',
+    },
+
+    statsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 18,
+    },
+    statPodCard: {
+        flex: 1,
+        borderRadius: 22,
+        padding: 14,
+        marginHorizontal: 4,
+        borderWidth: 1,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+    },
+    statPodHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    statPodIconBg: {
+        width: 32,
+        height: 32,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    statPodBadgeGreen: {
+        backgroundColor: '#e6f7ed',
+        paddingHorizontal: 7,
+        paddingVertical: 2,
+        borderRadius: 8,
+    },
+    statPodBadgeTextGreen: {
+        fontSize: 10.5,
+        fontWeight: '900',
+        color: '#056f36',
+    },
+    statPodBadgeGold: {
+        backgroundColor: '#fef3c7',
+        paddingHorizontal: 7,
+        paddingVertical: 2,
+        borderRadius: 8,
+    },
+    statPodBadgeTextGold: {
+        fontSize: 10.5,
+        fontWeight: '900',
+        color: '#b45309',
+    },
+    statPodValueGreen: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: '#056f36',
+    },
+    statPodValueGold: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: '#d97706',
+    },
+    statPodSubLabel: {
+        fontSize: 11.5,
+        fontWeight: '700',
+        marginTop: 2,
+    },
 
     walletCard: {
         backgroundColor: '#0c633a',

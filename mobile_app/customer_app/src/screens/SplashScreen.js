@@ -4,7 +4,7 @@ import { View, Image, StyleSheet, StatusBar } from 'react-native';
 export default function SplashScreen() {
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#254e2b" />
+            <StatusBar barStyle="light-content" backgroundColor="#056f36" translucent />
             <Image 
                 source={require('../../assets/splash.png')} 
                 style={styles.splashImage}
@@ -17,7 +17,7 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#254e2b',
+        backgroundColor: '#056f36',
         alignItems: 'center',
         justifyContent: 'center',
     },

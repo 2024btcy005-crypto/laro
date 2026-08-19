@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
     View, Text, StyleSheet, TextInput, TouchableOpacity, Image, 
-    KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, Dimensions 
+    KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, Dimensions, Animated 
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { signIn } from '../../store/authSlice';
@@ -12,13 +12,9 @@ import { COLORS } from '../../theme';
 import LaroAlert from '../../components/LaroAlert';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
-
-WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
     const insets = useSafeAreaInsets();
@@ -31,45 +27,39 @@ export default function LoginScreen() {
     const [secureText, setSecureText] = useState(true);
     const [secureConfirm, setSecureConfirm] = useState(true);
 
+    const slideAnim = useRef(new Animated.Value(0)).current;
+    const formFadeAnim = useRef(new Animated.Value(1)).current;
+
+    const switchMode = (toLogin) => {
+        if (isLoginMode === toLogin) return;
+        Haptics.selectionAsync();
+
+        Animated.parallel([
+            Animated.spring(slideAnim, {
+                toValue: toLogin ? 0 : 1,
+                tension: 68,
+                friction: 9,
+                useNativeDriver: false,
+            }),
+            Animated.sequence([
+                Animated.timing(formFadeAnim, {
+                    toValue: 0.4,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(formFadeAnim, {
+                    toValue: 1,
+                    duration: 180,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ]).start();
+
+        setIsLoginMode(toLogin);
+    };
+
     const dispatch = useDispatch();
     const navigation = useNavigation();
-
-    const [request, response, promptAsync] = Google.useAuthRequest({
-        responseType: 'id_token',
-        webClientId: '1089766186717-9hc8sqak0nhb3r09hd3k93d31744t4pp.apps.googleusercontent.com',
-        androidClientId: '1089766186717-9hc8sqak0nhb3r09hd3k93d31744t4pp.apps.googleusercontent.com',
-        iosClientId: '1089766186717-9hc8sqak0nhb3r09hd3k93d31744t4pp.apps.googleusercontent.com',
-    });
-
-    React.useEffect(() => {
-        if (response?.type === 'success') {
-            const idToken = response.authentication?.idToken || response.params?.id_token;
-            if (idToken) {
-                setLoading(true);
-                sendSocialTokenToBackend(idToken);
-            }
-        } else if (response?.type === 'error') {
-            console.error('[GOOGLE AUTH ERR]', response.error);
-            Alert.alert('Authentication Failed', 'Google login returned an error.');
-        }
-    }, [response]);
-
-    const sendSocialTokenToBackend = async (idToken) => {
-        try {
-            const res = await api.post('/auth/social-login', { idToken });
-            const { token, id, name: userName, email: userEmail, phoneNumber, role, needsWallet } = res.data;
-            const userData = { id, name: userName, email: userEmail, phoneNumber, role };
-
-            await AsyncStorage.setItem('userToken', token);
-            await AsyncStorage.setItem('userData', JSON.stringify(userData));
-
-            dispatch(signIn({ user: userData, token, setupPending: needsWallet }));
-        } catch (error) {
-            Alert.alert('Authentication Failed', error.response?.data?.message || 'Failed to authenticate via Google.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
@@ -126,36 +116,6 @@ export default function LoginScreen() {
         }
     };
 
-    const handleGoogleLogin = () => {
-        if (__DEV__) {
-            Alert.alert(
-                'Google Sign-In Option',
-                'Select an option to proceed:',
-                [
-                    {
-                        text: 'Use Mock Account',
-                        onPress: () => {
-                            setLoading(true);
-                            const mockIdToken = `mock_google_dev_${Math.floor(Math.random() * 10000)}`;
-                            sendSocialTokenToBackend(mockIdToken);
-                        }
-                    },
-                    {
-                        text: 'Real Google Sign-In',
-                        onPress: () => {
-                            if (request) promptAsync();
-                            else Alert.alert('Initialization Error', 'Google login request is not initialized yet.');
-                        }
-                    },
-                    { text: 'Cancel', style: 'cancel' }
-                ]
-            );
-        } else {
-            if (request) promptAsync();
-            else Alert.alert('Initialization Error', 'Google login request is not initialized yet.');
-        }
-    };
-
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <KeyboardAvoidingView 
@@ -179,17 +139,23 @@ export default function LoginScreen() {
                         </View>
                     </View>
 
-                    {/* Mode Segmented Selector */}
+                    {/* Mode Segmented Selector with Smooth Spring Sliding Pill */}
                     <View style={styles.modeSegmentContainer}>
-                        <TouchableOpacity
+                        <Animated.View
                             style={[
-                                styles.modeTab, 
-                                isLoginMode && styles.modeTabActive
+                                styles.animatedModePill,
+                                {
+                                    left: slideAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: ['1%', '50.5%'],
+                                    }),
+                                },
                             ]}
-                            onPress={() => {
-                                Haptics.selectionAsync();
-                                setIsLoginMode(true);
-                            }}
+                        />
+                        <TouchableOpacity
+                            style={styles.modeTab}
+                            onPress={() => switchMode(true)}
+                            activeOpacity={0.8}
                         >
                             <Text style={[
                                 styles.modeTabText, 
@@ -198,14 +164,9 @@ export default function LoginScreen() {
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            style={[
-                                styles.modeTab, 
-                                !isLoginMode && styles.modeTabActive
-                            ]}
-                            onPress={() => {
-                                Haptics.selectionAsync();
-                                setIsLoginMode(false);
-                            }}
+                            style={styles.modeTab}
+                            onPress={() => switchMode(false)}
+                            activeOpacity={0.8}
                         >
                             <Text style={[
                                 styles.modeTabText, 
@@ -214,8 +175,23 @@ export default function LoginScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Elevated Form Card */}
-                    <View style={styles.formCard}>
+                    {/* Elevated Animated Form Card */}
+                    <Animated.View 
+                        style={[
+                            styles.formCard,
+                            {
+                                opacity: formFadeAnim,
+                                transform: [
+                                    {
+                                        translateY: formFadeAnim.interpolate({
+                                            inputRange: [0.4, 1],
+                                            outputRange: [8, 0],
+                                        })
+                                    }
+                                ]
+                            }
+                        ]}
+                    >
                         <Text style={styles.welcomeTitle}>
                             {isLoginMode ? 'Welcome Back 👋' : 'Create Account 🚀'}
                         </Text>
@@ -248,7 +224,7 @@ export default function LoginScreen() {
                                 <Ionicons name="mail-outline" size={18} color="#666" style={{ marginRight: 10 }} />
                                 <TextInput
                                     style={styles.textInput}
-                                    placeholder="student@university.edu"
+                                    placeholder="Email"
                                     placeholderTextColor="#999"
                                     keyboardType="email-address"
                                     autoCapitalize="none"
@@ -332,26 +308,7 @@ export default function LoginScreen() {
                                 </View>
                             )}
                         </TouchableOpacity>
-
-                        {/* Divider */}
-                        <View style={styles.dividerRow}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>OR</Text>
-                            <View style={styles.dividerLine} />
-                        </View>
-
-                        {/* Google Sign In Button */}
-                        <TouchableOpacity 
-                            style={styles.googleBtn} 
-                            onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                handleGoogleLogin();
-                            }}
-                        >
-                            <Ionicons name="logo-google" size={18} color="#056f36" style={{ marginRight: 10 }} />
-                            <Text style={styles.googleBtnText}>Sign in with your Google</Text>
-                        </TouchableOpacity>
-                    </View>
+                    </Animated.View>
                 </ScrollView>
             </KeyboardAvoidingView>
 
@@ -428,21 +385,30 @@ const styles = StyleSheet.create({
         padding: 4,
         width: '100%',
         marginBottom: 20,
+        position: 'relative',
+        height: 48,
+    },
+    animatedModePill: {
+        position: 'absolute',
+        top: 4,
+        bottom: 4,
+        width: '48.5%',
+        backgroundColor: '#ffffff',
+        borderRadius: 12,
+        elevation: 3,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
     },
     modeTab: {
         flex: 1,
-        paddingVertical: 11,
+        justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 12,
+        zIndex: 2,
     },
-    modeTabActive: {
-        backgroundColor: '#fff',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-    },
+    modeTabActive: {},
     modeTabText: {
         fontSize: 14,
         fontWeight: '700',

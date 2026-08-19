@@ -13,15 +13,15 @@
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#254e2b"
+      "resizeMode": "cover",
+      "backgroundColor": "#056f36"
     },
     "android": {
       "package": "com.zippit.laro",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#254e2b"
+        "backgroundColor": "#056f36"
       }
     },
     "notification": {

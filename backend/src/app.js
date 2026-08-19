@@ -16,6 +16,7 @@ const xeroxPricingRoutes = require('./routes/xeroxPricingRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const universityRoutes = require('./routes/universityRoutes');
 const questRoutes = require('./routes/questRoutes');
+const referralRoutes = require('./routes/referralRoutes');
 
 const app = express();
 
@@ -93,6 +94,7 @@ app.use('/api/xerox-pricing', xeroxPricingRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/universities', universityRoutes);
 app.use('/api/quests', questRoutes);
+app.use('/api/referral', referralRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

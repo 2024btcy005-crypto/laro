@@ -1,10 +1,22 @@
-const { User } = require('../models');
+const { User, Referral, WalletTransaction } = require('../models');
 const { generateToken } = require('../utils/jwt');
 const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
 
 // Temporary in-memory OTP store (In production, use Redis or a DB table with expiry)
 const otpStore = new Map();
+
+const generateUniqueReferralCode = async () => {
+    let code = '';
+    let isUnique = false;
+    while (!isUnique) {
+        const randomPart = Math.random().toString(36).substring(2, 7).toUpperCase();
+        code = `LARO-${randomPart}`;
+        const existing = await User.findOne({ where: { referralCode: code } });
+        if (!existing) isUnique = true;
+    }
+    return code;
+};
 
 // @desc    Send OTP to phone number
 // @route   POST /api/auth/send-otp
@@ -86,7 +98,7 @@ const verifyOtp = async (req, res) => {
 // @access  Public
 const registerUser = async (req, res) => {
     try {
-        const { email, password, name, phoneNumber, role } = req.body;
+        const { email, password, name, phoneNumber, role, referralCode } = req.body;
 
         if (!email || !password || !name) {
             return res.status(400).json({ message: 'Email, password and name are required' });
@@ -118,7 +130,6 @@ const registerUser = async (req, res) => {
             const phoneExists = await User.findOne({ where: { phoneNumber } });
             if (phoneExists) {
                 if (role === 'delivery' && phoneExists.role === 'customer') {
-                    // Similar logic for phone-based registration if applicable
                     phoneExists.role = 'delivery';
                     await phoneExists.save();
                     return res.status(200).json({
@@ -135,16 +146,41 @@ const registerUser = async (req, res) => {
             }
         }
 
+        let referrer = null;
+        if (referralCode && typeof referralCode === 'string') {
+            const cleanCode = referralCode.trim().toUpperCase();
+            referrer = await User.findOne({ where: { referralCode: cleanCode } });
+            if (!referrer) {
+                console.log(`[REFERRAL] Invalid referral code supplied: ${cleanCode}`);
+            }
+        }
+
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
+        const myReferralCode = await generateUniqueReferralCode();
 
         const user = await User.create({
             email,
             passwordHash,
             name,
             phoneNumber,
-            role: role || 'customer'
+            role: role || 'customer',
+            referralCode: myReferralCode,
+            referredBy: referrer ? referrer.id : null,
+            hasRedeemedFirstOrderReferral: false
         });
+
+        // Create pending referral entry if referrer is valid
+        if (referrer) {
+            await Referral.create({
+                referrerId: referrer.id,
+                refereeId: user.id,
+                referralCode: referrer.referralCode,
+                status: 'pending',
+                rewardCoins: 10
+            });
+            console.log(`[REFERRAL] Created pending referral link for ${user.name} referred by ${referrer.name}`);
+        }
 
         res.status(201).json({
             id: user.id,
@@ -152,6 +188,7 @@ const registerUser = async (req, res) => {
             email: user.email,
             phoneNumber: user.phoneNumber,
             role: user.role,
+            referralCode: user.referralCode,
             token: generateToken(user.id, user.role),
         });
 

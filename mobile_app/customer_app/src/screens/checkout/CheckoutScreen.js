@@ -176,6 +176,16 @@ export default function CheckoutScreen({ navigation }) {
             return;
         }
 
+        if (paymentMethod === 'laro_coins' && grandTotal < 100) {
+            setAlertConfig({
+                visible: true,
+                title: 'Min. ₹100 Order Required',
+                message: 'Laro Coins can only be used on orders of ₹100 or above. Please select Cash on Delivery or add more items to your cart.',
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
+            return;
+        }
+
         setLoading(true);
         try {
             const orderPayload = {
@@ -278,27 +288,44 @@ export default function CheckoutScreen({ navigation }) {
                             style={[
                                 styles.paymentCard, 
                                 paymentMethod === 'laro_coins' && styles.paymentCardActive,
-                                laroCurrency < grandTotal && { opacity: 0.5 }
+                                (laroCurrency < grandTotal || grandTotal < 100) && { opacity: 0.6 }
                             ]}
                             onPress={() => {
-                                if (laroCurrency >= grandTotal) {
-                                    setPaymentMethod('laro_coins');
-                                } else {
+                                if (grandTotal < 100) {
+                                    const neededMore = (100 - grandTotal).toFixed(0);
+                                    setAlertConfig({
+                                        visible: true,
+                                        title: 'Min. ₹100 Order Required',
+                                        message: `Laro Coins can only be used on orders of ₹100 or above. Add ₹${neededMore} more to your cart to unlock Laro Coins payment.`,
+                                        onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+                                    });
+                                } else if (laroCurrency < grandTotal) {
                                     setAlertConfig({
                                         visible: true,
                                         title: 'Insufficient Balance',
-                                        message: `You need ${grandTotal} Laro Coins, but only have ${laroCurrency}.`,
+                                        message: `You need ${grandTotal} Laro Coins, but only have ${laroCurrency.toFixed(2)}.`,
                                         onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
                                     });
+                                } else {
+                                    setPaymentMethod('laro_coins');
                                 }
                             }}
                         >
                             <View style={[styles.paymentIconBox, paymentMethod === 'laro_coins' && styles.paymentIconBoxActive]}>
-                                <Ionicons name="logo-bitcoin" size={20} color={paymentMethod === 'laro_coins' ? '#fff' : '#666'} />
+                                <Ionicons name="logo-bitcoin" size={20} color={paymentMethod === 'laro_coins' ? '#fff' : '#056f36'} />
                             </View>
                             <View style={styles.paymentDetails}>
-                                <Text style={styles.paymentNameText}>Laro Coins</Text>
-                                <Text style={styles.paymentSubtext}>Available Balance: {laroCurrency.toFixed(2)}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <Text style={styles.paymentNameText}>Laro Coins (Ł)</Text>
+                                    {grandTotal < 100 && (
+                                        <View style={{ backgroundColor: '#fffbe6', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#ffe58f' }}>
+                                            <Text style={{ fontSize: 10, fontWeight: '700', color: '#d48806' }}>Min ₹100 Order</Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <Text style={styles.paymentSubtext}>
+                                    Available Balance: {laroCurrency.toFixed(2)} Ł {grandTotal < 100 ? '• (Min. ₹100 order)' : ''}
+                                </Text>
                             </View>
                             <View style={styles.radioButton}>
                                 {paymentMethod === 'laro_coins' && <View style={styles.radioButtonSelected} />}
