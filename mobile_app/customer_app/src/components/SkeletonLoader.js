@@ -234,6 +234,41 @@ export function ReferralScreenSkeleton() {
     );
 }
 
+export function OrderDetailScreenSkeleton() {
+    const insets = useSafeAreaInsets();
+    return (
+        <View style={[styles.container, { paddingTop: (insets?.top || 0) + 10, paddingHorizontal: 16, backgroundColor: '#f2f7f2', flex: 1 }]}>
+            {/* Header Skeleton */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <SkeletonLoader width={36} height={36} borderRadius={18} />
+                <SkeletonLoader width={140} height={18} borderRadius={6} />
+                <SkeletonLoader width={36} height={36} borderRadius={18} />
+            </View>
+
+            {/* Map Tracking Card Skeleton */}
+            <SkeletonLoader width="100%" height={180} borderRadius={24} style={{ marginBottom: 16 }} />
+
+            {/* Rider Details Card Skeleton */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 20, backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 }}>
+                    <SkeletonLoader width={44} height={44} borderRadius={22} />
+                    <View style={{ flex: 1, gap: 6 }}>
+                        <SkeletonLoader width={130} height={16} borderRadius={6} />
+                        <SkeletonLoader width={90} height={12} borderRadius={4} />
+                    </View>
+                </View>
+                <SkeletonLoader width={80} height={34} borderRadius={17} />
+            </View>
+
+            {/* OTP Box Skeleton */}
+            <SkeletonLoader width="100%" height={90} borderRadius={20} style={{ marginBottom: 16 }} />
+
+            {/* Order Items & Summary Card Skeleton */}
+            <SkeletonLoader width="100%" height={190} borderRadius={22} style={{ marginBottom: 16 }} />
+        </View>
+    );
+}
+
 const styles = StyleSheet.create({
     skeletonBox: {
         backgroundColor: '#e2e8f0',

@@ -8,6 +8,7 @@ import { COLORS, CONSTANTS } from '../../theme';
 import api from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
+import { OrderDetailScreenSkeleton } from '../../components/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 
@@ -92,12 +93,7 @@ export default function OrderDetailScreen({ route, navigation }) {
     };
 
     if (loading) {
-        return (
-            <SafeAreaView style={[styles.center, { backgroundColor: '#f2f7f2' }]} edges={['top']}>
-                <ActivityIndicator size="large" color="#056f36" />
-                <Text style={styles.loadingText}>Loading details...</Text>
-            </SafeAreaView>
-        );
+        return <OrderDetailScreenSkeleton />;
     }
 
     if (!order) {
