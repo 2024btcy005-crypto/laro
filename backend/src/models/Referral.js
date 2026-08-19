@@ -33,7 +33,7 @@ const Referral = sequelize.define('Referral', {
     },
     rewardCoins: {
         type: DataTypes.INTEGER,
-        defaultValue: 10,
+        defaultValue: 5,
     },
     completedAt: {
         type: DataTypes.DATE,

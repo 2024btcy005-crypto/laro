@@ -177,7 +177,7 @@ const registerUser = async (req, res) => {
                 refereeId: user.id,
                 referralCode: referrer.referralCode,
                 status: 'pending',
-                rewardCoins: 10
+                rewardCoins: 5
             });
             console.log(`[REFERRAL] Created pending referral link for ${user.name} referred by ${referrer.name}`);
         }

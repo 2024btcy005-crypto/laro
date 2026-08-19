@@ -33,14 +33,14 @@ const getReferralStats = async (req, res) => {
 
         const totalFriendsReferred = referrals.length;
         const completedReferralsCount = referrals.filter(r => r.status === 'completed').length;
-        const totalEarnedCoins = completedReferralsCount * 10;
+        const totalEarnedCoins = completedReferralsCount * 5;
 
         const friendsList = referrals.map(ref => ({
             id: ref.id,
             name: ref.referee ? ref.referee.name : 'Campus Friend',
             emailMasked: ref.referee ? ref.referee.email.replace(/(.{2})(.*)(?=@)/, '$1***') : '***',
             status: ref.status, // 'pending' | 'completed'
-            rewardCoins: ref.rewardCoins || 10,
+            rewardCoins: ref.rewardCoins || 5,
             joinedAt: ref.createdAt,
             completedAt: ref.completedAt
         }));
@@ -51,7 +51,7 @@ const getReferralStats = async (req, res) => {
             completedReferralsCount,
             totalEarnedCoins,
             shareUrl: `https://laro.app/join?ref=${userReferralCode}`,
-            shareMessage: `Hey! 🍔🛵 Join me on Laro campus delivery app!\n\nUse my referral code:\n👉 *${userReferralCode}* 👈\n\nBoth of us get *10 Laro Coins (10 Ł)* credited automatically when you place your 1st order! 🎉`,
+            shareMessage: `Hey! 🍔🛵 Join me on Laro campus delivery app!\n\nUse my referral code:\n👉 *${userReferralCode}* 👈\n\nBoth of us get *5 Laro Coins (5 Ł)* credited automatically when you place your 1st order! 🎉`,
             friendsList
         });
 

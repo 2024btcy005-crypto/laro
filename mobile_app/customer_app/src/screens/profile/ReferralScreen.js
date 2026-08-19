@@ -9,6 +9,7 @@ import { useSelector } from 'react-redux';
 import { useTheme } from '../../context/ThemeContext';
 import { referralAPI } from '../../services/api';
 import LaroToast from '../../components/LaroToast';
+import { ReferralScreenSkeleton } from '../../components/SkeletonLoader';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
@@ -25,7 +26,7 @@ export default function ReferralScreen({ navigation }) {
         totalFriendsReferred: 0,
         completedReferralsCount: 0,
         totalEarnedCoins: 0,
-        shareMessage: `Hey! 🍔🛵 Join me on Laro campus delivery app!\n\nUse my referral code:\n👉 *${defaultCode}* 👈\n\nBoth of us get *10 Laro Coins (10 Ł)* credited automatically when you place your 1st order! 🎉`,
+        shareMessage: `Hey! 🍔🛵 Join me on Laro campus delivery app!\n\nUse my referral code:\n👉 *${defaultCode}* 👈\n\nBoth of us win *up to 50 Laro Coins (5-50 Ł)* credited automatically when you place your 1st order! 🎉`,
         friendsList: []
     });
 
@@ -49,7 +50,7 @@ export default function ReferralScreen({ navigation }) {
             setStats(prev => ({
                 ...prev,
                 referralCode: defaultCode,
-                shareMessage: `Hey! 🍔🛵 Join me on Laro campus delivery app!\n\nUse my referral code:\n👉 *${defaultCode}* 👈\n\nBoth of us get *10 Laro Coins (10 Ł)* credited automatically when you place your 1st order! 🎉`
+                shareMessage: `Hey! 🍔🛵 Join me on Laro campus delivery app!\n\nUse my referral code:\n👉 *${defaultCode}* 👈\n\nBoth of us win *up to 50 Laro Coins (5-50 Ł)* credited automatically when you place your 1st order! 🎉`
             }));
         } finally {
             setLoading(false);
@@ -92,9 +93,7 @@ export default function ReferralScreen({ navigation }) {
             </View>
 
             {loading ? (
-                <View style={styles.centerContainer}>
-                    <ActivityIndicator size="large" color="#056f36" />
-                </View>
+                <ReferralScreenSkeleton />
             ) : (
                 <ScrollView
                     contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 }]}
@@ -119,16 +118,16 @@ export default function ReferralScreen({ navigation }) {
                             </View>
                         </View>
 
-                        <Text style={styles.heroTitle}>Invite Friends & Earn Together</Text>
+                        <Text style={styles.heroTitle}>Invite Friends & Win Up to 50 Ł</Text>
                         <Text style={styles.heroSub}>
-                            Share your unique referral code with campus friends. Both of you receive <Text style={{ fontWeight: '900', color: '#ffffff' }}>10 Laro Coins (10 Ł)</Text> automatically on their 1st delivered order!
+                            Share your unique referral code with campus friends. Both of you win <Text style={{ fontWeight: '900', color: '#ffffff' }}>up to 50 Laro Coins (5 Ł - 50 Ł)</Text> automatically on their 1st delivered order!
                         </Text>
 
                         {/* Dual Reward Split Pod Row */}
                         <View style={styles.dualRewardRow}>
                             <View style={styles.rewardPodItem}>
                                 <Text style={styles.rewardPodLabel}>YOU GET</Text>
-                                <Text style={styles.rewardPodValue}>+10 Ł</Text>
+                                <Text style={styles.rewardPodValue}>5 - 50 Ł</Text>
                             </View>
 
                             <View style={styles.rewardDividerDot}>
@@ -137,7 +136,7 @@ export default function ReferralScreen({ navigation }) {
 
                             <View style={styles.rewardPodItem}>
                                 <Text style={styles.rewardPodLabel}>FRIEND GETS</Text>
-                                <Text style={styles.rewardPodValue}>+10 Ł</Text>
+                                <Text style={styles.rewardPodValue}>5 - 50 Ł</Text>
                             </View>
                         </View>
                     </View>
@@ -214,8 +213,8 @@ export default function ReferralScreen({ navigation }) {
                         <View style={styles.stepRow}>
                             <View style={[styles.stepBadge, { backgroundColor: '#056f36' }]}><Ionicons name="checkmark" size={16} color="#fff" /></View>
                             <View style={{ flex: 1 }}>
-                                <Text style={[styles.stepHeading, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>Both Get 10 Laro Coins!</Text>
-                                <Text style={styles.stepDescription}>10 Ł is credited instantly to both wallets upon order delivery 🎉</Text>
+                                <Text style={[styles.stepHeading, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>Both Win Up to 50 Laro Coins!</Text>
+                                <Text style={styles.stepDescription}>Coins (5 Ł - 50 Ł) credited automatically to both wallets upon order delivery 🎉</Text>
                             </View>
                         </View>
                     </View>
@@ -250,7 +249,7 @@ export default function ReferralScreen({ navigation }) {
                                     {friend.status === 'completed' ? (
                                         <View style={styles.completedPill}>
                                             <Ionicons name="checkmark-circle" size={14} color="#056f36" style={{ marginRight: 3 }} />
-                                            <Text style={styles.completedPillText}>+10 Ł Earned</Text>
+                                            <Text style={styles.completedPillText}>+5 Ł Earned</Text>
                                         </View>
                                     ) : (
                                         <View style={styles.pendingPill}>

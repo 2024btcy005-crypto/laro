@@ -198,6 +198,42 @@ export function ProfileScreenSkeleton() {
     );
 }
 
+export function ReferralScreenSkeleton() {
+    return (
+        <View style={[styles.container, { paddingHorizontal: 16, paddingTop: 12 }]}>
+            {/* Hero Card Skeleton */}
+            <SkeletonLoader width="100%" height={170} borderRadius={24} style={{ marginBottom: 18 }} />
+
+            {/* Ticket Code Pass Skeleton */}
+            <SkeletonLoader width="100%" height={130} borderRadius={22} style={{ marginBottom: 18 }} />
+
+            {/* Twin Stat Pods Skeleton */}
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 18 }}>
+                <SkeletonLoader width={(width - 44) / 2} height={85} borderRadius={20} />
+                <SkeletonLoader width={(width - 44) / 2} height={85} borderRadius={20} />
+            </View>
+
+            {/* Step Card Skeleton */}
+            <SkeletonLoader width="100%" height={150} borderRadius={22} style={{ marginBottom: 20 }} />
+
+            {/* Friends List Title Skeleton */}
+            <SkeletonLoader width={160} height={18} borderRadius={6} style={{ marginBottom: 12 }} />
+
+            {/* Friends List Items Skeleton */}
+            {[1, 2].map((_, i) => (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10, gap: 12 }}>
+                    <SkeletonLoader width={42} height={42} borderRadius={21} />
+                    <View style={{ flex: 1, gap: 6 }}>
+                        <SkeletonLoader width={110} height={14} borderRadius={6} />
+                        <SkeletonLoader width={80} height={10} borderRadius={4} />
+                    </View>
+                    <SkeletonLoader width={85} height={26} borderRadius={13} />
+                </View>
+            ))}
+        </View>
+    );
+}
+
 const styles = StyleSheet.create({
     skeletonBox: {
         backgroundColor: '#e2e8f0',

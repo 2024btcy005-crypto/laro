@@ -337,10 +337,10 @@ export default function ProfileScreen({ navigation }) {
                         >
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <Ionicons name="gift-outline" size={22} color="#056f36" style={{ marginRight: 15 }} />
-                                <Text style={[styles.menuLinkLabel, { color: '#056f36', fontWeight: '800' }]}>Refer & Earn (10 Ł)</Text>
+                                <Text style={[styles.menuLinkLabel, { color: '#056f36', fontWeight: '800' }]}>Refer & Earn (Up to 50 Ł)</Text>
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#056f36' }}>Get 10 Ł</Text>
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#056f36' }}>Up to 50 Ł</Text>
                                 <Ionicons name="chevron-forward" size={18} color="#056f36" />
                             </View>
                         </TouchableOpacity>

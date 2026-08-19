@@ -50,8 +50,8 @@ const startServer = async () => {
 
     // Sync DB only if connection succeeded
     try {
-        await sequelize.sync();
-        console.log('📦 Database tables synced.');
+        await sequelize.sync({ alter: true });
+        console.log('📦 Database tables synced (schema altered if needed).');
     } catch (syncErr) {
         console.warn('⚠️  DB sync failed:', syncErr.message);
     }

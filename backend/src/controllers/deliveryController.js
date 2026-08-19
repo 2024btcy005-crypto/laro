@@ -221,9 +221,9 @@ const updateDeliveryStatus = async (req, res) => {
                     if (customer && customer.referredBy && !customer.hasRedeemedFirstOrderReferral) {
                         const referrer = await User.findByPk(customer.referredBy);
                         if (referrer) {
-                            const REWARD_AMOUNT = 10;
+                            const REWARD_AMOUNT = 5;
 
-                            // 1. Credit 10 Laro Coins to Referee (New Customer)
+                            // 1. Credit 5 Laro Coins to Referee (New Customer)
                             const refereeNewCurrency = (customer.laroCurrency || 0) + REWARD_AMOUNT;
                             await customer.update({
                                 laroCurrency: refereeNewCurrency,
@@ -243,7 +243,7 @@ const updateDeliveryStatus = async (req, res) => {
                                 balanceAfter: refereeNewCurrency
                             });
 
-                            // 2. Credit 10 Laro Coins to Referrer (Friend)
+                            // 2. Credit 5 Laro Coins to Referrer (Friend)
                             const referrerNewCurrency = (referrer.laroCurrency || 0) + REWARD_AMOUNT;
                             await referrer.update({
                                 laroCurrency: referrerNewCurrency
@@ -268,7 +268,7 @@ const updateDeliveryStatus = async (req, res) => {
                                 { where: { refereeId: customer.id, status: 'pending' } }
                             );
 
-                            console.log(`[REFERRAL SUCCESS] Awarded 10 Ł each to referee ${customer.name} & referrer ${referrer.name}`);
+                            console.log(`[REFERRAL SUCCESS] Awarded 5 Ł each to referee ${customer.name} & referrer ${referrer.name}`);
                         }
                     }
                 } catch (refErr) {

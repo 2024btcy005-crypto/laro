@@ -23,6 +23,7 @@ export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [referralCode, setReferralCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [secureText, setSecureText] = useState(true);
     const [secureConfirm, setSecureConfirm] = useState(true);
@@ -92,7 +93,7 @@ export default function LoginScreen() {
             const endpoint = isLoginMode ? '/auth/login' : '/auth/register';
             const payload = isLoginMode
                 ? { email, password }
-                : { email, password, name, role: 'customer' };
+                : { email, password, name, referralCode, role: 'customer' };
 
             const response = await api.post(endpoint, payload);
             const { token, id, name: userName, phoneNumber, role } = response.data;
@@ -283,6 +284,23 @@ export default function LoginScreen() {
                                             color="#666"
                                         />
                                     </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
+
+                        {!isLoginMode && (
+                            <View style={styles.inputWrapper}>
+                                <Text style={styles.inputLabel}>Referral Code (Optional)</Text>
+                                <View style={styles.inputFieldBox}>
+                                    <Ionicons name="gift-outline" size={18} color="#056f36" style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder="e.g. LARO-ABC12"
+                                        placeholderTextColor="#999"
+                                        autoCapitalize="characters"
+                                        value={referralCode}
+                                        onChangeText={setReferralCode}
+                                    />
                                 </View>
                             </View>
                         )}
