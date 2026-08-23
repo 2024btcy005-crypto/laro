@@ -9,6 +9,7 @@ import api, { resolveImageUrl } from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
 import { OrderDetailScreenSkeleton } from '../../components/SkeletonLoader';
+import { DeliveryLiveStatus } from '../../services/deliveryLiveStatus';
 
 const { width } = Dimensions.get('window');
 
@@ -34,12 +35,72 @@ export default function OrderDetailScreen({ route, navigation }) {
     const fetchOrderDetail = async () => {
         try {
             const response = await api.get(`/orders/${orderId}`);
-            setOrder(response.data);
+            if (response.data) {
+                setOrder(response.data);
+
+                // Sync Android System Live Delivery Status
+                const dbStatus = response.data.status;
+                const mappedStatus = dbStatus === 'placed' ? 'PLACED' :
+                                     dbStatus === 'accepted' ? 'CONFIRMED' :
+                                     dbStatus === 'picked' ? 'PICKED_UP' :
+                                     dbStatus === 'out_for_delivery' ? 'ON_THE_WAY' :
+                                     dbStatus === 'delivered' ? 'DELIVERED' :
+                                     dbStatus === 'cancelled' ? 'CANCELLED' : 'ON_THE_WAY';
+
+                const liveData = {
+                    orderId: response.data.id,
+                    restaurantName: response.data.Shop ? response.data.Shop.name : 'Laro Kitchen',
+                    deliveryPartnerName: 'Arun',
+                    status: mappedStatus,
+                    etaMinutes: 15,
+                    progress: dbStatus === 'delivered' ? 1.0 : 0.6,
+                    deepLink: `laro://order/${response.data.id}`
+                };
+
+                if (dbStatus === 'delivered') {
+                    DeliveryLiveStatus.end(liveData);
+                } else if (dbStatus === 'cancelled') {
+                    DeliveryLiveStatus.cancel(response.data.id);
+                } else {
+                    DeliveryLiveStatus.update(liveData);
+                }
+            }
         } catch (error) {
             console.error('[ORDER DETAIL FETCH ERROR]', error);
         } finally {
             setLoading(false);
             setRefreshing(false);
+        }
+    };
+
+    const simulateNextStatus = async () => {
+        if (!order) return;
+        const stages = [
+            { status: 'PREPARING', eta: 25, progress: 0.25 },
+            { status: 'ON_THE_WAY', eta: 12, progress: 0.65 },
+            { status: 'NEARBY', eta: 2, progress: 0.90 },
+            { status: 'DELIVERED', eta: 0, progress: 1.0 }
+        ];
+
+        const currentStageIdx = stages.findIndex(s => s.status === order._simStatus) ?? -1;
+        const nextStage = stages[(currentStageIdx + 1) % stages.length];
+
+        setOrder(prev => ({ ...prev, _simStatus: nextStage.status }));
+
+        const liveData = {
+            orderId: order.id,
+            restaurantName: order.Shop ? order.Shop.name : 'Laro Kitchen',
+            deliveryPartnerName: 'Arun (Driver)',
+            status: nextStage.status,
+            etaMinutes: nextStage.eta,
+            progress: nextStage.progress,
+            deepLink: `laro://order/${order.id}`
+        };
+
+        if (nextStage.status === 'DELIVERED') {
+            await DeliveryLiveStatus.end(liveData);
+        } else {
+            await DeliveryLiveStatus.update(liveData);
         }
     };
 
@@ -191,6 +252,30 @@ export default function OrderDetailScreen({ route, navigation }) {
                         </TouchableOpacity>
                     </View>
                 </View>
+
+                {/* Dev Live Status Test Trigger */}
+                {__DEV__ && (
+                    <TouchableOpacity
+                        style={{
+                            backgroundColor: '#056f36',
+                            paddingVertical: 12,
+                            paddingHorizontal: 16,
+                            borderRadius: 16,
+                            alignItems: 'center',
+                            marginBottom: 14,
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            gap: 6
+                        }}
+                        onPress={simulateNextStatus}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="notifications" size={18} color="#ffffff" />
+                        <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 13 }}>
+                            ⚡ Test Android Live Delivery Status Pill
+                        </Text>
+                    </TouchableOpacity>
+                )}
 
                 {/* Delivery Partner Card */}
                 {!['delivered', 'cancelled'].includes(order.status) && (

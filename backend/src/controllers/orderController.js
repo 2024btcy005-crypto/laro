@@ -744,6 +744,127 @@ const getRecentRecipients = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Update live delivery status with strict state machine validation & push to customer device
+ * @route   POST /api/orders/:id/status
+ * @access  Private (Driver/Vendor/Customer/Admin)
+ */
+const updateOrderStatusLive = async (req, res) => {
+    try {
+        const { id: orderId } = req.params;
+        const { status, etaMinutes, deliveryPartnerId, deliveryPartnerName } = req.body;
+
+        const { sendLiveDeliveryStatusNotification } = require('../services/notificationService');
+        const { User, Shop } = require('../models');
+
+        const order = await Order.findByPk(orderId, {
+            include: [
+                { model: Shop, as: 'Shop', attributes: ['id', 'name'] },
+                { model: User, as: 'Customer', attributes: ['id', 'name', 'fcmToken', 'pushToken'] }
+            ]
+        });
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Standard Delivery Status Ordering
+        const STATUS_HIERARCHY = {
+            'PLACED': 1,
+            'CONFIRMED': 2,
+            'PREPARING': 3,
+            'READY_FOR_PICKUP': 4,
+            'PICKED_UP': 5,
+            'ON_THE_WAY': 6,
+            'NEARBY': 7,
+            'DELIVERED': 8,
+            'CANCELLED': 99
+        };
+
+        // Map backend DB status to standard DeliveryStatus
+        const DB_STATUS_TO_LIVE = {
+            'placed': 'PLACED',
+            'accepted': 'CONFIRMED',
+            'picked': 'PICKED_UP',
+            'out_for_delivery': 'ON_THE_WAY',
+            'delivered': 'DELIVERED',
+            'cancelled': 'CANCELLED'
+        };
+
+        const LIVE_TO_DB_STATUS = {
+            'PLACED': 'placed',
+            'CONFIRMED': 'accepted',
+            'PREPARING': 'accepted',
+            'READY_FOR_PICKUP': 'accepted',
+            'PICKED_UP': 'picked',
+            'ON_THE_WAY': 'out_for_delivery',
+            'NEARBY': 'out_for_delivery',
+            'DELIVERED': 'delivered',
+            'CANCELLED': 'cancelled'
+        };
+
+        const targetStatus = String(status || '').toUpperCase();
+        if (!STATUS_HIERARCHY[targetStatus]) {
+            return res.status(400).json({ message: `Invalid delivery status: ${status}` });
+        }
+
+        const currentLiveStatus = DB_STATUS_TO_LIVE[order.status] || 'PLACED';
+        const currentIndex = STATUS_HIERARCHY[currentLiveStatus] || 1;
+        const targetIndex = STATUS_HIERARCHY[targetStatus];
+
+        // State machine transition validation
+        if (currentLiveStatus === 'DELIVERED') {
+            return res.status(400).json({ message: 'Cannot modify a delivered order' });
+        }
+
+        if (targetStatus !== 'CANCELLED' && targetIndex < currentIndex) {
+            return res.status(400).json({
+                message: `Invalid state transition from ${currentLiveStatus} to ${targetStatus}`
+            });
+        }
+
+        // Calculate progress ratio (0.0 to 1.0)
+        const progressRatio = targetStatus === 'CANCELLED'
+            ? 0
+            : Math.min(1.0, Math.max(0.1, targetIndex / 8.0));
+
+        // Update DB status if mapped
+        if (LIVE_TO_DB_STATUS[targetStatus]) {
+            order.status = LIVE_TO_DB_STATUS[targetStatus];
+            await order.save();
+        }
+
+        const customer = order.Customer || await User.findByPk(order.customerId);
+        const restaurantName = order.Shop ? order.Shop.name : 'Laro Kitchen';
+
+        const liveStatusPayload = {
+            orderId: order.id,
+            restaurantName,
+            deliveryPartnerName: deliveryPartnerName || 'Arun',
+            status: targetStatus,
+            etaMinutes: etaMinutes ? parseInt(etaMinutes, 10) : 15,
+            progress: progressRatio,
+            deepLink: `laro://order/${order.id}`
+        };
+
+        // Trigger FCM / Expo Push broadcast to customer device
+        if (customer) {
+            await sendLiveDeliveryStatusNotification(customer, liveStatusPayload);
+        }
+
+        return res.status(200).json({
+            message: `Delivery status updated to ${targetStatus}`,
+            orderId: order.id,
+            status: targetStatus,
+            etaMinutes: liveStatusPayload.etaMinutes,
+            progress: progressRatio
+        });
+    } catch (err) {
+        console.error('[UPDATE_LIVE_STATUS ERROR]', err);
+        return res.status(500).json({ message: 'Failed to update live delivery status', error: err.message });
+    }
+};
+
 module.exports = {
     createOrder,
     getMyOrders,
@@ -755,4 +876,5 @@ module.exports = {
     findUserByPhone,
     transferCoins,
     getRecentRecipients,
+    updateOrderStatusLive,
 };

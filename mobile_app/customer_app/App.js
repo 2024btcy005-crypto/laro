@@ -35,6 +35,7 @@ try {
 // Import Screens
 
 import HomeScreen from './src/screens/home/HomeScreen';
+import { DeliveryLiveStatus } from './src/services/deliveryLiveStatus';
 import ShopDetailsScreen from './src/screens/shop/ShopDetailsScreen';
 import CartScreen from './src/screens/cart/CartScreen';
 import CheckoutScreen from './src/screens/checkout/CheckoutScreen';
@@ -269,6 +270,26 @@ function RootNavigator() {
             if (Notifications) {
                 const subReceived = Notifications.addNotificationReceivedListener(notification => {
                     console.log('[PUSH RECEIVED FOREGROUND]:', notification);
+                    const data = notification.request.content.data;
+                    if (data && data.type === 'DELIVERY_LIVE_STATUS') {
+                        const liveData = {
+                            orderId: data.orderId,
+                            restaurantName: data.restaurantName || 'Laro Kitchen',
+                            deliveryPartnerName: data.deliveryPartnerName || 'Delivery Partner',
+                            status: data.status,
+                            etaMinutes: data.etaMinutes ? parseInt(data.etaMinutes, 10) : 15,
+                            progress: data.progress ? parseFloat(data.progress) : 0.5,
+                            deepLink: data.deepLink || `laro://order/${data.orderId}`
+                        };
+
+                        if (data.status === 'DELIVERED') {
+                            DeliveryLiveStatus.end(liveData);
+                        } else if (data.status === 'CANCELLED') {
+                            DeliveryLiveStatus.cancel(data.orderId);
+                        } else {
+                            DeliveryLiveStatus.update(liveData);
+                        }
+                    }
                 });
 
                 const subResponse = Notifications.addNotificationResponseReceivedListener(response => {
@@ -376,10 +397,25 @@ export default function App() {
     );
 }
 
+const linkingConfig = {
+    prefixes: ['laro://', 'https://laro.app', 'exp://'],
+    config: {
+        screens: {
+            Main: {
+                screens: {
+                    Home: 'home',
+                    Orders: 'orders',
+                }
+            },
+            OrderDetail: 'order/:orderId',
+        }
+    }
+};
+
 function AppContent() {
     const { isDarkMode } = useTheme();
     return (
-        <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
+        <NavigationContainer linking={linkingConfig} theme={isDarkMode ? DarkTheme : DefaultTheme}>
             <StatusBar style={isDarkMode ? 'light' : 'dark'} />
             <RootNavigator />
         </NavigationContainer>

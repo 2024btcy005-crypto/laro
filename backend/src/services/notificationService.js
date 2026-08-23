@@ -180,8 +180,80 @@ const notifyWalletTransaction = async (user, { type, amount, description, balanc
     }
 };
 
+/**
+ * Send event-driven push notification with DELIVERY_LIVE_STATUS data payload
+ * @param {object} customer - User model instance or customer data object
+ * @param {object} liveStatusData - { orderId, restaurantName, deliveryPartnerName, status, etaMinutes, progress, deepLink }
+ */
+const sendLiveDeliveryStatusNotification = async (customer, liveStatusData) => {
+    if (!customer) return;
+    try {
+        const pushToken = customer.fcmToken || customer.pushToken;
+        const { orderId, restaurantName, deliveryPartnerName, status, etaMinutes, progress, deepLink } = liveStatusData;
+
+        let title = '🛵 Live Delivery Update';
+        let body = `${restaurantName || 'Laro Kitchen'} • Status: ${status}`;
+
+        switch (status) {
+            case 'PLACED':
+                title = '📦 Order Placed!';
+                body = `Your order #${String(orderId).slice(0, 8)} has been placed.`;
+                break;
+            case 'CONFIRMED':
+                title = '✅ Order Confirmed!';
+                body = `${restaurantName || 'Store'} has confirmed your order.`;
+                break;
+            case 'PREPARING':
+                title = '🍔 Preparing Your Order';
+                body = `${restaurantName || 'Kitchen'} is preparing your food (ETA: ${etaMinutes || 25} min).`;
+                break;
+            case 'READY_FOR_PICKUP':
+                title = '📦 Ready For Pickup';
+                body = `Order is packed and ready for delivery partner pickup.`;
+                break;
+            case 'PICKED_UP':
+                title = `🛵 ${deliveryPartnerName || 'Driver'} Picked Up Order`;
+                body = `Your order is collected and heading to your location (ETA: ${etaMinutes || 15} min).`;
+                break;
+            case 'ON_THE_WAY':
+                title = `🛵 ${deliveryPartnerName || 'Delivery Partner'} is On The Way!`;
+                body = `Heading to your hostel/address (ETA: ${etaMinutes || 10} min).`;
+                break;
+            case 'NEARBY':
+                title = `📍 ${deliveryPartnerName || 'Driver'} is Nearby!`;
+                body = `Arriving in ~${etaMinutes || 2} min. Get ready to receive your order!`;
+                break;
+            case 'DELIVERED':
+                title = '🎉 Order Delivered!';
+                body = `Enjoy your meal/items! Thank you for ordering on Laro.`;
+                break;
+            case 'CANCELLED':
+                title = '❌ Order Cancelled';
+                body = `Your order #${String(orderId).slice(0, 8)} has been cancelled.`;
+                break;
+        }
+
+        if (pushToken) {
+            await sendPushNotification(pushToken, title, body, {
+                type: 'DELIVERY_LIVE_STATUS',
+                orderId,
+                restaurantName: restaurantName || 'Laro',
+                deliveryPartnerName: deliveryPartnerName || 'Delivery Partner',
+                status,
+                etaMinutes: String(etaMinutes || 0),
+                progress: String(progress || 0),
+                deepLink: deepLink || `laro://order/${orderId}`
+            });
+        }
+        console.log(`[LIVE_STATUS_PUSH] Sent ${status} notification to User #${customer.id} for Order ${orderId}`);
+    } catch (err) {
+        console.error('[LIVE_STATUS_PUSH ERROR]', err.message);
+    }
+};
+
 module.exports = {
     sendPushNotification,
     notifyEligibleRidersNewOrder,
-    notifyWalletTransaction
+    notifyWalletTransaction,
+    sendLiveDeliveryStatusNotification
 };

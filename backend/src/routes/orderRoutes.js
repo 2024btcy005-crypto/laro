@@ -1,5 +1,5 @@
 const express = require('express');
-const { createOrder, getMyOrders, getOrderById, cancelOrder, getUserSummary, deleteOrder, getWalletHistory, findUserByPhone, transferCoins, getRecentRecipients } = require('../controllers/orderController');
+const { createOrder, getMyOrders, getOrderById, cancelOrder, getUserSummary, deleteOrder, getWalletHistory, findUserByPhone, transferCoins, getRecentRecipients, updateOrderStatusLive } = require('../controllers/orderController');
 const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
@@ -29,6 +29,9 @@ router.route('/recent-recipients')
 router.route('/:id')
     .get(protect, getOrderById)
     .delete(protect, deleteOrder);
+
+router.route('/:id/status')
+    .post(protect, updateOrderStatusLive);
 
 router.route('/:id/cancel')
     .put(protect, cancelOrder);
