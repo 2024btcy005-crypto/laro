@@ -28,32 +28,38 @@ const isEdibleProduct = (item) => {
     if (!item) return false;
     if (item.isEdible === false) return false;
     if (item.isVeg === null) return false;
-
     const cat = (item.category || '').toLowerCase();
     const name = (item.name || '').toLowerCase();
+    const nonEdibleCategories = ['xerox', 'printing', 'stationery', 'books', 'electronics', 'medicines'];
+    if (nonEdibleCategories.some(c => cat.includes(c) || name.includes(c))) return false;
+    return true;
+};
 
-    const nonEdibleKeywords = [
-        'a4', 'sheet', 'print', 'xerox', 'paper', 'notebook', 'binding',
-        'pen', 'pencil', 'calculator', 'charger', 'cable', 'bottle', 'water bottle',
-        'stapler', 'folder', 'file', 'sanitizer', 'soap', 'shampoo', 'toothpaste',
-        'mask', 'bandage', 'thermometer', 'medicine'
-    ];
+const ProductCardImage = ({ product, style }) => {
+    const [imgFailed, setImgFailed] = useState(false);
+    const rawUrl = product?.imageUrl || 
+                   product?.image || 
+                   product?.img || 
+                   product?.image_url || 
+                   (Array.isArray(product?.images) ? product.images[0] : null);
+    const resolvedUri = resolveImageUrl(rawUrl);
 
-    const nonEdibleCategories = [
-        'xerox', 'printing', 'stationery', 'books', 'study', 'electronics',
-        'accessories', 'hardware', 'utility', 'general', 'pharmacy', 'medicines', 'healthcare'
-    ];
-
-    const foodKeywords = ['milk', 'curd', 'buttermilk', 'butter', 'egg', 'bread', 'chips', 'lays', 'coke', 'campa', 'maggi', 'noodle', 'rice', 'atta', 'dal', 'tea', 'coffee', 'juice', 'soda', 'peanuts', 'chocolate', 'biscuit', 'cookie', 'pizza', 'burger'];
-
-    if (nonEdibleKeywords.some(k => name.includes(k))) return false;
-
-    if (nonEdibleCategories.some(c => cat === c)) {
-        if (foodKeywords.some(f => name.includes(f))) return true;
-        return false;
+    if (imgFailed || !rawUrl) {
+        return (
+            <View style={[style, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0fdf4' }]}>
+                <Ionicons name="fast-food-outline" size={28} color="#056f36" />
+            </View>
+        );
     }
 
-    return true;
+    return (
+        <Image
+            source={{ uri: resolvedUri }}
+            style={style}
+            resizeMode="contain"
+            onError={() => setImgFailed(true)}
+        />
+    );
 };
 
 export default function HomeScreen({ navigation }) {
@@ -889,7 +895,7 @@ export default function HomeScreen({ navigation }) {
                     activeOpacity={0.8}
                 >
                     <View style={[styles.gridImageWrapper, { backgroundColor: isDarkMode ? colors.white + '10' : '#f8faf8' }]}>
-                        <Image source={{ uri: resolveImageUrl(product.imageUrl) }} style={styles.gridProductImage} />
+                        <ProductCardImage product={product} style={styles.gridProductImage} />
                         {product.stockQuantity === 0 && (
                             <View style={styles.outOfStockOverlay}>
                                 <Text style={styles.outOfStockText}>OUT OF STOCK</Text>
@@ -1469,7 +1475,7 @@ export default function HomeScreen({ navigation }) {
                                             navigation.navigate('ProductDetail', { productId: prod.id || prod._id });
                                         }}
                                     >
-                                        <Image source={{ uri: resolveImageUrl(prod.imageUrl) }} style={styles.searchResultThumb} />
+                                        <ProductCardImage product={prod} style={styles.searchResultThumb} />
                                         <View style={{ flex: 1, marginLeft: 12 }}>
                                             <Text style={[styles.searchResultName, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>{prod.name}</Text>
                                             <Text style={styles.searchResultPrice}>₹{prod.price}</Text>
