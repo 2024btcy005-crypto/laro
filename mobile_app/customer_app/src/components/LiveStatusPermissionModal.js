@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
-let NotificationsModule: any = null;
+let NotificationsModule = null;
 try {
     NotificationsModule = require('expo-notifications');
 } catch (e) {}
@@ -12,7 +12,7 @@ try {
 /**
  * Request standard Android POST_NOTIFICATIONS permission
  */
-export const requestNotificationPermissionsAsync = async (): Promise<boolean> => {
+export const requestNotificationPermissionsAsync = async () => {
     if (!NotificationsModule) return false;
     try {
         const { status: existingStatus } = await NotificationsModule.getPermissionsAsync();
@@ -26,18 +26,13 @@ export const requestNotificationPermissionsAsync = async (): Promise<boolean> =>
             finalStatus = status;
         }
         return finalStatus === 'granted';
-    } catch (err: any) {
+    } catch (err) {
         console.warn('[LiveStatusPermissions] Permission request error:', err.message);
         return false;
     }
 };
 
-interface LiveStatusPermissionModalProps {
-    visible: boolean;
-    onClose: () => void;
-}
-
-export default function LiveStatusPermissionModal({ visible, onClose }: LiveStatusPermissionModalProps) {
+export default function LiveStatusPermissionModal({ visible, onClose }) {
     const [permissionGranted, setPermissionGranted] = useState(false);
 
     useEffect(() => {
@@ -144,7 +139,7 @@ const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(15, 23, 42, 0.65)',
-        justifyContent: 'flex-end',
+        justify: 'flex-end',
     },
     modalContainer: {
         backgroundColor: '#ffffff',
@@ -164,7 +159,7 @@ const styles = StyleSheet.create({
         borderRadius: 36,
         backgroundColor: '#f0fdf4',
         alignItems: 'center',
-        justifyContent: 'center',
+        justify: 'center',
         marginBottom: 14,
         borderWidth: 1.5,
         borderColor: '#bbf7d0',
@@ -224,7 +219,7 @@ const styles = StyleSheet.create({
         width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        justify: 'center',
         backgroundColor: '#056f36',
         paddingVertical: 15,
         borderRadius: 22,
