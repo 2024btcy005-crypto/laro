@@ -277,6 +277,8 @@ const createProduct = async (req, res) => {
             }
         }
 
+        const { name, description, price, originalPrice, category, imageUrl, isVeg, isEdible, isAvailable, shopId, variantOf, variantName } = req.body;
+
         const product = await Product.create({
             shopId,
             universityId: req.user.role === 'campus_admin' ? req.user.universityId : (req.body.universityId || null),
@@ -286,7 +288,8 @@ const createProduct = async (req, res) => {
             originalPrice,
             category,
             imageUrl,
-            isVeg: isVeg !== undefined ? isVeg : true,
+            isVeg: isVeg !== undefined ? isVeg : (isEdible === false ? null : true),
+            isEdible: isEdible !== undefined ? isEdible : (isVeg === null ? false : true),
             isAvailable: isAvailable !== undefined ? isAvailable : true,
             variantOf,
             variantName,
@@ -305,7 +308,7 @@ const createProduct = async (req, res) => {
 // @access  Private/Admin
 const updateProduct = async (req, res) => {
     try {
-        const { name, description, price, originalPrice, category, imageUrl, isVeg, isAvailable, shopId, variantOf, variantName, stockQuantity } = req.body;
+        const { name, description, price, originalPrice, category, imageUrl, isVeg, isEdible, isAvailable, shopId, variantOf, variantName, stockQuantity } = req.body;
         const product = await Product.findByPk(req.params.id);
 
         if (!product) {
@@ -324,7 +327,8 @@ const updateProduct = async (req, res) => {
             originalPrice,
             category,
             imageUrl,
-            isVeg,
+            isVeg: isVeg !== undefined ? isVeg : product.isVeg,
+            isEdible: isEdible !== undefined ? isEdible : product.isEdible,
             isAvailable,
             shopId,
             variantOf,

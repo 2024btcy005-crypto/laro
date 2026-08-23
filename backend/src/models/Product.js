@@ -60,6 +60,12 @@ const Product = sequelize.define('Product', {
     },
     isVeg: {
         type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: true,
+    },
+    isEdible: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
         defaultValue: true,
     },
     variantOf: {

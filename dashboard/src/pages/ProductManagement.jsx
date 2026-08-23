@@ -3,7 +3,7 @@ import {
     Box, Typography, Button, Paper, Grid, IconButton, Chip, Modal, TextField,
     CircularProgress, useTheme, Fade, Backdrop, Card, CardMedia, CardContent,
     CardActions, Tooltip, Stack, InputAdornment, FormControl, InputLabel,
-    Select, MenuItem, Switch, FormControlLabel
+    Select, MenuItem, Switch, FormControlLabel, RadioGroup, Radio, FormLabel
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -25,7 +25,9 @@ const INITIAL_FORM_STATE = {
     originalPrice: '',
     category: 'General',
     imageUrl: '',
+    itemType: 'veg',
     isVeg: true,
+    isEdible: true,
     isAvailable: true,
     variantOf: null,
     variantName: '',
@@ -114,7 +116,9 @@ export default function ProductManagement() {
                 originalPrice: product.originalPrice || '',
                 category: product.category || 'General',
                 imageUrl: product.imageUrl || '',
+                itemType: product.isEdible === false || product.isVeg === null ? 'non-edible' : (product.isVeg === false ? 'non-veg' : 'veg'),
                 isVeg: product.isVeg !== undefined ? product.isVeg : true,
+                isEdible: product.isEdible !== undefined ? product.isEdible : true,
                 isAvailable: product.isAvailable !== undefined ? product.isAvailable : true,
                 variantOf: product.variantOf || null,
                 variantName: product.variantName || '',
@@ -126,7 +130,6 @@ export default function ProductManagement() {
             setFormData({
                 ...INITIAL_FORM_STATE,
                 category: category || 'General',
-                // Pre-fill shopId if there's only one shop or if we can derive it
                 shopId: shops.length === 1 ? shops[0].id : ''
             });
             setImagePreview(null);
@@ -136,6 +139,7 @@ export default function ProductManagement() {
     };
 
     const handleAddVariant = (parent) => {
+        const derivedType = parent.isEdible === false || parent.isVeg === null ? 'non-edible' : (parent.isVeg === false ? 'non-veg' : 'veg');
         setFormData({
             ...INITIAL_FORM_STATE,
             universityId: parent.universityId || '',
@@ -143,7 +147,9 @@ export default function ProductManagement() {
             name: parent.name,
             category: parent.category || 'General',
             imageUrl: parent.imageUrl || '',
+            itemType: derivedType,
             isVeg: parent.isVeg !== undefined ? parent.isVeg : true,
+            isEdible: parent.isEdible !== undefined ? parent.isEdible : true,
             variantOf: parent.id,
             variantName: ''
         });
@@ -182,9 +188,14 @@ export default function ProductManagement() {
                 finalImageUrl = uploadRes.data.url;
             }
 
+            const isEdible = formData.itemType !== 'non-edible';
+            const isVeg = formData.itemType === 'veg' ? true : (formData.itemType === 'non-veg' ? false : null);
+
             // 2. Save product with the image URL and sanitized numeric fields
             const submissionData = {
                 ...formData,
+                isEdible,
+                isVeg,
                 imageUrl: finalImageUrl,
                 price: parseFloat(formData.price),
                 originalPrice: formData.originalPrice === '' ? null : parseFloat(formData.originalPrice),
@@ -347,7 +358,7 @@ export default function ProductManagement() {
                                                                 objectFit: 'contain'
                                                             }}
                                                         />
-                                                        <Box sx={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 1 }}>
+                                                        <Box sx={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                                             <Chip
                                                                 label={product.isAvailable ? "AVAILABLE" : "DISABLED"}
                                                                 sx={{
@@ -357,6 +368,17 @@ export default function ProductManagement() {
                                                                     bgcolor: product.isAvailable ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
                                                                     color: product.isAvailable ? '#10b981' : '#ef4444',
                                                                     border: `1px solid ${product.isAvailable ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}`
+                                                                }}
+                                                            />
+                                                            <Chip
+                                                                label={product.isEdible === false || product.isVeg === null ? "NON-EDIBLE 📦" : (product.isVeg ? "VEG 🟢" : "NON-VEG 🔴")}
+                                                                sx={{
+                                                                    fontWeight: 900,
+                                                                    fontSize: '0.66rem',
+                                                                    borderRadius: 1,
+                                                                    bgcolor: product.isEdible === false || product.isVeg === null ? 'rgba(100, 116, 139, 0.2)' : (product.isVeg ? 'rgba(22, 163, 74, 0.2)' : 'rgba(220, 38, 38, 0.2)'),
+                                                                    color: product.isEdible === false || product.isVeg === null ? '#94a3b8' : (product.isVeg ? '#22c55e' : '#ef4444'),
+                                                                    border: `1px solid ${product.isEdible === false || product.isVeg === null ? 'rgba(100, 116, 139, 0.3)' : (product.isVeg ? 'rgba(22, 163, 74, 0.3)' : 'rgba(220, 38, 38, 0.3)')}`
                                                                 }}
                                                             />
                                                         </Box>
@@ -449,15 +471,23 @@ export default function ProductManagement() {
                     BackdropProps={{ timeout: 500, sx: { backdropFilter: 'blur(8px)', background: 'rgba(8, 12, 20, 0.8)' } }}
                 >
                     <Fade in={open}>
-                        <Box sx={{
-                            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                            width: 600, bgcolor: 'background.paper',
-                            borderRadius: 4, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-                            p: 5, border: '1px solid rgba(255, 255, 255, 0.05)',
-                            maxHeight: '90vh', overflowY: 'auto'
-                        }}>
-                            <Typography variant="h5" sx={{ fontWeight: 900, mb: 4 }}>
-                                {formData.id ? 'Edit Product' : 'Add New Product'}
+                        <Paper
+                             sx={{
+                                 position: 'absolute',
+                                 top: '50%',
+                                 left: '50%',
+                                 transform: 'translate(-50%, -50%)',
+                                 width: { xs: '90%', sm: 600 },
+                                 maxHeight: '90vh',
+                                 overflowY: 'auto',
+                                 p: 4,
+                                 borderRadius: 3,
+                                 bgcolor: theme.palette.background.paper,
+                                 boxShadow: 24,
+                             }}
+                        >
+                            <Typography variant="h6" fontWeight="900" mb={3}>
+                                {formData.id ? 'Edit Product' : (formData.variantOf ? 'Add Product Variant' : 'Create New Product')}
                             </Typography>
                             <Grid container spacing={3}>
                                 <Grid item xs={12}>
@@ -608,12 +638,39 @@ export default function ProductManagement() {
                                         placeholder="https://example.com/image.jpg"
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
-                                    <FormControlLabel
-                                        control={<Switch checked={formData.isVeg} onChange={(e) => setFormData({ ...formData, isVeg: e.target.checked })} />}
-                                        label="Pure Veg?"
-                                    />
-                                </Grid>
+                                 <Grid item xs={12}>
+                                     <FormControl component="fieldset" sx={{ width: '100%', bgcolor: 'rgba(255,255,255,0.02)', p: 1.5, borderRadius: 2, border: '1px solid rgba(255,255,255,0.08)' }}>
+                                         <FormLabel component="legend" sx={{ fontSize: '0.8rem', fontWeight: 800, color: theme.palette.text.secondary, mb: 0.5 }}>
+                                             PRODUCT CLASSIFICATION (EDIBLE / NON-EDIBLE)
+                                         </FormLabel>
+                                         <RadioGroup
+                                             row
+                                             value={formData.itemType || (formData.isVeg === null || formData.isEdible === false ? 'non-edible' : (formData.isVeg ? 'veg' : 'non-veg'))}
+                                             onChange={(e) => setFormData({
+                                                 ...formData,
+                                                 itemType: e.target.value,
+                                                 isEdible: e.target.value !== 'non-edible',
+                                                 isVeg: e.target.value === 'veg' ? true : (e.target.value === 'non-veg' ? false : null)
+                                             })}
+                                         >
+                                             <FormControlLabel
+                                                 value="veg"
+                                                 control={<Radio size="small" sx={{ color: '#16a34a', '&.Mui-checked': { color: '#16a34a' } }} />}
+                                                 label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.85rem', fontWeight: 700 }}>🟢 Pure Veg</Box>}
+                                             />
+                                             <FormControlLabel
+                                                 value="non-veg"
+                                                 control={<Radio size="small" sx={{ color: '#dc2626', '&.Mui-checked': { color: '#dc2626' } }} />}
+                                                 label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.85rem', fontWeight: 700 }}>🔴 Non-Veg</Box>}
+                                             />
+                                             <FormControlLabel
+                                                 value="non-edible"
+                                                 control={<Radio size="small" sx={{ color: '#94a3b8', '&.Mui-checked': { color: '#94a3b8' } }} />}
+                                                 label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.85rem', fontWeight: 700 }}>📦 Non-Edible / Non-Food</Box>}
+                                             />
+                                         </RadioGroup>
+                                     </FormControl>
+                                 </Grid>
                                 <Grid item xs={6}>
                                     <FormControlLabel
                                         control={<Switch checked={formData.isAvailable} onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })} />}
