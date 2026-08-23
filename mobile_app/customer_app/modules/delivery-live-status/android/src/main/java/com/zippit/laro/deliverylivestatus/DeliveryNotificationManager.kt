@@ -99,7 +99,8 @@ class DeliveryNotificationManager(private val context: Context) {
             .setOngoing(isOngoing)
             .setAutoCancel(!isOngoing)
             .setOnlyAlertOnce(true)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setColor(0xFF056F36.toInt())
 
