@@ -249,7 +249,12 @@ export default function OrderDetailScreen({ route, navigation }) {
         activeStepIndex = 0;
     }
 
-    const stepsList = ['Placed', 'Preparing', 'On The Way', 'Delivered'];
+    const stepsInfo = [
+        { name: 'Placed', icon: 'cube' },
+        { name: 'Preparing', icon: 'restaurant' },
+        { name: 'On Way', icon: 'bicycle' },
+        { name: 'Delivered', icon: 'home' }
+    ];
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -326,49 +331,57 @@ export default function OrderDetailScreen({ route, navigation }) {
                             <Text style={styles.etaPillText}>{arrivalText}</Text>
                         </View>
 
-                        {/* Bulletproof Flex-Connector Progress Tracker */}
+                        {/* Modern Segmented Capsule Progress Bar */}
                         {currentStatus !== 'cancelled' && currentStatus !== 'CANCELLED' && (
-                            <View style={styles.progressTimelineRow}>
-                                {stepsList.map((stepName, idx) => {
-                                    const isDone = idx <= activeStepIndex;
-                                    const isCurrent = idx === activeStepIndex;
-                                    const isLast = idx === stepsList.length - 1;
-                                    const isSegmentActive = idx < activeStepIndex;
+                            <View style={styles.segmentedTrackerContainer}>
+                                {/* Top 4 Segmented Bar Pills */}
+                                <View style={styles.segmentedBarRow}>
+                                    {[0, 1, 2, 3].map((segIdx) => {
+                                        const isCompleted = segIdx < activeStepIndex;
+                                        const isCurrent = segIdx === activeStepIndex;
 
-                                    return (
-                                        <React.Fragment key={idx}>
-                                            <View style={styles.stepNodeItem}>
+                                        return (
+                                            <View key={segIdx} style={styles.segmentedBarItem}>
                                                 <View style={[
-                                                    styles.stepNodeCircle,
-                                                    isDone && styles.stepNodeCircleDone,
-                                                    isCurrent && styles.stepNodeCircleCurrent
+                                                    styles.segmentedBarFill,
+                                                    isCompleted && styles.segmentedBarCompleted,
+                                                    isCurrent && styles.segmentedBarCurrent,
+                                                ]} />
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+
+                                {/* 4 Step Labels Row with Icons */}
+                                <View style={styles.stepLabelsRow}>
+                                    {stepsInfo.map((step, idx) => {
+                                        const isDone = idx <= activeStepIndex;
+                                        const isCurrent = idx === activeStepIndex;
+
+                                        return (
+                                            <View key={idx} style={styles.stepLabelItem}>
+                                                <View style={[
+                                                    styles.stepIconBadge,
+                                                    isDone && styles.stepIconBadgeDone,
+                                                    isCurrent && styles.stepIconBadgeCurrent
                                                 ]}>
-                                                    {isDone ? (
-                                                        <Ionicons name="checkmark" size={12} color="#ffffff" />
-                                                    ) : (
-                                                        <View style={styles.stepNodeDotInner} />
-                                                    )}
+                                                    <Ionicons
+                                                        name={step.icon}
+                                                        size={12}
+                                                        color={isDone ? '#ffffff' : '#94a3b8'}
+                                                    />
                                                 </View>
                                                 <Text style={[
-                                                    styles.stepNodeLabel,
-                                                    isDone && styles.stepNodeLabelDone,
-                                                    isCurrent && styles.stepNodeLabelCurrent
+                                                    styles.stepLabelText,
+                                                    isDone && styles.stepLabelTextDone,
+                                                    isCurrent && styles.stepLabelTextCurrent
                                                 ]}>
-                                                    {stepName}
+                                                    {step.name}
                                                 </Text>
                                             </View>
-
-                                            {!isLast && (
-                                                <View style={styles.stepConnectorContainer}>
-                                                    <View style={[
-                                                        styles.stepConnectorLine,
-                                                        isSegmentActive && styles.stepConnectorLineDone
-                                                    ]} />
-                                                </View>
-                                            )}
-                                        </React.Fragment>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </View>
                             </View>
                         )}
                     </View>
@@ -790,69 +803,72 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '800',
     },
-    progressTimelineRow: {
+    segmentedTrackerContainer: {
         width: '100%',
+        marginTop: 4,
+    },
+    segmentedBarRow: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
-        justify: 'space-between',
-        paddingHorizontal: 4,
-    },
-    stepNodeItem: {
         alignItems: 'center',
-        width: 54,
+        gap: 6,
+        marginBottom: 12,
     },
-    stepNodeCircle: {
+    segmentedBarItem: {
+        flex: 1,
+        height: 8,
+        backgroundColor: '#e2e8f0',
+        borderRadius: 4,
+        overflow: 'hidden',
+    },
+    segmentedBarFill: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 4,
+    },
+    segmentedBarCompleted: {
+        backgroundColor: '#056f36',
+    },
+    segmentedBarCurrent: {
+        backgroundColor: '#16a34a',
+    },
+    stepLabelsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justify: 'space-between',
+    },
+    stepLabelItem: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    stepIconBadge: {
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: '#e2e8f0',
+        backgroundColor: '#f1f5f9',
         alignItems: 'center',
         justify: 'center',
-        marginBottom: 6,
+        marginBottom: 4,
     },
-    stepNodeCircleDone: {
+    stepIconBadgeDone: {
         backgroundColor: '#056f36',
     },
-    stepNodeCircleCurrent: {
+    stepIconBadgeCurrent: {
+        backgroundColor: '#16a34a',
         borderWidth: 2,
-        borderColor: '#056f36',
-        backgroundColor: '#ffffff',
+        borderColor: '#bbf7d0',
     },
-    stepNodeDotInner: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#94a3b8',
-    },
-    stepNodeLabel: {
+    stepLabelText: {
         fontSize: 10.5,
         fontWeight: '700',
         color: '#94a3b8',
-        textAlign: 'center',
     },
-    stepNodeLabelDone: {
+    stepLabelTextDone: {
         color: '#056f36',
         fontWeight: '900',
     },
-    stepNodeLabelCurrent: {
+    stepLabelTextCurrent: {
         color: '#0f172a',
         fontWeight: '900',
-    },
-    stepConnectorContainer: {
-        flex: 1,
-        height: 24,
-        justify: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 2,
-    },
-    stepConnectorLine: {
-        width: '100%',
-        height: 3.5,
-        backgroundColor: '#e2e8f0',
-        borderRadius: 2,
-    },
-    stepConnectorLineDone: {
-        backgroundColor: '#056f36',
     },
     contentBody: {
         paddingHorizontal: 16,
