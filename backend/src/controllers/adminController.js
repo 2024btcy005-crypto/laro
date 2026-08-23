@@ -266,7 +266,7 @@ const getAllShops = async (req, res) => {
 // @access  Private/Admin
 const createProduct = async (req, res) => {
     try {
-        const { shopId, name, description, price, originalPrice, category, imageUrl, isVeg, isAvailable, variantOf, variantName } = req.body;
+        const { shopId, name, description, price, originalPrice, category, imageUrl, isVeg, isEdible, isAvailable, variantOf, variantName } = req.body;
 
         // Campus Admin Isolation Check
         if (req.user.role === 'campus_admin') {
@@ -276,8 +276,6 @@ const createProduct = async (req, res) => {
                 return res.status(403).json({ message: 'Cannot add product to this shop' });
             }
         }
-
-        const { name, description, price, originalPrice, category, imageUrl, isVeg, isEdible, isAvailable, shopId, variantOf, variantName } = req.body;
 
         const product = await Product.create({
             shopId,

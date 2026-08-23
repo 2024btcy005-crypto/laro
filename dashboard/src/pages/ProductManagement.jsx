@@ -697,11 +697,11 @@ export default function ProductManagement() {
                                     </Button>
                                 </Grid>
                             </Grid>
-                        </Box>
+                        </Paper>
                     </Fade>
                 </Modal>
             </Box>
-        </Fade >
+        </Fade>
     );
 }
 
