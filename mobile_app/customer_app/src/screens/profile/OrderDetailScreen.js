@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import Svg, { Path, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient, Stop, Rect, Circle, Line } from 'react-native-svg';
 import { COLORS, CONSTANTS } from '../../theme';
 import api, { resolveImageUrl } from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
@@ -69,7 +69,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                 setOrder(response.data);
 
                 // Sync Android System Live Delivery Status only if status changed
-                const dbStatus = response.data.status;
+                const dbStatus = (response.data.status || '').toLowerCase();
                 const mappedStatus = dbStatus === 'placed' ? 'PLACED' :
                                      dbStatus === 'accepted' ? 'CONFIRMED' :
                                      dbStatus === 'picked' ? 'PICKED_UP' :
@@ -214,35 +214,35 @@ export default function OrderDetailScreen({ route, navigation }) {
     // Format OTP spacing
     const formattedOtp = order.deliveryOtp ? order.deliveryOtp.toString().split('').join(' ') : '8 8 2 1';
 
-    // Dynamic arrival minutes based on status
-    let statusText = "Preparing Order";
-    let arrivalText = "Arriving soon";
-    let statusIconName = "bag-handle";
-    let activeStepIndex = 1;
+    // Dynamic arrival minutes & status text mapping
+    let statusText = "Order Placed";
+    let arrivalText = "Shop is confirming your order (approx. 15 mins)";
+    let statusIconName = "cube-outline";
+    let activeStepIndex = 0;
 
-    const currentStatus = order._simStatus || order.status;
+    const rawStatus = (order._simStatus || order.status || '').toLowerCase();
 
-    if (currentStatus === 'placed' || currentStatus === 'PLACED') {
-        statusText = `Preparing at ${order.Shop?.name || 'Shop'}`;
-        arrivalText = "Arriving in approx. 15 mins";
-        statusIconName = "bag-handle";
+    if (rawStatus === 'placed') {
+        statusText = "Order Placed";
+        arrivalText = "Shop is confirming your order (approx. 15 mins)";
+        statusIconName = "cube-outline";
         activeStepIndex = 0;
-    } else if (currentStatus === 'accepted' || currentStatus === 'CONFIRMED' || currentStatus === 'PREPARING') {
+    } else if (rawStatus === 'accepted' || rawStatus === 'confirmed' || rawStatus === 'preparing') {
         statusText = `Preparing at ${order.Shop?.name || 'Shop'}`;
-        arrivalText = "Arriving in approx. 12 mins";
-        statusIconName = "restaurant";
+        arrivalText = "Kitchen is cooking your meal (approx. 12 mins)";
+        statusIconName = "flame";
         activeStepIndex = 1;
-    } else if (currentStatus === 'out_for_delivery' || currentStatus === 'ON_THE_WAY' || currentStatus === 'NEARBY') {
+    } else if (rawStatus === 'picked' || rawStatus === 'out_for_delivery' || rawStatus === 'on_the_way' || rawStatus === 'nearby') {
         statusText = `Heading to ${mainAddressTitle}`;
-        arrivalText = "Arriving in approx. 4 mins";
+        arrivalText = "Driver is on the way (approx. 4 mins)";
         statusIconName = "bicycle";
         activeStepIndex = 2;
-    } else if (currentStatus === 'delivered' || currentStatus === 'DELIVERED') {
+    } else if (rawStatus === 'delivered') {
         statusText = "Order Delivered";
         arrivalText = "Enjoy your meal!";
         statusIconName = "checkmark-circle";
         activeStepIndex = 3;
-    } else if (currentStatus === 'cancelled' || currentStatus === 'CANCELLED') {
+    } else if (rawStatus === 'cancelled') {
         statusText = "Order Cancelled";
         arrivalText = "This order was cancelled";
         statusIconName = "close-circle";
@@ -251,9 +251,9 @@ export default function OrderDetailScreen({ route, navigation }) {
 
     const stepsInfo = [
         { name: 'Placed', icon: 'cube' },
-        { name: 'Preparing', icon: 'restaurant' },
+        { name: 'Preparing', icon: 'flame' },
         { name: 'On Way', icon: 'bicycle' },
-        { name: 'Delivered', icon: 'home' }
+        { name: 'Delivered', icon: 'checkmark-circle' }
     ];
 
     return (
@@ -268,7 +268,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                 }
             >
                 {/* Top Section Hero Backdrop (Matching Home & Food Screen) */}
-                <View style={[styles.heroHeaderSection, { backgroundColor: heroBgColor, paddingTop: Math.max(insets.top, 10) + 4 }]}>
+                <View style={[styles.heroHeaderSection, { backgroundColor: heroBgColor, paddingTop: Math.max(insets.top, 10) + 6 }]}>
                     {/* Navigation Header Row */}
                     <View style={styles.topHeaderNavRow}>
                         <TouchableOpacity
@@ -332,12 +332,12 @@ export default function OrderDetailScreen({ route, navigation }) {
                         </View>
 
                         {/* Modern Segmented Capsule Progress Bar */}
-                        {currentStatus !== 'cancelled' && currentStatus !== 'CANCELLED' && (
+                        {rawStatus !== 'cancelled' && (
                             <View style={styles.segmentedTrackerContainer}>
                                 {/* Top 4 Segmented Bar Pills */}
                                 <View style={styles.segmentedBarRow}>
                                     {[0, 1, 2, 3].map((segIdx) => {
-                                        const isCompleted = segIdx < activeStepIndex;
+                                        const isCompleted = segIdx <= activeStepIndex;
                                         const isCurrent = segIdx === activeStepIndex;
 
                                         return (
@@ -417,14 +417,42 @@ export default function OrderDetailScreen({ route, navigation }) {
                         </TouchableOpacity>
                     )}
 
-                    {/* Live Delivery Map Card Preview */}
-                    <View style={[styles.mapCard, { borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]}>
-                        <Image
-                            source={{ uri: 'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&q=80' }}
-                            style={styles.mapImage}
-                        />
+                    {/* Vector Campus Live Route Map Card */}
+                    <View style={[styles.vectorMapCard, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]}>
+                        <Svg width="100%" height={140} style={{ position: 'absolute' }}>
+                            {/* Grid Map Roads */}
+                            <Line x1="0" y1="40" x2="100%" y2="40" stroke={isDarkMode ? '#334155' : '#e2e8f0'} strokeWidth="12" />
+                            <Line x1="0" y1="95" x2="100%" y2="95" stroke={isDarkMode ? '#334155' : '#e2e8f0'} strokeWidth="16" />
+                            <Line x1="70" y1="0" x2="70" y2="100%" stroke={isDarkMode ? '#334155' : '#e2e8f0'} strokeWidth="14" />
+                            <Line x1="240" y1="0" x2="240" y2="100%" stroke={isDarkMode ? '#334155' : '#e2e8f0'} strokeWidth="12" />
+
+                            {/* Active Delivery Green Path */}
+                            <Path d="M 40,95 L 140,95 L 140,40 L 280,40" stroke="#056f36" strokeWidth="4" strokeDasharray="6,4" fill="none" />
+                        </Svg>
+
+                        {/* Map Pins overlay */}
+                        <View style={styles.mapPinShop}>
+                            <View style={styles.mapPinIconCircle}>
+                                <Ionicons name="storefront" size={14} color="#056f36" />
+                            </View>
+                            <Text style={styles.mapPinText}>{order.Shop?.name || 'Shop'}</Text>
+                        </View>
+
+                        <View style={styles.mapPinDriver}>
+                            <View style={styles.mapPinDriverCircle}>
+                                <Ionicons name="bicycle" size={14} color="#ffffff" />
+                            </View>
+                        </View>
+
+                        <View style={styles.mapPinDestination}>
+                            <View style={styles.mapPinDestCircle}>
+                                <Ionicons name="location" size={14} color="#ef4444" />
+                            </View>
+                            <Text style={styles.mapPinText}>{mainAddressTitle}</Text>
+                        </View>
+
                         <View style={styles.mapOverlayPill}>
-                            <Ionicons name="navigate-circle" size={20} color="#056f36" />
+                            <Ionicons name="navigate-circle" size={18} color="#056f36" />
                             <Text style={styles.mapOverlayText}>Live Driver Route • {mainAddressTitle}</Text>
                         </View>
                     </View>
@@ -889,30 +917,90 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         fontSize: 13,
     },
-    mapCard: {
+    vectorMapCard: {
         height: 140,
         borderRadius: 22,
         overflow: 'hidden',
         position: 'relative',
         marginBottom: 16,
         borderWidth: 1,
+        justify: 'center',
     },
-    mapImage: {
-        width: '100%',
-        height: '100%',
+    mapPinShop: {
+        position: 'absolute',
+        top: 20,
+        left: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    mapPinIconCircle: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: '#dcfce7',
+        alignItems: 'center',
+        justify: 'center',
+        borderWidth: 1,
+        borderColor: '#056f36',
+    },
+    mapPinDriver: {
+        position: 'absolute',
+        top: 75,
+        left: 126,
+    },
+    mapPinDriverCircle: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#056f36',
+        alignItems: 'center',
+        justify: 'center',
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        elevation: 4,
+    },
+    mapPinDestination: {
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    mapPinDestCircle: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: '#fef2f2',
+        alignItems: 'center',
+        justify: 'center',
+        borderWidth: 1,
+        borderColor: '#ef4444',
+    },
+    mapPinText: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#0f172a',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 8,
     },
     mapOverlayPill: {
         position: 'absolute',
-        bottom: 12,
+        bottom: 10,
         left: 12,
         right: 12,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        backgroundColor: 'rgba(255, 255, 255, 0.94)',
         paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingVertical: 7,
         borderRadius: 14,
         gap: 6,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
     },
     mapOverlayText: {
         fontSize: 12,
