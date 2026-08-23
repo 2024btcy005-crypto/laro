@@ -134,8 +134,11 @@ const getShopById = async (req, res) => {
             variantOf: null
         };
 
-        if (universityId) {
-            productWhere.universityId = universityId;
+        if (universityId && universityId !== 'null' && universityId !== 'undefined' && universityId !== '') {
+            productWhere[Op.or] = [
+                { universityId: universityId },
+                { universityId: { [Op.is]: null } }
+            ];
         }
 
         const shop = await Shop.findByPk(req.params.id, {

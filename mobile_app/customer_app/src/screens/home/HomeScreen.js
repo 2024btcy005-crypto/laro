@@ -412,29 +412,58 @@ export default function HomeScreen({ navigation }) {
         });
 
         if (selectedCategory === 'All') {
+            const categoriesCovered = new Set();
+
+            const addSection = (title, filterFn) => {
+                const items = filteredProducts.filter(p => {
+                    const match = filterFn(p);
+                    if (match && p.category) categoriesCovered.add(p.category);
+                    return match;
+                });
+                return { title, data: items };
+            };
+
             const rawSections = [
-                {
-                    title: 'Fresh & Healthy',
-                    data: filteredProducts.filter(p => p.category === 'Fresh' || p.category === 'Vegetables' || p.category === 'Fruits' || p.category === 'Dairy')
-                },
-                {
-                    title: 'Grocery Essentials',
-                    data: filteredProducts.filter(p => p.category === 'Grocery' || p.category === 'Grocery & kitchen' || p.category === 'Dairy & Bread' || p.category === 'Organic')
-                },
-                {
-                    title: 'Snacks & drinks',
-                    data: filteredProducts.filter(p => p.category === 'Snacks & drinks' || p.category === 'Munchies')
-                },
-                {
-                    title: 'Stationery & Study',
-                    data: filteredProducts.filter(p => STATIONERY_SHOP_MODES.some(m => (p.category || '').toLowerCase().includes(m.toLowerCase()) || (p.shopCategory || '').toLowerCase().includes(m.toLowerCase())))
-                },
-                {
-                    title: 'Explore More',
-                    data: filteredProducts.filter(p => !['Fresh', 'Vegetables', 'Fruits', 'Dairy', 'Grocery', 'Grocery & kitchen', 'Dairy & Bread', 'Organic', 'Snacks & drinks', 'Munchies', 'Stationery', 'Xerox', 'Printing', 'Books', 'Study'].includes(p.category) && !STATIONERY_SHOP_MODES.some(m => (p.category || '').toLowerCase().includes(m.toLowerCase()) || (p.shopCategory || '').toLowerCase().includes(m.toLowerCase())))
-                }
+                addSection('Fresh & Healthy', p =>
+                    ['Fresh', 'Vegetables', 'Fruits', 'Dairy'].includes(p.category)
+                ),
+                addSection('Grocery Essentials', p =>
+                    ['Grocery', 'Grocery & kitchen', 'Dairy & Bread', 'Dairy & Eggs', 'Organic'].includes(p.category)
+                ),
+                addSection('Drinks & Beverages', p =>
+                    ['Snacks & drinks', 'Munchies', 'Drinks', 'Beverages', 'Cold Drinks', 'Juices', 'Smoothies', 'Protein Shakes', 'Coffee'].includes(p.category)
+                ),
+                addSection('Campus Canteen & Meals', p =>
+                    ['Food', 'Food & Canteen', 'Restaurant', 'Burgers', 'Pizzas', 'Biryani', 'Curries', 'Thalis', 'Pastas', 'Desserts', 'Bakery', 'Snacks'].includes(p.category)
+                ),
+                addSection('Stationery & Study', p =>
+                    ['Stationery', 'Xerox', 'Printing', 'Books', 'Study', 'Books & Stationery'].includes(p.category) ||
+                    STATIONERY_SHOP_MODES.some(m => (p.category || '').toLowerCase().includes(m.toLowerCase()) || (p.shopCategory || '').toLowerCase().includes(m.toLowerCase()))
+                ),
+                addSection('Pharmacy & Healthcare', p =>
+                    ['Medicines', 'Pharmacy', 'Healthcare', 'Wellness'].includes(p.category)
+                )
             ];
+
             const filtered = rawSections.filter(s => s.data.length > 0);
+
+            // Group remaining items by their actual category name dynamically
+            const remainingItems = filteredProducts.filter(p => !categoriesCovered.has(p.category));
+            if (remainingItems.length > 0) {
+                const customCategoryGroups = {};
+                remainingItems.forEach(item => {
+                    const catName = item.category || 'General';
+                    if (!customCategoryGroups[catName]) customCategoryGroups[catName] = [];
+                    customCategoryGroups[catName].push(item);
+                });
+
+                Object.keys(customCategoryGroups).forEach(catName => {
+                    filtered.push({
+                        title: catName,
+                        data: customCategoryGroups[catName]
+                    });
+                });
+            }
 
             if (searchQuery && filtered.length === 0 && filteredProducts.length > 0) {
                 return [{ title: 'Search Results', data: filteredProducts }];
