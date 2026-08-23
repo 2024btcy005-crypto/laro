@@ -247,6 +247,7 @@ class DeliveryLiveStatusManager {
                         type: 'DELIVERY_LIVE_STATUS',
                         status: data.status,
                         etaMinutes: data.etaMinutes,
+                        isLocalFallback: true,
                     },
                     sound: false,
                     sticky: data.status !== 'DELIVERED' && data.status !== 'CANCELLED',

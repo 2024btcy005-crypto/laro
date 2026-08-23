@@ -33,11 +33,12 @@ export default function OrderDetailScreen({ route, navigation }) {
     });
 
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const lastSyncedStatusRef = useRef(null);
 
     useEffect(() => {
         fetchOrderDetail();
 
-        // Pulsing Flame / Radar Animation
+        // Pulsing Radar Ring Animation
         Animated.loop(
             Animated.sequence([
                 Animated.timing(pulseAnim, {
@@ -67,7 +68,7 @@ export default function OrderDetailScreen({ route, navigation }) {
             if (response.data) {
                 setOrder(response.data);
 
-                // Sync Android System Live Delivery Status
+                // Sync Android System Live Delivery Status only if status changed
                 const dbStatus = response.data.status;
                 const mappedStatus = dbStatus === 'placed' ? 'PLACED' :
                                      dbStatus === 'accepted' ? 'CONFIRMED' :
@@ -76,22 +77,26 @@ export default function OrderDetailScreen({ route, navigation }) {
                                      dbStatus === 'delivered' ? 'DELIVERED' :
                                      dbStatus === 'cancelled' ? 'CANCELLED' : 'ON_THE_WAY';
 
-                const liveData = {
-                    orderId: response.data.id,
-                    restaurantName: response.data.Shop ? response.data.Shop.name : 'Laro Kitchen',
-                    deliveryPartnerName: 'Arun',
-                    status: mappedStatus,
-                    etaMinutes: 15,
-                    progress: dbStatus === 'delivered' ? 1.0 : 0.6,
-                    deepLink: `laro://order/${response.data.id}`
-                };
+                if (lastSyncedStatusRef.current !== mappedStatus) {
+                    lastSyncedStatusRef.current = mappedStatus;
 
-                if (dbStatus === 'delivered') {
-                    DeliveryLiveStatus.end(liveData);
-                } else if (dbStatus === 'cancelled') {
-                    DeliveryLiveStatus.cancel(response.data.id);
-                } else {
-                    DeliveryLiveStatus.update(liveData);
+                    const liveData = {
+                        orderId: response.data.id,
+                        restaurantName: response.data.Shop ? response.data.Shop.name : 'Laro Kitchen',
+                        deliveryPartnerName: 'Arun',
+                        status: mappedStatus,
+                        etaMinutes: 15,
+                        progress: dbStatus === 'delivered' ? 1.0 : 0.6,
+                        deepLink: `laro://order/${response.data.id}`
+                    };
+
+                    if (dbStatus === 'delivered') {
+                        DeliveryLiveStatus.end(liveData);
+                    } else if (dbStatus === 'cancelled') {
+                        DeliveryLiveStatus.cancel(response.data.id);
+                    } else {
+                        DeliveryLiveStatus.update(liveData);
+                    }
                 }
             }
         } catch (error) {
@@ -212,35 +217,39 @@ export default function OrderDetailScreen({ route, navigation }) {
     // Dynamic arrival minutes based on status
     let statusText = "Preparing Order";
     let arrivalText = "Arriving soon";
-    let statusIconName = "fast-food";
+    let statusIconName = "bag-handle";
     let activeStepIndex = 1;
 
-    if (order.status === 'placed') {
+    const currentStatus = order._simStatus || order.status;
+
+    if (currentStatus === 'placed' || currentStatus === 'PLACED') {
         statusText = `Preparing at ${order.Shop?.name || 'Shop'}`;
         arrivalText = "Arriving in approx. 15 mins";
         statusIconName = "bag-handle";
         activeStepIndex = 0;
-    } else if (order.status === 'accepted') {
-        statusText = "Preparing your food";
-        arrivalText = "Arriving in approx. 10 mins";
+    } else if (currentStatus === 'accepted' || currentStatus === 'CONFIRMED' || currentStatus === 'PREPARING') {
+        statusText = `Preparing at ${order.Shop?.name || 'Shop'}`;
+        arrivalText = "Arriving in approx. 12 mins";
         statusIconName = "restaurant";
         activeStepIndex = 1;
-    } else if (order.status === 'out_for_delivery') {
+    } else if (currentStatus === 'out_for_delivery' || currentStatus === 'ON_THE_WAY' || currentStatus === 'NEARBY') {
         statusText = `Heading to ${mainAddressTitle}`;
         arrivalText = "Arriving in approx. 4 mins";
         statusIconName = "bicycle";
         activeStepIndex = 2;
-    } else if (order.status === 'delivered') {
+    } else if (currentStatus === 'delivered' || currentStatus === 'DELIVERED') {
         statusText = "Order Delivered";
         arrivalText = "Enjoy your meal!";
         statusIconName = "checkmark-circle";
         activeStepIndex = 3;
-    } else if (order.status === 'cancelled') {
+    } else if (currentStatus === 'cancelled' || currentStatus === 'CANCELLED') {
         statusText = "Order Cancelled";
         arrivalText = "This order was cancelled";
         statusIconName = "close-circle";
         activeStepIndex = 0;
     }
+
+    const stepsList = ['Placed', 'Preparing', 'On The Way', 'Delivered'];
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -254,7 +263,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                 }
             >
                 {/* Top Section Hero Backdrop (Matching Home & Food Screen) */}
-                <View style={[styles.heroHeaderSection, { backgroundColor: heroBgColor, paddingTop: Math.max(insets.top, 14) + 6 }]}>
+                <View style={[styles.heroHeaderSection, { backgroundColor: heroBgColor, paddingTop: Math.max(insets.top, 10) + 4 }]}>
                     {/* Navigation Header Row */}
                     <View style={styles.topHeaderNavRow}>
                         <TouchableOpacity
@@ -279,7 +288,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Main Title & Calligraphy Subtitle with Swoosh */}
+                    {/* Main Title & Calligraphy Subtitle with Centered Swoosh */}
                     <View style={styles.heroTextWrapper}>
                         <Text style={[styles.heroTitleText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
                             LIVE ORDER TRACKING
@@ -288,9 +297,9 @@ export default function OrderDetailScreen({ route, navigation }) {
                             Freshly Prepared & Delivered to Your Doorstep
                         </Text>
                         <View style={styles.curvedSwooshWrapper}>
-                            <Svg width={180} height={14} viewBox="0 0 180 14" fill="none">
+                            <Svg width={200} height={14} viewBox="0 0 200 14" fill="none">
                                 <Path
-                                    d="M 4,5 Q 90,1 175,6 C 181,7 177,12 150,12"
+                                    d="M 10,6 Q 100,1 190,7 C 196,8 192,13 165,13"
                                     stroke="#056f36"
                                     strokeWidth={2.2}
                                     strokeLinecap="round"
@@ -304,7 +313,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                         <View style={styles.iconPulseWrapper}>
                             <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulseAnim }] }]} />
                             <View style={styles.statusIconCircle}>
-                                <Ionicons name={statusIconName} size={36} color="#ffffff" />
+                                <Ionicons name={statusIconName} size={34} color="#ffffff" />
                             </View>
                         </View>
 
@@ -317,33 +326,47 @@ export default function OrderDetailScreen({ route, navigation }) {
                             <Text style={styles.etaPillText}>{arrivalText}</Text>
                         </View>
 
-                        {/* 4-Step Progress Tracker */}
-                        {order.status !== 'cancelled' && (
-                            <View style={styles.progressTimelineWrapper}>
-                                <View style={styles.progressTrackLineBackground}>
-                                    <View
-                                        style={[
-                                            styles.progressTrackLineFill,
-                                            { width: `${(activeStepIndex / 3) * 100}%` }
-                                        ]}
-                                    />
-                                </View>
-
-                                {['Placed', 'Preparing', 'On The Way', 'Delivered'].map((stepName, idx) => {
+                        {/* Bulletproof Flex-Connector Progress Tracker */}
+                        {currentStatus !== 'cancelled' && currentStatus !== 'CANCELLED' && (
+                            <View style={styles.progressTimelineRow}>
+                                {stepsList.map((stepName, idx) => {
                                     const isDone = idx <= activeStepIndex;
+                                    const isCurrent = idx === activeStepIndex;
+                                    const isLast = idx === stepsList.length - 1;
+                                    const isSegmentActive = idx < activeStepIndex;
+
                                     return (
-                                        <View key={idx} style={styles.stepNodeContainer}>
-                                            <View style={[styles.stepNodeCircle, isDone && styles.stepNodeCircleDone]}>
-                                                <Ionicons
-                                                    name={isDone ? "checkmark" : "ellipse-outline"}
-                                                    size={12}
-                                                    color={isDone ? "#ffffff" : "#94a3b8"}
-                                                />
+                                        <React.Fragment key={idx}>
+                                            <View style={styles.stepNodeItem}>
+                                                <View style={[
+                                                    styles.stepNodeCircle,
+                                                    isDone && styles.stepNodeCircleDone,
+                                                    isCurrent && styles.stepNodeCircleCurrent
+                                                ]}>
+                                                    {isDone ? (
+                                                        <Ionicons name="checkmark" size={12} color="#ffffff" />
+                                                    ) : (
+                                                        <View style={styles.stepNodeDotInner} />
+                                                    )}
+                                                </View>
+                                                <Text style={[
+                                                    styles.stepNodeLabel,
+                                                    isDone && styles.stepNodeLabelDone,
+                                                    isCurrent && styles.stepNodeLabelCurrent
+                                                ]}>
+                                                    {stepName}
+                                                </Text>
                                             </View>
-                                            <Text style={[styles.stepNodeLabel, isDone && styles.stepNodeLabelDone]}>
-                                                {stepName}
-                                            </Text>
-                                        </View>
+
+                                            {!isLast && (
+                                                <View style={styles.stepConnectorContainer}>
+                                                    <View style={[
+                                                        styles.stepConnectorLine,
+                                                        isSegmentActive && styles.stepConnectorLineDone
+                                                    ]} />
+                                                </View>
+                                            )}
+                                        </React.Fragment>
                                     );
                                 })}
                             </View>
@@ -352,15 +375,15 @@ export default function OrderDetailScreen({ route, navigation }) {
                 </View>
 
                 {/* Soft Edge Blend Transition Strip where Green meets White */}
-                <View style={{ height: 26, width: '100%', backgroundColor: colors.background }}>
-                    <Svg width="100%" height={26} preserveAspectRatio="none">
+                <View style={{ height: 24, width: '100%', backgroundColor: colors.background }}>
+                    <Svg width="100%" height={24} preserveAspectRatio="none">
                         <Defs>
                             <LinearGradient id="orderDetailEdgeBlend" x1="0%" y1="0%" x2="0%" y2="100%">
                                 <Stop offset="0%" stopColor={heroBgColor} stopOpacity="1" />
                                 <Stop offset="100%" stopColor={colors.background} stopOpacity="1" />
                             </LinearGradient>
                         </Defs>
-                        <Rect width="100%" height={26} fill="url(#orderDetailEdgeBlend)" />
+                        <Rect width="100%" height={24} fill="url(#orderDetailEdgeBlend)" />
                     </Svg>
                 </View>
 
@@ -374,7 +397,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                             onPress={simulateNextStatus}
                             activeOpacity={0.8}
                         >
-                            <Ionicons name="notifications" size={18} color="#ffffff" />
+                            <Ionicons name="notifications" size={16} color="#ffffff" />
                             <Text style={styles.devTestTriggerText}>
                                 ⚡ Test Android Live Delivery Status Pill
                             </Text>
@@ -382,9 +405,9 @@ export default function OrderDetailScreen({ route, navigation }) {
                     )}
 
                     {/* Live Delivery Map Card Preview */}
-                    <View style={[styles.mapCard, { borderColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
+                    <View style={[styles.mapCard, { borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]}>
                         <Image
-                            source={{ uri: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&q=80' }}
+                            source={{ uri: 'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&q=80' }}
                             style={styles.mapImage}
                         />
                         <View style={styles.mapOverlayPill}>
@@ -405,9 +428,9 @@ export default function OrderDetailScreen({ route, navigation }) {
                                 <View style={styles.riderAvatarCircle}>
                                     <Ionicons name={rider ? "person" : "hourglass-outline"} size={22} color={rider ? "#056f36" : "#94a3b8"} />
                                 </View>
-                                <View style={{ flex: 1 }}>
+                                <View style={{ flex: 1, paddingRight: 8 }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                        <Text style={[styles.riderNameText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                        <Text style={[styles.riderNameText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]} numberOfLines={1}>
                                             {rider ? rider.name : 'Assigning Campus Rider...'}
                                         </Text>
                                         {rider && (
@@ -417,7 +440,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                                             </View>
                                         )}
                                     </View>
-                                    <Text style={styles.riderSubText}>
+                                    <Text style={styles.riderSubText} numberOfLines={1}>
                                         {rider ? 'Laro Express Partner • 140+ Deliveries' : 'Finding nearest driver near campus'}
                                     </Text>
                                 </View>
@@ -433,7 +456,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                             {/* OTP Delivery Verification Code */}
                             {order.deliveryOtp && (
                                 <View style={styles.otpCardBox}>
-                                    <View>
+                                    <View style={{ flex: 1 }}>
                                         <Text style={styles.otpLabel}>DELIVERY VERIFICATION OTP</Text>
                                         <Text style={styles.otpSub}>Share with driver on handoff</Text>
                                     </View>
@@ -633,15 +656,16 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     topHeaderNavRow: {
+        width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
         justify: 'space-between',
         marginBottom: 14,
     },
     backBtnCircle: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         alignItems: 'center',
         justify: 'center',
         shadowColor: '#000',
@@ -651,9 +675,9 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     callBtnCircle: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         alignItems: 'center',
         justify: 'center',
         shadowColor: '#000',
@@ -666,7 +690,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#dcfce7',
-        paddingHorizontal: 14,
+        paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
         gap: 6,
@@ -683,13 +707,13 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     heroTitleText: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: '900',
         letterSpacing: -0.5,
         textAlign: 'center',
     },
     heroCalligraphySubText: {
-        fontSize: 20,
+        fontSize: 19,
         fontFamily: Platform.select({ ios: 'Snell Roundhand', android: 'serif', default: 'serif' }),
         fontStyle: 'italic',
         color: '#056f36',
@@ -705,7 +729,7 @@ const styles = StyleSheet.create({
     },
     heroTrackingCard: {
         borderRadius: 26,
-        padding: 22,
+        padding: 20,
         alignItems: 'center',
         borderWidth: 1.5,
         shadowColor: '#056f36',
@@ -719,20 +743,22 @@ const styles = StyleSheet.create({
         position: 'relative',
         alignItems: 'center',
         justify: 'center',
+        width: 84,
+        height: 84,
         marginBottom: 12,
     },
     pulseRing: {
         position: 'absolute',
-        width: 90,
-        height: 90,
-        borderRadius: 45,
+        width: 84,
+        height: 84,
+        borderRadius: 42,
         backgroundColor: '#bbf7d0',
-        opacity: 0.5,
+        opacity: 0.6,
     },
     statusIconCircle: {
-        width: 76,
-        height: 76,
-        borderRadius: 38,
+        width: 70,
+        height: 70,
+        borderRadius: 35,
         backgroundColor: '#056f36',
         alignItems: 'center',
         justify: 'center',
@@ -764,43 +790,39 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '800',
     },
-    progressTimelineWrapper: {
+    progressTimelineRow: {
         width: '100%',
         flexDirection: 'row',
-        justify: 'space-between',
         alignItems: 'flex-start',
-        position: 'relative',
-        paddingHorizontal: 6,
+        justify: 'space-between',
+        paddingHorizontal: 4,
     },
-    progressTrackLineBackground: {
-        position: 'absolute',
-        top: 9,
-        left: 24,
-        right: 24,
-        height: 4,
-        backgroundColor: '#e2e8f0',
-        borderRadius: 2,
-    },
-    progressTrackLineFill: {
-        height: '100%',
-        backgroundColor: '#056f36',
-        borderRadius: 2,
-    },
-    stepNodeContainer: {
+    stepNodeItem: {
         alignItems: 'center',
-        width: 64,
+        width: 54,
     },
     stepNodeCircle: {
-        width: 22,
-        height: 22,
-        borderRadius: 11,
-        backgroundColor: '#cbd5e1',
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#e2e8f0',
         alignItems: 'center',
         justify: 'center',
         marginBottom: 6,
     },
     stepNodeCircleDone: {
         backgroundColor: '#056f36',
+    },
+    stepNodeCircleCurrent: {
+        borderWidth: 2,
+        borderColor: '#056f36',
+        backgroundColor: '#ffffff',
+    },
+    stepNodeDotInner: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#94a3b8',
     },
     stepNodeLabel: {
         fontSize: 10.5,
@@ -811,6 +833,26 @@ const styles = StyleSheet.create({
     stepNodeLabelDone: {
         color: '#056f36',
         fontWeight: '900',
+    },
+    stepNodeLabelCurrent: {
+        color: '#0f172a',
+        fontWeight: '900',
+    },
+    stepConnectorContainer: {
+        flex: 1,
+        height: 24,
+        justify: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 2,
+    },
+    stepConnectorLine: {
+        width: '100%',
+        height: 3.5,
+        backgroundColor: '#e2e8f0',
+        borderRadius: 2,
+    },
+    stepConnectorLineDone: {
+        backgroundColor: '#056f36',
     },
     contentBody: {
         paddingHorizontal: 16,
@@ -881,18 +923,19 @@ const styles = StyleSheet.create({
     riderRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        justify: 'space-between',
     },
     riderAvatarCircle: {
-        width: 46,
-        height: 46,
-        borderRadius: 23,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         backgroundColor: '#dcfce7',
         alignItems: 'center',
         justify: 'center',
         marginRight: 12,
     },
     riderNameText: {
-        fontSize: 15,
+        fontSize: 14.5,
         fontWeight: '800',
     },
     ratingBadge: {
@@ -915,9 +958,9 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     riderCallBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 38,
+        height: 38,
+        borderRadius: 19,
         backgroundColor: '#056f36',
         alignItems: 'center',
         justify: 'center',
@@ -927,7 +970,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justify: 'space-between',
         backgroundColor: '#f0fdf4',
-        padding: 14,
+        padding: 12,
         borderRadius: 16,
         marginTop: 14,
         borderWidth: 1,

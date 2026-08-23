@@ -269,9 +269,17 @@ function RootNavigator() {
 
             if (Notifications) {
                 const subReceived = Notifications.addNotificationReceivedListener(notification => {
-                    console.log('[PUSH RECEIVED FOREGROUND]:', notification);
                     const data = notification.request.content.data;
-                    if (data && data.type === 'DELIVERY_LIVE_STATUS') {
+                    const trigger = notification.request.trigger;
+
+                    // Ignore locally scheduled notification fallbacks to prevent infinite recursive loops!
+                    if (!data || data.isLocalFallback || trigger === null) {
+                        return;
+                    }
+
+                    console.log('[PUSH RECEIVED FOREGROUND]:', notification);
+
+                    if (data.type === 'DELIVERY_LIVE_STATUS') {
                         const liveData = {
                             orderId: data.orderId,
                             restaurantName: data.restaurantName || 'Laro Kitchen',
