@@ -78,7 +78,7 @@ const Product = sequelize.define('Product', {
     },
     stockQuantity: {
         type: DataTypes.INTEGER,
-        defaultValue: 0,
+        defaultValue: 100,
         comment: 'Current inventory level'
     },
     lowStockThreshold: {

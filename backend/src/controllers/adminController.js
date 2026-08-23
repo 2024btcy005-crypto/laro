@@ -289,7 +289,8 @@ const createProduct = async (req, res) => {
             isVeg: isVeg !== undefined ? isVeg : true,
             isAvailable: isAvailable !== undefined ? isAvailable : true,
             variantOf,
-            variantName
+            variantName,
+            stockQuantity: req.body.stockQuantity !== undefined ? parseInt(req.body.stockQuantity) : 100
         });
 
         res.status(201).json(product);
@@ -304,7 +305,7 @@ const createProduct = async (req, res) => {
 // @access  Private/Admin
 const updateProduct = async (req, res) => {
     try {
-        const { name, description, price, originalPrice, category, imageUrl, isVeg, isAvailable, shopId, variantOf, variantName } = req.body;
+        const { name, description, price, originalPrice, category, imageUrl, isVeg, isAvailable, shopId, variantOf, variantName, stockQuantity } = req.body;
         const product = await Product.findByPk(req.params.id);
 
         if (!product) {
@@ -327,7 +328,8 @@ const updateProduct = async (req, res) => {
             isAvailable,
             shopId,
             variantOf,
-            variantName
+            variantName,
+            stockQuantity: stockQuantity !== undefined ? parseInt(stockQuantity) : (product.stockQuantity || 100)
         });
 
         res.json(product);
