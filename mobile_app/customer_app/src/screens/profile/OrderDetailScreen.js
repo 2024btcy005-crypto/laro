@@ -36,6 +36,28 @@ const CenteredIcon = ({ name, size, color, style }) => (
     />
 );
 
+const ItemThumbnail = ({ imageUrl, isXerox }) => {
+    const [imgFailed, setImgFailed] = useState(false);
+    const resolvedUri = resolveImageUrl(imageUrl);
+
+    if (imgFailed || !imageUrl) {
+        return (
+            <View style={[styles.itemThumb, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0fdf4' }]}>
+                <Ionicons name={isXerox ? "document-text" : "fast-food-outline"} size={20} color="#056f36" />
+            </View>
+        );
+    }
+
+    return (
+        <Image
+            source={{ uri: resolvedUri }}
+            style={styles.itemThumb}
+            resizeMode="cover"
+            onError={() => setImgFailed(true)}
+        />
+    );
+};
+
 export default function OrderDetailScreen({ route, navigation }) {
     const { colors, isDarkMode } = useTheme();
     const insets = useSafeAreaInsets();
@@ -551,15 +573,25 @@ export default function OrderDetailScreen({ route, navigation }) {
                             const qty = item.quantity || 1;
                             const itemTotal = unitPrice * qty;
 
+                            const itemImgUrl = item.product?.imageUrl || 
+                                               item.product?.image || 
+                                               item.Product?.imageUrl || 
+                                               item.Product?.image || 
+                                               item.imageUrl || 
+                                               item.image || 
+                                               item.metadata?.imageUrl;
+
+                            const isXeroxItem = (typeof item.productId === 'string' && item.productId.startsWith('xerox_')) || item.metadata?.fileUrl;
+
                             return (
                                 <View key={item.id || idx} style={styles.itemRow}>
-                                    <Image
-                                        source={{ uri: resolveImageUrl(item.product?.imageUrl || item.imageUrl) }}
-                                        style={styles.itemThumb}
+                                    <ItemThumbnail
+                                        imageUrl={itemImgUrl}
+                                        isXerox={isXeroxItem}
                                     />
                                     <View style={{ flex: 1, marginLeft: 12 }}>
                                         <Text style={[styles.itemNameText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
-                                            {item.product?.name || item.name || 'Campus Item'}
+                                            {item.product?.name || item.name || (isXeroxItem ? 'Xerox Printing Job' : 'Campus Item')}
                                         </Text>
                                         <Text style={styles.itemQtyPriceText}>
                                             Qty: {qty} • {CONSTANTS.CURRENCY}{unitPrice.toFixed(2)} each

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, CONSTANTS } from '../../theme';
-import { orderAPI } from '../../services/api';
+import { orderAPI, resolveImageUrl } from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
 import Svg, { Path } from 'react-native-svg';
@@ -59,6 +59,7 @@ export default function OrdersScreen({ navigation }) {
                         id: (order.id || '').toString(),
                         store: order.shop?.name || 'Laro Store',
                         storeCategory: order.shop?.category || 'Cafe & Grill',
+                        storeImage: order.shop?.imageUrl || order.shop?.image || null,
                         date: order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', {
                             day: 'numeric',
                             month: 'short',
@@ -251,8 +252,15 @@ export default function OrdersScreen({ navigation }) {
             >
                 <View style={styles.pastCardHeader}>
                     <View style={styles.pastStoreInfo}>
-                        <View style={[styles.pastStoreIcon, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9' }]}>
-                            <Ionicons name="receipt-outline" size={20} color={isDarkMode ? '#94a3b8' : '#666'} />
+                        <View style={[styles.pastStoreIcon, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', overflow: 'hidden' }]}>
+                            {item.storeImage ? (
+                                <Image
+                                    source={{ uri: resolveImageUrl(item.storeImage) }}
+                                    style={{ width: 40, height: 40, borderRadius: 20 }}
+                                />
+                            ) : (
+                                <Ionicons name="receipt-outline" size={20} color={isDarkMode ? '#94a3b8' : '#666'} />
+                            )}
                         </View>
                         <View style={{ marginLeft: 12 }}>
                             <Text style={[styles.pastStoreName, { color: isDarkMode ? '#ffffff' : '#111827' }]}>{item.store}</Text>
