@@ -254,13 +254,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                 }
             >
                 {/* Top Section Hero Backdrop (Matching Home & Food Screen) */}
-                <View style={[styles.heroHeaderSection, { backgroundColor: heroBgColor, paddingTop: Math.max(insets.top, 16) + 8 }]}>
-                    {/* Brand Pill */}
-                    <View style={styles.brandTagPill}>
-                        <Ionicons name="flash" size={12} color="#056f36" />
-                        <Text style={styles.brandTagText}>LARO • LIVE ORDER TRACKING</Text>
-                    </View>
-
+                <View style={[styles.heroHeaderSection, { backgroundColor: heroBgColor, paddingTop: Math.max(insets.top, 14) + 6 }]}>
                     {/* Navigation Header Row */}
                     <View style={styles.topHeaderNavRow}>
                         <TouchableOpacity
@@ -288,17 +282,17 @@ export default function OrderDetailScreen({ route, navigation }) {
                     {/* Main Title & Calligraphy Subtitle with Swoosh */}
                     <View style={styles.heroTextWrapper}>
                         <Text style={[styles.heroTitleText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
-                            {statusText.toUpperCase()}
+                            LIVE ORDER TRACKING
                         </Text>
                         <Text style={styles.heroCalligraphySubText}>
                             Freshly Prepared & Delivered to Your Doorstep
                         </Text>
                         <View style={styles.curvedSwooshWrapper}>
-                            <Svg width={190} height={16} viewBox="0 0 190 16" fill="none">
+                            <Svg width={180} height={14} viewBox="0 0 180 14" fill="none">
                                 <Path
-                                    d="M 4,6 Q 95,1 185,7 C 191,8 187,14 160,14"
+                                    d="M 4,5 Q 90,1 175,6 C 181,7 177,12 150,12"
                                     stroke="#056f36"
-                                    strokeWidth={2.4}
+                                    strokeWidth={2.2}
                                     strokeLinecap="round"
                                 />
                             </Svg>
@@ -314,8 +308,12 @@ export default function OrderDetailScreen({ route, navigation }) {
                             </View>
                         </View>
 
+                        <Text style={[styles.cardStatusTitle, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                            {statusText}
+                        </Text>
+
                         <View style={styles.etaPillBadge}>
-                            <Ionicons name="time" size={14} color="#056f36" />
+                            <Ionicons name="time" size={13} color="#056f36" />
                             <Text style={styles.etaPillText}>{arrivalText}</Text>
                         </View>
 
@@ -620,7 +618,7 @@ const styles = StyleSheet.create({
     },
     center: {
         flex: 1,
-        justifyContent: 'center',
+        justify: 'center',
         alignItems: 'center',
     },
     backBtnWrapper: {
@@ -633,23 +631,6 @@ const styles = StyleSheet.create({
     heroHeaderSection: {
         paddingHorizontal: 16,
         paddingBottom: 20,
-    },
-    brandTagPill: {
-        alignSelf: 'center',
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#dcfce7',
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 12,
-        gap: 4,
-        marginBottom: 12,
-    },
-    brandTagText: {
-        fontSize: 10.5,
-        fontWeight: '900',
-        color: '#056f36',
-        letterSpacing: 1.2,
     },
     topHeaderNavRow: {
         flexDirection: 'row',
@@ -708,13 +689,14 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     heroCalligraphySubText: {
-        fontSize: 21,
-        fontFamily: Platform.select({ ios: 'Snell Roundhand', android: 'cursive', default: 'cursive' }),
+        fontSize: 20,
+        fontFamily: Platform.select({ ios: 'Snell Roundhand', android: 'serif', default: 'serif' }),
+        fontStyle: 'italic',
         color: '#056f36',
         marginTop: 4,
         textAlign: 'center',
         fontWeight: '700',
-        letterSpacing: 0.5,
+        letterSpacing: 0.3,
     },
     curvedSwooshWrapper: {
         alignItems: 'center',
@@ -737,7 +719,7 @@ const styles = StyleSheet.create({
         position: 'relative',
         alignItems: 'center',
         justify: 'center',
-        marginBottom: 14,
+        marginBottom: 12,
     },
     pulseRing: {
         position: 'absolute',
@@ -759,6 +741,13 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 10,
         elevation: 6,
+    },
+    cardStatusTitle: {
+        fontSize: 19,
+        fontWeight: '900',
+        textAlign: 'center',
+        marginBottom: 8,
+        letterSpacing: -0.3,
     },
     etaPillBadge: {
         flexDirection: 'row',
@@ -785,7 +774,7 @@ const styles = StyleSheet.create({
     },
     progressTrackLineBackground: {
         position: 'absolute',
-        top: 10,
+        top: 9,
         left: 24,
         right: 24,
         height: 4,
