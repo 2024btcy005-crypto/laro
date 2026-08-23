@@ -238,27 +238,40 @@ export default function OrdersScreen({ navigation }) {
 
         // Past Order Item
         return (
-            <TouchableOpacity style={styles.pastCard} onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}>
+            <TouchableOpacity 
+                style={[
+                    styles.pastCard, 
+                    { 
+                        backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', 
+                        borderColor: isDarkMode ? '#334155' : '#f1f5f9' 
+                    }
+                ]} 
+                onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
+                activeOpacity={0.85}
+            >
                 <View style={styles.pastCardHeader}>
                     <View style={styles.pastStoreInfo}>
-                        <View style={styles.pastStoreIcon}>
-                            <Ionicons name="receipt-outline" size={20} color="#666" />
+                        <View style={[styles.pastStoreIcon, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9' }]}>
+                            <Ionicons name="receipt-outline" size={20} color={isDarkMode ? '#94a3b8' : '#666'} />
                         </View>
                         <View style={{ marginLeft: 12 }}>
-                            <Text style={styles.pastStoreName}>{item.store}</Text>
-                            <Text style={styles.pastStoreSub}>{item.date} • {item.total}</Text>
+                            <Text style={[styles.pastStoreName, { color: isDarkMode ? '#ffffff' : '#111827' }]}>{item.store}</Text>
+                            <Text style={[styles.pastStoreSub, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>{item.date} • {item.total}</Text>
                         </View>
                     </View>
                     <Text style={[styles.pastStatus, item.status === 'cancelled' ? styles.statusCancelled : styles.statusDelivered]}>
                         {item.statusLabel}
                     </Text>
                 </View>
-                <Text style={styles.pastItems} numberOfLines={1}>{item.items}</Text>
+                <Text style={[styles.pastItems, { color: isDarkMode ? '#cbd5e1' : '#666' }]} numberOfLines={1}>{item.items}</Text>
                 <View style={styles.pastActions}>
-                    <TouchableOpacity style={styles.viewDetailsBtn} onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}>
-                        <Text style={styles.viewDetailsText}>View Details</Text>
+                    <TouchableOpacity 
+                        style={[styles.viewDetailsBtn, { backgroundColor: isDarkMode ? '#0f172a' : '#f0fdf4', borderColor: isDarkMode ? '#334155' : '#bbf7d0' }]} 
+                        onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
+                    >
+                        <Text style={[styles.viewDetailsText, { color: '#056f36' }]}>View Details</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeletePress(item)}>
+                    <TouchableOpacity style={[styles.deleteBtn, { backgroundColor: isDarkMode ? '#334155' : '#fef2f2' }]} onPress={() => handleDeletePress(item)}>
                         <Ionicons name="trash-outline" size={18} color="#ef4444" />
                     </TouchableOpacity>
                 </View>
@@ -267,13 +280,13 @@ export default function OrdersScreen({ navigation }) {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fcfdfc" />
+        <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc' }]} edges={['top']}>
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isDarkMode ? '#0f172a' : '#fcfdfc'} />
             
             {/* Custom Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderBottomColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
                 <View>
-                    <Text style={styles.headerTitle}>Your Orders</Text>
+                    <Text style={[styles.headerTitle, { color: isDarkMode ? '#ffffff' : '#1a1a2e' }]}>Your Orders</Text>
                     <View style={styles.curvedSwooshWrapperHeader}>
                         <Svg width={140} height={14} viewBox="0 0 140 14" fill="none">
                             <Path

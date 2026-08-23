@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useFonts, DancingScript_700Bold } from '@expo-google-fonts/dancing-script';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Linking, RefreshControl, Image, StatusBar, Dimensions, Modal, Animated, Platform
+    View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Linking, RefreshControl, Image, StatusBar, Dimensions, Animated, Platform, Modal
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Path, Defs, LinearGradient, Stop, Rect, Circle, Line } from 'react-native-svg';
 import { COLORS, CONSTANTS } from '../../theme';
-import api, { resolveImageUrl } from '../../services/api';
+import api, { resolveImageUrl, orderAPI } from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
 import { OrderDetailScreenSkeleton } from '../../components/SkeletonLoader';
@@ -14,6 +15,26 @@ import { DeliveryLiveStatus } from '../../services/deliveryLiveStatus';
 import LiveStatusPermissionModal, { requestNotificationPermissionsAsync } from '../../components/LiveStatusPermissionModal';
 
 const { width } = Dimensions.get('window');
+
+// Helper component to render 100% geometrically centered Ionicons inside circles
+const CenteredIcon = ({ name, size, color, style }) => (
+    <Ionicons
+        name={name}
+        size={size}
+        color={color}
+        style={[
+            {
+                width: size,
+                height: size,
+                lineHeight: size,
+                textAlign: 'center',
+                textAlignVertical: 'center',
+                includeFontPadding: false,
+            },
+            style
+        ]}
+    />
+);
 
 export default function OrderDetailScreen({ route, navigation }) {
     const { colors, isDarkMode } = useTheme();
@@ -25,6 +46,7 @@ export default function OrderDetailScreen({ route, navigation }) {
     const [cancelLoading, setCancelLoading] = useState(false);
     const [receiptVisible, setReceiptVisible] = useState(false);
     const [permModalVisible, setPermModalVisible] = useState(false);
+    const [config, setConfig] = useState({ taxRate: 5.0, handlingCharge: 2.00, defaultDeliveryFee: 0.00 });
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
         title: '',
@@ -34,6 +56,7 @@ export default function OrderDetailScreen({ route, navigation }) {
 
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const lastSyncedStatusRef = useRef(null);
+    const [fontsLoaded] = useFonts({ DancingScript_700Bold });
 
     useEffect(() => {
         fetchOrderDetail();
@@ -42,7 +65,7 @@ export default function OrderDetailScreen({ route, navigation }) {
         Animated.loop(
             Animated.sequence([
                 Animated.timing(pulseAnim, {
-                    toValue: 1.15,
+                    toValue: 1.18,
                     duration: 1200,
                     useNativeDriver: true,
                 }),
@@ -60,6 +83,11 @@ export default function OrderDetailScreen({ route, navigation }) {
                 setPermModalVisible(true);
             }
         });
+
+        // Fetch billing config (taxRate, handlingCharge)
+        orderAPI.getConfig().then(res => {
+            if (res?.data) setConfig(res.data);
+        }).catch(() => {});
     }, [orderId]);
 
     const fetchOrderDetail = async () => {
@@ -110,8 +138,8 @@ export default function OrderDetailScreen({ route, navigation }) {
     const simulateNextStatus = async () => {
         if (!order) return;
         const stages = [
-            { status: 'PREPARING', eta: 25, progress: 0.25 },
-            { status: 'ON_THE_WAY', eta: 12, progress: 0.65 },
+            { status: 'PREPARING', eta: 25, progress: 0.35 },
+            { status: 'ON_THE_WAY', eta: 12, progress: 0.70 },
             { status: 'NEARBY', eta: 2, progress: 0.90 },
             { status: 'DELIVERED', eta: 0, progress: 1.0 }
         ];
@@ -123,7 +151,7 @@ export default function OrderDetailScreen({ route, navigation }) {
 
         const liveData = {
             orderId: order.id,
-            restaurantName: order.Shop ? order.Shop.name : 'Laro Kitchen',
+            restaurantName: order.shop?.name || '',
             deliveryPartnerName: 'Arun (Driver)',
             status: nextStage.status,
             etaMinutes: nextStage.eta,
@@ -178,15 +206,6 @@ export default function OrderDetailScreen({ route, navigation }) {
         });
     };
 
-    const formatOrderTime = (timeStr, offsetMinutes = 0) => {
-        if (!timeStr) return '';
-        const d = new Date(timeStr);
-        if (offsetMinutes > 0) {
-            d.setMinutes(d.getMinutes() + offsetMinutes);
-        }
-        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    };
-
     if (loading) {
         return <OrderDetailScreenSkeleton />;
     }
@@ -206,59 +225,105 @@ export default function OrderDetailScreen({ route, navigation }) {
     const rider = order.delivery?.partner;
     const itemsCount = order.items?.reduce((acc, curr) => acc + (curr.quantity || 1), 0) || 0;
 
-    // Split address into lines
+    // Address lines formatting
     const addressParts = order.deliveryAddress ? order.deliveryAddress.split(',').map(p => p.trim()) : [];
     const mainAddressTitle = addressParts[0] || 'Your Location';
     const detailAddressSub = addressParts.slice(1).join(', ') || 'Within Campus Area';
 
-    // Format OTP spacing
+    // Format OTP
     const formattedOtp = order.deliveryOtp ? order.deliveryOtp.toString().split('').join(' ') : '8 8 2 1';
 
+    // Bill breakdown — matches CheckoutScreen exactly
+    const itemSubtotal = order.items?.reduce((sum, item) => {
+        const price = parseFloat(item.priceAtTime || item.price || item.product?.price || 0);
+        return sum + price * (item.quantity || 1);
+    }, 0) || parseFloat(order.totalAmount || 0);
+    const taxes = parseFloat((itemSubtotal * (config.taxRate / 100)).toFixed(2));
+    const handlingFee = parseFloat(config.handlingCharge || 0);
+    const couponDiscount = parseFloat(order.discountAmount || 0);
+
     // Dynamic arrival minutes & status text mapping
-    let statusText = "Order Placed";
+    let statusTitle = "Order Placed";
     let arrivalText = "Shop is confirming your order (approx. 15 mins)";
     let statusIconName = "cube-outline";
     let activeStepIndex = 0;
+    let progressRatio = 0.15;
 
     const rawStatus = (order._simStatus || order.status || '').toLowerCase();
 
     if (rawStatus === 'placed') {
-        statusText = "Order Placed";
+        statusTitle = "Order Placed";
         arrivalText = "Shop is confirming your order (approx. 15 mins)";
         statusIconName = "cube-outline";
         activeStepIndex = 0;
+        progressRatio = 0.15;
     } else if (rawStatus === 'accepted' || rawStatus === 'confirmed' || rawStatus === 'preparing') {
-        statusText = `Preparing at ${order.Shop?.name || 'Shop'}`;
-        arrivalText = "Kitchen is cooking your meal (approx. 12 mins)";
+        statusTitle = `Preparing at ${order.shop?.name || 'Kitchen'}`;
+        arrivalText = "Kitchen is cooking your fresh meal (approx. 10 mins)";
         statusIconName = "flame";
         activeStepIndex = 1;
+        progressRatio = 0.45;
     } else if (rawStatus === 'picked' || rawStatus === 'out_for_delivery' || rawStatus === 'on_the_way' || rawStatus === 'nearby') {
-        statusText = `Heading to ${mainAddressTitle}`;
-        arrivalText = "Driver is on the way (approx. 4 mins)";
+        statusTitle = `Rider Heading to ${mainAddressTitle}`;
+        arrivalText = "Arun is on the way to your door (approx. 4 mins)";
         statusIconName = "bicycle";
         activeStepIndex = 2;
+        progressRatio = 0.80;
     } else if (rawStatus === 'delivered') {
-        statusText = "Order Delivered";
-        arrivalText = "Enjoy your meal!";
+        statusTitle = "Order Delivered";
+        arrivalText = "Enjoy your fresh meal!";
         statusIconName = "checkmark-circle";
         activeStepIndex = 3;
+        progressRatio = 1.0;
     } else if (rawStatus === 'cancelled') {
-        statusText = "Order Cancelled";
+        statusTitle = "Order Cancelled";
         arrivalText = "This order was cancelled";
         statusIconName = "close-circle";
         activeStepIndex = 0;
+        progressRatio = 0.0;
     }
 
-    const stepsInfo = [
-        { name: 'Placed', icon: 'cube' },
-        { name: 'Preparing', icon: 'flame' },
-        { name: 'On Way', icon: 'bicycle' },
-        { name: 'Delivered', icon: 'checkmark-circle' }
+    const stepsList = [
+        { label: 'Placed', icon: 'cube' },
+        { label: 'Preparing', icon: 'flame' },
+        { label: 'On Way', icon: 'bicycle' },
+        { label: 'Delivered', icon: 'checkmark-circle' }
     ];
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={heroBgColor} />
+
+            {/* Premium Sticky Navigation Header Bar */}
+            <View style={[
+                styles.fixedHeaderBar,
+                {
+                    backgroundColor: heroBgColor,
+                    paddingTop: Math.max(insets.top, 10),
+                    borderBottomColor: isDarkMode ? '#1e293b' : '#e6f7ed'
+                }
+            ]}>
+                <TouchableOpacity
+                    style={[styles.backBtnCircle, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff' }]}
+                    onPress={() => navigation.goBack()}
+                    activeOpacity={0.8}
+                >
+                    <CenteredIcon name="arrow-back" size={20} color={isDarkMode ? '#ffffff' : '#0f172a'} />
+                </TouchableOpacity>
+
+                <Text style={[styles.fixedHeaderTitle, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                    Order Details
+                </Text>
+
+                <TouchableOpacity
+                    style={styles.receiptHeaderBtn}
+                    onPress={() => setReceiptVisible(true)}
+                    activeOpacity={0.8}
+                >
+                    <CenteredIcon name="receipt" size={15} color="#056f36" />
+                    <Text style={styles.receiptHeaderBtnText}>Receipt</Text>
+                </TouchableOpacity>
+            </View>
 
             <ScrollView
                 contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 40 }}
@@ -267,33 +332,10 @@ export default function OrderDetailScreen({ route, navigation }) {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#056f36" />
                 }
             >
-                {/* Top Section Hero Backdrop (Matching Home & Food Screen) */}
-                <View style={[styles.heroHeaderSection, { backgroundColor: heroBgColor, paddingTop: Math.max(insets.top, 10) + 6 }]}>
-                    {/* Navigation Header Row */}
-                    <View style={styles.topHeaderNavRow}>
-                        <TouchableOpacity
-                            style={[styles.backBtnCircle, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff' }]}
-                            onPress={() => navigation.goBack()}
-                            activeOpacity={0.8}
-                        >
-                            <Ionicons name="arrow-back" size={20} color={isDarkMode ? '#ffffff' : '#0f172a'} />
-                        </TouchableOpacity>
+                {/* Hero Banner Section */}
+                <View style={[styles.heroHeaderSection, { backgroundColor: heroBgColor, paddingTop: 14 }]}>
 
-                        <View style={styles.orderIdBadge}>
-                            <Ionicons name="receipt" size={14} color="#056f36" />
-                            <Text style={styles.orderIdBadgeText}>#{order.id.split('-')[0].toUpperCase()}</Text>
-                        </View>
-
-                        <TouchableOpacity
-                            style={[styles.callBtnCircle, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff' }]}
-                            onPress={() => handleCallRider(rider?.phoneNumber)}
-                            activeOpacity={0.8}
-                        >
-                            <Ionicons name="call" size={18} color="#056f36" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Main Title & Calligraphy Subtitle with Centered Swoosh */}
+                    {/* Brand Title & Cursive Subtitle */}
                     <View style={styles.heroTextWrapper}>
                         <Text style={[styles.heroTitleText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
                             LIVE ORDER TRACKING
@@ -315,68 +357,58 @@ export default function OrderDetailScreen({ route, navigation }) {
 
                     {/* Hero Tracking Status Card */}
                     <View style={[styles.heroTrackingCard, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#dcfce7' }]}>
+                        {/* Pulse Radar Circle */}
                         <View style={styles.iconPulseWrapper}>
                             <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulseAnim }] }]} />
                             <View style={styles.statusIconCircle}>
-                                <Ionicons name={statusIconName} size={34} color="#ffffff" />
+                                <CenteredIcon name={statusIconName} size={36} color="#ffffff" />
                             </View>
                         </View>
 
+                        {/* Title & ETA Pill */}
                         <Text style={[styles.cardStatusTitle, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
-                            {statusText}
+                            {statusTitle}
                         </Text>
 
                         <View style={styles.etaPillBadge}>
-                            <Ionicons name="time" size={13} color="#056f36" />
+                            <CenteredIcon name="time" size={13} color="#056f36" />
                             <Text style={styles.etaPillText}>{arrivalText}</Text>
                         </View>
 
-                        {/* Modern Segmented Capsule Progress Bar */}
+                        {/* Continuous Track Line with Floating Rider */}
                         {rawStatus !== 'cancelled' && (
-                            <View style={styles.segmentedTrackerContainer}>
-                                {/* Top 4 Segmented Bar Pills */}
-                                <View style={styles.segmentedBarRow}>
-                                    {[0, 1, 2, 3].map((segIdx) => {
-                                        const isCompleted = segIdx <= activeStepIndex;
-                                        const isCurrent = segIdx === activeStepIndex;
-
-                                        return (
-                                            <View key={segIdx} style={styles.segmentedBarItem}>
-                                                <View style={[
-                                                    styles.segmentedBarFill,
-                                                    isCompleted && styles.segmentedBarCompleted,
-                                                    isCurrent && styles.segmentedBarCurrent,
-                                                ]} />
-                                            </View>
-                                        );
-                                    })}
+                            <View style={styles.zomatoProgressWrapper}>
+                                <View style={styles.zomatoTrackBackground}>
+                                    <View style={[styles.zomatoTrackFill, { width: `${progressRatio * 100}%` }]} />
+                                    <View style={[styles.zomatoRiderDotTip, { left: `${Math.min(Math.max(progressRatio * 100, 4), 96)}%` }]}>
+                                        <CenteredIcon name="bicycle" size={12} color="#ffffff" />
+                                    </View>
                                 </View>
 
-                                {/* 4 Step Labels Row with Icons */}
-                                <View style={styles.stepLabelsRow}>
-                                    {stepsInfo.map((step, idx) => {
+                                <View style={styles.zomatoStepsRow}>
+                                    {stepsList.map((step, idx) => {
                                         const isDone = idx <= activeStepIndex;
                                         const isCurrent = idx === activeStepIndex;
 
                                         return (
-                                            <View key={idx} style={styles.stepLabelItem}>
+                                            <View key={idx} style={styles.zomatoStepItem}>
                                                 <View style={[
-                                                    styles.stepIconBadge,
-                                                    isDone && styles.stepIconBadgeDone,
-                                                    isCurrent && styles.stepIconBadgeCurrent
+                                                    styles.zomatoStepCircle,
+                                                    isDone && styles.zomatoStepCircleDone,
+                                                    isCurrent && styles.zomatoStepCircleCurrent
                                                 ]}>
-                                                    <Ionicons
+                                                    <CenteredIcon
                                                         name={step.icon}
-                                                        size={12}
+                                                        size={13}
                                                         color={isDone ? '#ffffff' : '#94a3b8'}
                                                     />
                                                 </View>
                                                 <Text style={[
-                                                    styles.stepLabelText,
-                                                    isDone && styles.stepLabelTextDone,
-                                                    isCurrent && styles.stepLabelTextCurrent
+                                                    styles.zomatoStepLabel,
+                                                    isDone && styles.zomatoStepLabelDone,
+                                                    isCurrent && styles.zomatoStepLabelCurrent
                                                 ]}>
-                                                    {step.name}
+                                                    {step.label}
                                                 </Text>
                                             </View>
                                         );
@@ -387,7 +419,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                     </View>
                 </View>
 
-                {/* Soft Edge Blend Transition Strip where Green meets White */}
+                {/* Soft Gradient Edge Blend */}
                 <View style={{ height: 24, width: '100%', backgroundColor: colors.background }}>
                     <Svg width="100%" height={24} preserveAspectRatio="none">
                         <Defs>
@@ -400,59 +432,41 @@ export default function OrderDetailScreen({ route, navigation }) {
                     </Svg>
                 </View>
 
-                {/* Main Content Details Body */}
+                {/* Content Body */}
                 <View style={styles.contentBody}>
 
-                    {/* Dev Live Status Test Trigger */}
-                    {__DEV__ && (
-                        <TouchableOpacity
-                            style={styles.devTestTriggerBtn}
-                            onPress={simulateNextStatus}
-                            activeOpacity={0.8}
-                        >
-                            <Ionicons name="notifications" size={16} color="#ffffff" />
-                            <Text style={styles.devTestTriggerText}>
-                                ⚡ Test Android Live Delivery Status Pill
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-
-                    {/* Vector Campus Live Route Map Card */}
+                    {/* Vector Campus Route Map Card */}
                     <View style={[styles.vectorMapCard, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]}>
                         <Svg width="100%" height={140} style={{ position: 'absolute' }}>
-                            {/* Grid Map Roads */}
                             <Line x1="0" y1="40" x2="100%" y2="40" stroke={isDarkMode ? '#334155' : '#e2e8f0'} strokeWidth="12" />
                             <Line x1="0" y1="95" x2="100%" y2="95" stroke={isDarkMode ? '#334155' : '#e2e8f0'} strokeWidth="16" />
                             <Line x1="70" y1="0" x2="70" y2="100%" stroke={isDarkMode ? '#334155' : '#e2e8f0'} strokeWidth="14" />
                             <Line x1="240" y1="0" x2="240" y2="100%" stroke={isDarkMode ? '#334155' : '#e2e8f0'} strokeWidth="12" />
-
-                            {/* Active Delivery Green Path */}
                             <Path d="M 40,95 L 140,95 L 140,40 L 280,40" stroke="#056f36" strokeWidth="4" strokeDasharray="6,4" fill="none" />
                         </Svg>
 
-                        {/* Map Pins overlay */}
                         <View style={styles.mapPinShop}>
                             <View style={styles.mapPinIconCircle}>
-                                <Ionicons name="storefront" size={14} color="#056f36" />
+                                <CenteredIcon name="storefront" size={14} color="#056f36" />
                             </View>
-                            <Text style={styles.mapPinText}>{order.Shop?.name || 'Shop'}</Text>
+                            <Text style={styles.mapPinText}>{order.shop?.name || 'Shop'}</Text>
                         </View>
 
                         <View style={styles.mapPinDriver}>
                             <View style={styles.mapPinDriverCircle}>
-                                <Ionicons name="bicycle" size={14} color="#ffffff" />
+                                <CenteredIcon name="bicycle" size={14} color="#ffffff" />
                             </View>
                         </View>
 
                         <View style={styles.mapPinDestination}>
                             <View style={styles.mapPinDestCircle}>
-                                <Ionicons name="location" size={14} color="#ef4444" />
+                                <CenteredIcon name="location" size={14} color="#ef4444" />
                             </View>
                             <Text style={styles.mapPinText}>{mainAddressTitle}</Text>
                         </View>
 
                         <View style={styles.mapOverlayPill}>
-                            <Ionicons name="navigate-circle" size={18} color="#056f36" />
+                            <CenteredIcon name="navigate-circle" size={18} color="#056f36" />
                             <Text style={styles.mapOverlayText}>Live Driver Route • {mainAddressTitle}</Text>
                         </View>
                     </View>
@@ -467,7 +481,11 @@ export default function OrderDetailScreen({ route, navigation }) {
 
                             <View style={styles.riderRow}>
                                 <View style={styles.riderAvatarCircle}>
-                                    <Ionicons name={rider ? "person" : "hourglass-outline"} size={22} color={rider ? "#056f36" : "#94a3b8"} />
+                                    <CenteredIcon
+                                        name={rider ? "person" : "hourglass-outline"}
+                                        size={22}
+                                        color={rider ? "#056f36" : "#94a3b8"}
+                                    />
                                 </View>
                                 <View style={{ flex: 1, paddingRight: 8 }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -490,11 +508,11 @@ export default function OrderDetailScreen({ route, navigation }) {
                                     onPress={() => handleCallRider(rider?.phoneNumber)}
                                     activeOpacity={0.8}
                                 >
-                                    <Ionicons name="call" size={16} color="#ffffff" />
+                                    <CenteredIcon name="call" size={16} color="#ffffff" />
                                 </TouchableOpacity>
                             </View>
 
-                            {/* OTP Delivery Verification Code */}
+                            {/* OTP Delivery Verification Banner */}
                             {order.deliveryOtp && (
                                 <View style={styles.otpCardBox}>
                                     <View style={{ flex: 1 }}>
@@ -509,7 +527,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                         </View>
                     )}
 
-                    {/* Delivery Address Card */}
+                    {/* Delivery Location Card */}
                     <View style={[styles.card, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
                         <View style={styles.cardHeaderRow}>
                             <Ionicons name="location-outline" size={18} color="#056f36" />
@@ -528,132 +546,328 @@ export default function OrderDetailScreen({ route, navigation }) {
                             </Text>
                         </View>
 
-                        {order.items?.map((item, idx) => (
-                            <View key={item.id || idx} style={styles.itemRow}>
-                                <Image
-                                    source={{ uri: resolveImageUrl(item.product?.imageUrl || item.imageUrl) }}
-                                    style={styles.itemThumb}
-                                />
-                                <View style={{ flex: 1, marginLeft: 12 }}>
-                                    <Text style={[styles.itemNameText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
-                                        {item.product?.name || item.name || 'Campus Item'}
-                                    </Text>
-                                    <Text style={styles.itemQtyPriceText}>
-                                        Qty: {item.quantity} • {CONSTANTS.CURRENCY}{parseFloat(item.price || 0).toFixed(2)} each
+                        {order.items?.map((item, idx) => {
+                            const unitPrice = parseFloat(item.priceAtTime || item.price || item.product?.price || 0);
+                            const qty = item.quantity || 1;
+                            const itemTotal = unitPrice * qty;
+
+                            return (
+                                <View key={item.id || idx} style={styles.itemRow}>
+                                    <Image
+                                        source={{ uri: resolveImageUrl(item.product?.imageUrl || item.imageUrl) }}
+                                        style={styles.itemThumb}
+                                    />
+                                    <View style={{ flex: 1, marginLeft: 12 }}>
+                                        <Text style={[styles.itemNameText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                            {item.product?.name || item.name || 'Campus Item'}
+                                        </Text>
+                                        <Text style={styles.itemQtyPriceText}>
+                                            Qty: {qty} • {CONSTANTS.CURRENCY}{unitPrice.toFixed(2)} each
+                                        </Text>
+                                    </View>
+                                    <Text style={[styles.itemTotalPriceText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                        {CONSTANTS.CURRENCY}{itemTotal.toFixed(2)}
                                     </Text>
                                 </View>
-                                <Text style={[styles.itemTotalPriceText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
-                                    {CONSTANTS.CURRENCY}{(parseFloat(item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                                </Text>
-                            </View>
-                        ))}
+                            );
+                        })}
                     </View>
 
-                    {/* Bill & Tax Receipt Card */}
+                    {/* Bill Details Card — matches Checkout bill exactly */}
                     <View style={[styles.card, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
                         <View style={styles.cardHeaderRow}>
                             <Ionicons name="card-outline" size={18} color="#056f36" />
-                            <Text style={[styles.cardHeaderTitle, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>BILL BREAKDOWN</Text>
+                            <Text style={[styles.cardHeaderTitle, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>BILL DETAILS</Text>
                         </View>
 
-                        <View style={styles.billRow}>
-                            <Text style={styles.billLabel}>Item Subtotal</Text>
-                            <Text style={[styles.billValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
-                                {CONSTANTS.CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}
-                            </Text>
-                        </View>
-                        <View style={styles.billRow}>
-                            <Text style={styles.billLabel}>Delivery Fee</Text>
-                            <Text style={[styles.billValue, { color: '#056f36', fontWeight: '900' }]}>FREE</Text>
-                        </View>
-
-                        <View style={styles.billDivider} />
-
-                        <View style={styles.billTotalRow}>
-                            <Text style={[styles.billTotalLabel, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>Total Paid ({order.paymentMethod?.toUpperCase()})</Text>
-                            <Text style={styles.billTotalValue}>
-                                {CONSTANTS.CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}
+                        {/* Item Total */}
+                        <View style={styles.paymentSummaryRow}>
+                            <Text style={styles.paymentLabel}>Item Total</Text>
+                            <Text style={[styles.paymentValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                {CONSTANTS.CURRENCY}{itemSubtotal.toFixed(2)}
                             </Text>
                         </View>
 
-                        {/* View Tax Receipt Button */}
-                        <TouchableOpacity
-                            style={styles.viewReceiptBtn}
-                            onPress={() => setReceiptVisible(true)}
-                            activeOpacity={0.8}
-                        >
-                            <Ionicons name="document-text-outline" size={16} color="#056f36" />
-                            <Text style={styles.viewReceiptBtnText}>View Official Tax Invoice / Receipt</Text>
-                        </TouchableOpacity>
+                        {/* Delivery Fee — CAMPUS FREE */}
+                        <View style={styles.paymentSummaryRow}>
+                            <Text style={styles.paymentLabel}>Delivery Fee</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <View style={styles.campusFreeBadge}>
+                                    <Text style={styles.campusFreeBadgeText}>CAMPUS FREE</Text>
+                                </View>
+                                <Text style={styles.deliveryStruckText}>₹25.00</Text>
+                                <Text style={styles.deliveryFreeText}>FREE</Text>
+                            </View>
+                        </View>
+
+                        {/* Handling Charge */}
+                        <View style={styles.paymentSummaryRow}>
+                            <Text style={styles.paymentLabel}>Handling Charge</Text>
+                            {handlingFee > 0 ? (
+                                <Text style={[styles.paymentValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                    {CONSTANTS.CURRENCY}{handlingFee.toFixed(2)}
+                                </Text>
+                            ) : (
+                                <Text style={styles.deliveryFreeText}>FREE</Text>
+                            )}
+                        </View>
+
+                        {/* Platform Tax */}
+                        {taxes > 0 && (
+                            <View style={styles.paymentSummaryRow}>
+                                <Text style={styles.paymentLabel}>Platform Tax ({config.taxRate}%)</Text>
+                                <Text style={[styles.paymentValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                    {CONSTANTS.CURRENCY}{taxes.toFixed(2)}
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Coupon Discount — only if order had one */}
+                        {order.couponCode && couponDiscount > 0 && (
+                            <View style={styles.paymentSummaryRow}>
+                                <Text style={[styles.paymentLabel, { color: '#056f36' }]}>
+                                    Coupon ({order.couponCode})
+                                </Text>
+                                <Text style={[styles.paymentValue, { color: '#056f36' }]}>
+                                    -{CONSTANTS.CURRENCY}{couponDiscount.toFixed(2)}
+                                </Text>
+                            </View>
+                        )}
+
+                        <View style={styles.summaryDivider} />
+
+                        {/* Total Payable */}
+                        <View style={styles.paymentSummaryRow}>
+                            <View>
+                                <Text style={[styles.totalLabel, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>Total Payable</Text>
+                                <Text style={styles.paymentLabel}>Inclusive of all taxes</Text>
+                            </View>
+                            <Text style={styles.totalValue}>
+                                {CONSTANTS.CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}
+                            </Text>
+                        </View>
+
+                        <View style={{ alignItems: 'center', paddingTop: 10, marginTop: 6, borderTopWidth: 1, borderTopColor: isDarkMode ? '#334155' : '#e6f7ed' }}>
+                            <Text style={{ fontSize: 11, fontWeight: '800', color: '#056f36' }}>Made with ❤️ for Students</Text>
+                        </View>
                     </View>
 
-                    {/* Actions / Cancel Order Button */}
-                    {['placed', 'accepted'].includes(order.status) && (
-                        <TouchableOpacity
-                            style={styles.cancelOrderBtn}
-                            onPress={handleCancelOrder}
-                            disabled={cancelLoading}
-                            activeOpacity={0.85}
-                        >
-                            {cancelLoading ? (
-                                <ActivityIndicator color="#ef4444" />
-                            ) : (
-                                <>
-                                    <Ionicons name="close-circle-outline" size={18} color="#ef4444" style={{ marginRight: 6 }} />
-                                    <Text style={styles.cancelOrderBtnText}>Cancel Order</Text>
-                                </>
-                            )}
-                        </TouchableOpacity>
+                    {/* Actions / Cancel Order Card Strip */}
+                    {['placed', 'accepted'].includes((order.status || '').toLowerCase()) && (
+                        <View style={[
+                            styles.cancelCardStrip,
+                            {
+                                backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
+                                borderColor: isDarkMode ? '#334155' : '#fee2e2'
+                            }
+                        ]}>
+                            <View style={{ flex: 1, paddingRight: 10 }}>
+                                <Text style={[styles.cancelCardTitle, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                    Need to cancel?
+                                </Text>
+                                <Text style={styles.cancelCardSub}>
+                                    Free cancellation before kitchen prepares
+                                </Text>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.cancelActionBtn}
+                                onPress={handleCancelOrder}
+                                disabled={cancelLoading}
+                                activeOpacity={0.8}
+                            >
+                                {cancelLoading ? (
+                                    <ActivityIndicator color="#dc2626" size="small" />
+                                ) : (
+                                    <Text style={styles.cancelActionBtnText}>Cancel Order</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     )}
                 </View>
             </ScrollView>
 
             {/* Receipt Modal */}
             <Modal
-                transparent={true}
                 visible={receiptVisible}
-                animationType="fade"
+                animationType="slide"
+                transparent
                 onRequestClose={() => setReceiptVisible(false)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.receiptContainer}>
-                        <View style={styles.receiptTopHeader}>
-                            <View style={styles.receiptBrandRow}>
-                                <Text style={styles.receiptBrand}>ZIP'IT BY LARO</Text>
-                                <Ionicons name="school" size={18} color="#056f36" />
+                <View style={styles.receiptOverlay}>
+                    <TouchableOpacity
+                        style={styles.receiptDismissArea}
+                        activeOpacity={1}
+                        onPress={() => setReceiptVisible(false)}
+                    />
+
+                    <View style={[styles.receiptSheet, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff' }]}>
+                        {/* Sheet handle */}
+                        <View style={styles.receiptHandle} />
+
+                        {/* Receipt Header */}
+                        <View style={styles.receiptLogoRow}>
+                            <View style={styles.receiptLogoBadge}>
+                                <Text style={styles.receiptLogoText}>Z</Text>
                             </View>
-                            <Text style={styles.receiptType}>TAX INVOICE / RECEIPT</Text>
+                            <View style={{ flex: 1, marginLeft: 12 }}>
+                                <Text style={[styles.receiptBrandName, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>Laro</Text>
+                                <Text style={styles.receiptBrandSub}>Official Digital Receipt</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setReceiptVisible(false)} style={styles.receiptCloseBtn}>
+                                <CenteredIcon name="close" size={18} color="#64748b" />
+                            </TouchableOpacity>
                         </View>
 
-                        <ScrollView contentContainerStyle={styles.receiptScrollContent} showsVerticalScrollIndicator={false}>
-                            <Text style={styles.receiptShopName}>{order.Shop?.name || 'Laro Store'}</Text>
+                        {/* Dashed divider */}
+                        <View style={[styles.receiptDash, { borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]} />
 
-                            <View style={styles.receiptDivider} />
-
-                            <View style={styles.receiptMetaRow}>
-                                <Text style={styles.receiptMetaLabel}>Order ID:</Text>
-                                <Text style={styles.receiptMetaValue}>#{order.id.split('-')[0].toUpperCase()}</Text>
+                        {/* Order meta */}
+                        <View style={styles.receiptMetaRow}>
+                            <View>
+                                <Text style={styles.receiptMetaLabel}>ORDER ID</Text>
+                                <Text style={[styles.receiptMetaValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>#{order.id.split('-')[0].toUpperCase()}</Text>
                             </View>
-                            <View style={styles.receiptMetaRow}>
-                                <Text style={styles.receiptMetaLabel}>Date & Time:</Text>
-                                <Text style={styles.receiptMetaValue}>{new Date(order.createdAt).toLocaleDateString('en-IN')} {formatOrderTime(order.createdAt)}</Text>
+                            <View style={{ alignItems: 'flex-end' }}>
+                                <Text style={styles.receiptMetaLabel}>DATE</Text>
+                                <Text style={[styles.receiptMetaValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                    {new Date(order.createdAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </Text>
                             </View>
-                            <View style={styles.receiptMetaRow}>
-                                <Text style={styles.receiptMetaLabel}>Payment Method:</Text>
-                                <Text style={styles.receiptMetaValue}>{order.paymentMethod?.toUpperCase()}</Text>
+                        </View>
+
+                        <View style={styles.receiptMetaRow}>
+                            <View>
+                                <Text style={styles.receiptMetaLabel}>FROM</Text>
+                                <Text style={[styles.receiptMetaValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>{order.shop?.name || order.shopName}</Text>
                             </View>
-
-                            <View style={styles.receiptDivider} />
-
-                            <View style={styles.receiptGrandTotalRow}>
-                                <Text style={styles.receiptGrandTotalLabel}>TOTAL PAID:</Text>
-                                <Text style={styles.receiptGrandTotalValue}>{CONSTANTS.CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}</Text>
+                            <View style={{ alignItems: 'flex-end' }}>
+                                <Text style={styles.receiptMetaLabel}>STATUS</Text>
+                                <View style={[
+                                    styles.receiptStatusPill,
+                                    { backgroundColor: order.status === 'delivered' ? '#dcfce7' : order.status === 'cancelled' ? '#fef2f2' : '#fef3c7' }
+                                ]}>
+                                    <Text style={[
+                                        styles.receiptStatusText,
+                                        { color: order.status === 'delivered' ? '#056f36' : order.status === 'cancelled' ? '#dc2626' : '#d97706' }
+                                    ]}>
+                                        {(order.status || 'placed').toUpperCase()}
+                                    </Text>
+                                </View>
                             </View>
-                        </ScrollView>
+                        </View>
 
-                        <TouchableOpacity style={styles.closeReceiptBtn} onPress={() => setReceiptVisible(false)}>
-                            <Text style={styles.closeReceiptBtnText}>Close Receipt</Text>
-                        </TouchableOpacity>
+                        {/* Dashed divider */}
+                        <View style={[styles.receiptDash, { borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]} />
+
+                        {/* Line items */}
+                        <Text style={[styles.receiptSectionTitle, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>ITEMS ORDERED</Text>
+                        {order.items?.map((item, idx) => {
+                            const price = parseFloat(item.priceAtTime || item.price || item.product?.price || 0);
+                            const qty = item.quantity || 1;
+                            return (
+                                <View key={idx} style={styles.receiptItemRow}>
+                                    <View style={styles.receiptQtyBadge}>
+                                        <Text style={styles.receiptQtyText}>{qty}x</Text>
+                                    </View>
+                                    <Text style={[styles.receiptItemName, { color: isDarkMode ? '#ffffff' : '#0f172a' }]} numberOfLines={1}>
+                                        {item.product?.name || item.name || 'Item'}
+                                    </Text>
+                                    <Text style={[styles.receiptItemPrice, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                        {CONSTANTS.CURRENCY}{(price * qty).toFixed(2)}
+                                    </Text>
+                                </View>
+                            );
+                        })}
+
+                        {/* Dashed divider */}
+                        <View style={[styles.receiptDash, { borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]} />
+
+                        {/* Subtotals — matches checkout bill exactly */}
+                        <View style={styles.receiptSubRow}>
+                            <Text style={styles.receiptSubLabel}>Item Total</Text>
+                            <Text style={[styles.receiptSubValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                {CONSTANTS.CURRENCY}{itemSubtotal.toFixed(2)}
+                            </Text>
+                        </View>
+                        <View style={styles.receiptSubRow}>
+                            <Text style={styles.receiptSubLabel}>Delivery Fee</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <Text style={styles.deliveryStruckText}>₹25.00</Text>
+                                <Text style={styles.deliveryFreeText}>FREE</Text>
+                            </View>
+                        </View>
+                        <View style={styles.receiptSubRow}>
+                            <Text style={styles.receiptSubLabel}>Handling Charge</Text>
+                            {handlingFee > 0 ? (
+                                <Text style={[styles.receiptSubValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                    {CONSTANTS.CURRENCY}{handlingFee.toFixed(2)}
+                                </Text>
+                            ) : (
+                                <Text style={styles.receiptFreeChip}>FREE</Text>
+                            )}
+                        </View>
+                        {taxes > 0 && (
+                            <View style={styles.receiptSubRow}>
+                                <Text style={styles.receiptSubLabel}>Platform Tax ({config.taxRate}%)</Text>
+                                <Text style={[styles.receiptSubValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                    {CONSTANTS.CURRENCY}{taxes.toFixed(2)}
+                                </Text>
+                            </View>
+                        )}
+                        {order.couponCode && couponDiscount > 0 && (
+                            <View style={styles.receiptSubRow}>
+                                <Text style={[styles.receiptSubLabel, { color: '#056f36' }]}>Coupon ({order.couponCode})</Text>
+                                <Text style={[styles.receiptSubValue, { color: '#056f36' }]}>-{CONSTANTS.CURRENCY}{couponDiscount.toFixed(2)}</Text>
+                            </View>
+                        )}
+
+                        {/* Dashed divider */}
+                        <View style={[styles.receiptDash, { borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]} />
+
+                        {/* Grand total */}
+                        <View style={styles.receiptTotalRow}>
+                            <View>
+                                <Text style={[styles.receiptTotalLabel, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>Total Payable</Text>
+                                <Text style={styles.receiptSubLabel}>Inclusive of all taxes</Text>
+                            </View>
+                            <Text style={styles.receiptTotalValue}>
+                                {CONSTANTS.CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}
+                            </Text>
+                        </View>
+
+                        {/* Payment method */}
+                        <View style={[styles.receiptPaymentRow, { backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc', borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]}>
+                            <CenteredIcon
+                                name={order.paymentMethod === 'laro_coins' ? 'diamond' : order.paymentMethod === 'cod' ? 'cash' : 'card'}
+                                size={16}
+                                color={order.paymentMethod === 'cod' ? '#d97706' : '#056f36'}
+                            />
+                            <Text style={[styles.receiptPaymentText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                {order.paymentMethod === 'cod' ? 'Cash on Delivery' : order.paymentMethod === 'laro_coins' ? 'Laro Coins' : 'Online Payment'}
+                            </Text>
+                            {order.paymentMethod === 'cod' ? (
+                                <Text style={[styles.receiptPaymentBadge, { color: '#d97706', backgroundColor: '#fef3c7' }]}>PAY ON DELIVERY</Text>
+                            ) : (
+                                <Text style={styles.receiptPaymentBadge}>PAID</Text>
+                            )}
+                        </View>
+
+                        {/* Footer barcode-style strip */}
+                        <View style={styles.receiptBarcode}>
+                            {Array.from({ length: 32 }).map((_, i) => (
+                                <View
+                                    key={i}
+                                    style={[
+                                        styles.receiptBar,
+                                        { height: [8, 14, 10, 18, 12, 8, 16, 10][i % 8], backgroundColor: isDarkMode ? '#334155' : '#0f172a' }
+                                    ]}
+                                />
+                            ))}
+                        </View>
+                        <Text style={[styles.receiptFooterText, { color: isDarkMode ? '#475569' : '#94a3b8' }]}>
+                            Thank you for ordering with Laro 🎉
+                        </Text>
                     </View>
                 </View>
             </Modal>
@@ -682,7 +896,7 @@ const styles = StyleSheet.create({
     },
     center: {
         flex: 1,
-        justify: 'center',
+        justifyContent: 'center',
         alignItems: 'center',
     },
     backBtnWrapper: {
@@ -692,35 +906,31 @@ const styles = StyleSheet.create({
         backgroundColor: '#ffffff',
         borderRadius: 12,
     },
+    fixedHeaderBar: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        zIndex: 10,
+    },
+    fixedHeaderTitle: {
+        fontSize: 17,
+        fontWeight: '900',
+        letterSpacing: -0.3,
+    },
     heroHeaderSection: {
         paddingHorizontal: 16,
         paddingBottom: 20,
     },
-    topHeaderNavRow: {
-        width: '100%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justify: 'space-between',
-        marginBottom: 14,
-    },
     backBtnCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 38,
+        height: 38,
+        borderRadius: 19,
         alignItems: 'center',
-        justify: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-        elevation: 2,
-    },
-    callBtnCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
@@ -731,20 +941,20 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#dcfce7',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
-        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 14,
+        gap: 4,
     },
     orderIdBadgeText: {
         color: '#056f36',
-        fontSize: 12,
+        fontSize: 11.5,
         fontWeight: '900',
-        letterSpacing: 1,
+        letterSpacing: 0.8,
     },
     heroTextWrapper: {
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         marginBottom: 18,
     },
     heroTitleText: {
@@ -754,18 +964,16 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     heroCalligraphySubText: {
-        fontSize: 19,
-        fontFamily: Platform.select({ ios: 'Snell Roundhand', android: 'serif', default: 'serif' }),
-        fontStyle: 'italic',
+        fontSize: 14,
+        fontFamily: 'DancingScript_700Bold',
         color: '#056f36',
-        marginTop: 4,
+        marginTop: 3,
         textAlign: 'center',
-        fontWeight: '700',
-        letterSpacing: 0.3,
+        letterSpacing: 0.4,
     },
     curvedSwooshWrapper: {
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         marginTop: 4,
     },
     heroTrackingCard: {
@@ -783,7 +991,7 @@ const styles = StyleSheet.create({
     iconPulseWrapper: {
         position: 'relative',
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         width: 84,
         height: 84,
         marginBottom: 12,
@@ -797,12 +1005,12 @@ const styles = StyleSheet.create({
         opacity: 0.6,
     },
     statusIconCircle: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
+        width: 72,
+        height: 72,
+        borderRadius: 36,
         backgroundColor: '#056f36',
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         shadowColor: '#056f36',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.25,
@@ -831,91 +1039,83 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '800',
     },
-    segmentedTrackerContainer: {
+    zomatoProgressWrapper: {
         width: '100%',
         marginTop: 4,
     },
-    segmentedBarRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        marginBottom: 12,
-    },
-    segmentedBarItem: {
-        flex: 1,
+    zomatoTrackBackground: {
+        width: '100%',
         height: 8,
         backgroundColor: '#e2e8f0',
         borderRadius: 4,
-        overflow: 'hidden',
+        position: 'relative',
+        marginBottom: 16,
     },
-    segmentedBarFill: {
-        width: '100%',
+    zomatoTrackFill: {
         height: '100%',
+        backgroundColor: '#056f36',
         borderRadius: 4,
     },
-    segmentedBarCompleted: {
+    zomatoRiderDotTip: {
+        position: 'absolute',
+        top: -7,
+        marginLeft: -11,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
         backgroundColor: '#056f36',
-    },
-    segmentedBarCurrent: {
-        backgroundColor: '#16a34a',
-    },
-    stepLabelsRow: {
-        flexDirection: 'row',
         alignItems: 'center',
-        justify: 'space-between',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        elevation: 4,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
     },
-    stepLabelItem: {
+    zomatoStepsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    zomatoStepItem: {
         alignItems: 'center',
         flex: 1,
     },
-    stepIconBadge: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+    zomatoStepCircle: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
         backgroundColor: '#f1f5f9',
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         marginBottom: 4,
     },
-    stepIconBadgeDone: {
+    zomatoStepCircleDone: {
         backgroundColor: '#056f36',
     },
-    stepIconBadgeCurrent: {
+    zomatoStepCircleCurrent: {
         backgroundColor: '#16a34a',
         borderWidth: 2,
         borderColor: '#bbf7d0',
     },
-    stepLabelText: {
+    zomatoStepLabel: {
         fontSize: 10.5,
         fontWeight: '700',
         color: '#94a3b8',
+        textAlign: 'center',
     },
-    stepLabelTextDone: {
+    zomatoStepLabelDone: {
         color: '#056f36',
         fontWeight: '900',
     },
-    stepLabelTextCurrent: {
+    zomatoStepLabelCurrent: {
         color: '#0f172a',
         fontWeight: '900',
     },
     contentBody: {
         paddingHorizontal: 16,
-    },
-    devTestTriggerBtn: {
-        backgroundColor: '#056f36',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 16,
-        alignItems: 'center',
-        marginBottom: 16,
-        flexDirection: 'row',
-        justify: 'center',
-        gap: 6,
-    },
-    devTestTriggerText: {
-        color: '#ffffff',
-        fontWeight: '800',
-        fontSize: 13,
     },
     vectorMapCard: {
         height: 140,
@@ -924,7 +1124,7 @@ const styles = StyleSheet.create({
         position: 'relative',
         marginBottom: 16,
         borderWidth: 1,
-        justify: 'center',
+        justifyContent: 'center',
     },
     mapPinShop: {
         position: 'absolute',
@@ -940,7 +1140,7 @@ const styles = StyleSheet.create({
         borderRadius: 13,
         backgroundColor: '#dcfce7',
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         borderWidth: 1,
         borderColor: '#056f36',
     },
@@ -955,7 +1155,7 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         backgroundColor: '#056f36',
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         borderWidth: 2,
         borderColor: '#ffffff',
         elevation: 4,
@@ -974,7 +1174,7 @@ const styles = StyleSheet.create({
         borderRadius: 13,
         backgroundColor: '#fef2f2',
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         borderWidth: 1,
         borderColor: '#ef4444',
     },
@@ -1027,7 +1227,7 @@ const styles = StyleSheet.create({
     riderRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justify: 'space-between',
+        justifyContent: 'space-between',
     },
     riderAvatarCircle: {
         width: 44,
@@ -1035,7 +1235,7 @@ const styles = StyleSheet.create({
         borderRadius: 22,
         backgroundColor: '#dcfce7',
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         marginRight: 12,
     },
     riderNameText: {
@@ -1067,12 +1267,12 @@ const styles = StyleSheet.create({
         borderRadius: 19,
         backgroundColor: '#056f36',
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
     },
     otpCardBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        justify: 'space-between',
+        justifyContent: 'space-between',
         backgroundColor: '#f0fdf4',
         padding: 12,
         borderRadius: 16,
@@ -1093,15 +1293,20 @@ const styles = StyleSheet.create({
     },
     otpPill: {
         backgroundColor: '#056f36',
-        paddingHorizontal: 14,
-        paddingVertical: 6,
-        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 14,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
     },
     otpText: {
         color: '#ffffff',
-        fontSize: 16,
+        fontSize: 22,
         fontWeight: '900',
-        letterSpacing: 2,
+        letterSpacing: 3,
     },
     addressTitleText: {
         fontSize: 15,
@@ -1138,158 +1343,313 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '900',
     },
-    billRow: {
+    paymentSummaryRow: {
         flexDirection: 'row',
-        justify: 'space-between',
-        marginBottom: 8,
-    },
-    billLabel: {
-        fontSize: 13.5,
-        color: '#64748b',
-    },
-    billValue: {
-        fontSize: 13.5,
-        fontWeight: '700',
-    },
-    billDivider: {
-        height: 1,
-        backgroundColor: '#e2e8f0',
-        marginVertical: 10,
-    },
-    billTotalRow: {
-        flexDirection: 'row',
-        justify: 'space-between',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 14,
+        marginVertical: 6,
     },
-    billTotalLabel: {
-        fontSize: 14.5,
-        fontWeight: '900',
-    },
-    billTotalValue: {
-        fontSize: 18,
-        fontWeight: '900',
-        color: '#056f36',
-    },
-    viewReceiptBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justify: 'center',
-        backgroundColor: '#f0fdf4',
-        paddingVertical: 12,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: '#bbf7d0',
-        gap: 6,
-    },
-    viewReceiptBtnText: {
-        color: '#056f36',
-        fontSize: 13,
-        fontWeight: '800',
-    },
-    cancelOrderBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justify: 'center',
-        backgroundColor: '#fef2f2',
-        paddingVertical: 14,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#fecaca',
-    },
-    cancelOrderBtnText: {
-        color: '#ef4444',
+    paymentLabel: {
         fontSize: 14,
+        color: '#64748b',
+        fontWeight: '700',
+    },
+    paymentValue: {
+        fontSize: 14,
+        color: '#0f172a',
         fontWeight: '800',
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justify: 'center',
-        alignItems: 'center',
-        padding: 20,
+    deliveryStruckText: {
+        fontSize: 12,
+        color: '#94a3b8',
+        textDecorationLine: 'line-through',
+        fontWeight: '600',
     },
-    receiptContainer: {
-        width: '100%',
-        backgroundColor: '#ffffff',
-        borderRadius: 24,
-        padding: 20,
-        maxHeight: '80%',
+    campusFreeBadge: {
+        backgroundColor: '#dcfce7',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#86efac',
     },
-    receiptTopHeader: {
-        alignItems: 'center',
-        marginBottom: 14,
-    },
-    receiptBrandRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    receiptBrand: {
-        fontSize: 16,
+    campusFreeBadgeText: {
+        fontSize: 9,
         fontWeight: '900',
         color: '#056f36',
-        letterSpacing: 1,
+        letterSpacing: 0.5,
     },
-    receiptType: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: '#64748b',
-        marginTop: 2,
+    deliveryFreeText: {
+        fontSize: 13,
+        color: '#056f36',
+        fontWeight: '900',
     },
-    receiptScrollContent: {
-        paddingVertical: 10,
-    },
-    receiptShopName: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: '#0f172a',
-        textAlign: 'center',
-    },
-    receiptDivider: {
+    summaryDivider: {
         height: 1,
         backgroundColor: '#e2e8f0',
         marginVertical: 12,
     },
-    receiptMetaRow: {
-        flexDirection: 'row',
-        justify: 'space-between',
-        marginBottom: 6,
-    },
-    receiptMetaLabel: {
-        fontSize: 12.5,
-        color: '#64748b',
-    },
-    receiptMetaValue: {
-        fontSize: 12.5,
-        fontWeight: '700',
-        color: '#0f172a',
-    },
-    receiptGrandTotalRow: {
-        flexDirection: 'row',
-        justify: 'space-between',
-        alignItems: 'center',
-    },
-    receiptGrandTotalLabel: {
-        fontSize: 15,
+    totalLabel: {
+        fontSize: 16,
         fontWeight: '900',
         color: '#0f172a',
     },
-    receiptGrandTotalValue: {
+    totalValue: {
         fontSize: 18,
         fontWeight: '900',
         color: '#056f36',
     },
-    closeReceiptBtn: {
-        backgroundColor: '#056f36',
-        paddingVertical: 12,
-        borderRadius: 14,
+    cancelCardStrip: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 14,
+        justifyContent: 'space-between',
+        padding: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        marginTop: 6,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        elevation: 2,
     },
-    closeReceiptBtnText: {
+    cancelCardTitle: {
+        fontSize: 14,
+        fontWeight: '900',
+    },
+    cancelCardSub: {
+        fontSize: 11.5,
+        color: '#64748b',
+        marginTop: 2,
+    },
+    cancelActionBtn: {
+        backgroundColor: '#fef2f2',
+        paddingVertical: 9,
+        paddingHorizontal: 14,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: '#fecaca',
+    },
+    cancelActionBtnText: {
+        color: '#dc2626',
+        fontSize: 12.5,
+        fontWeight: '900',
+    },
+    receiptHeaderBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#dcfce7',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 14,
+        gap: 5,
+    },
+    receiptHeaderBtnText: {
+        color: '#056f36',
+        fontSize: 12,
+        fontWeight: '900',
+    },
+    receiptOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    receiptDismissArea: {
+        flex: 1,
+    },
+    receiptSheet: {
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingHorizontal: 22,
+        paddingBottom: 36,
+        paddingTop: 12,
+        maxHeight: '90%',
+    },
+    receiptHandle: {
+        width: 40,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#e2e8f0',
+        alignSelf: 'center',
+        marginBottom: 20,
+    },
+    receiptLogoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    receiptLogoBadge: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        backgroundColor: '#056f36',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    receiptLogoText: {
         color: '#ffffff',
+        fontSize: 22,
+        fontWeight: '900',
+    },
+    receiptBrandName: {
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    receiptBrandSub: {
+        fontSize: 11.5,
+        color: '#64748b',
+        marginTop: 2,
+    },
+    receiptCloseBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#f1f5f9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    receiptDash: {
+        borderStyle: 'dashed',
+        borderTopWidth: 1.5,
+        marginVertical: 14,
+    },
+    receiptMetaRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+    },
+    receiptMetaLabel: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#94a3b8',
+        letterSpacing: 1,
+        marginBottom: 3,
+    },
+    receiptMetaValue: {
         fontSize: 14,
         fontWeight: '800',
     },
+    receiptStatusPill: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+    },
+    receiptStatusText: {
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 0.5,
+    },
+    receiptSectionTitle: {
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
+        marginBottom: 10,
+    },
+    receiptItemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 8,
+    },
+    receiptQtyBadge: {
+        backgroundColor: '#f0fdf4',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#bbf7d0',
+    },
+    receiptQtyText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#056f36',
+    },
+    receiptItemName: {
+        flex: 1,
+        fontSize: 13.5,
+        fontWeight: '700',
+    },
+    receiptItemPrice: {
+        fontSize: 13.5,
+        fontWeight: '900',
+    },
+    receiptSubRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    receiptSubLabel: {
+        fontSize: 13,
+        color: '#64748b',
+        fontWeight: '600',
+    },
+    receiptSubValue: {
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    receiptFreeChip: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#056f36',
+    },
+    receiptTotalRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 14,
+    },
+    receiptTotalLabel: {
+        fontSize: 15,
+        fontWeight: '900',
+    },
+    receiptTotalValue: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: '#056f36',
+    },
+    receiptPaymentRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        padding: 12,
+        borderRadius: 14,
+        borderWidth: 1,
+        marginBottom: 20,
+    },
+    receiptPaymentText: {
+        flex: 1,
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    receiptPaymentBadge: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#056f36',
+        backgroundColor: '#dcfce7',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+    },
+    receiptBarcode: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        gap: 3,
+        marginBottom: 12,
+    },
+    receiptBar: {
+        width: 3,
+        borderRadius: 1.5,
+    },
+    receiptFooterText: {
+        textAlign: 'center',
+        fontSize: 12,
+        fontWeight: '600',
+    },
 });
+
+
+

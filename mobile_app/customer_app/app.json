@@ -38,7 +38,8 @@
           "icon": "./assets/notification.png",
           "color": "#006d33"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {
