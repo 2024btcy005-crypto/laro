@@ -3,16 +3,25 @@ import axios from 'axios';
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://laro.onrender.com/api';
 
 export const resolveImageUrl = (url) => {
-    if (!url) return 'https://via.placeholder.com/150?text=Laro';
-    if (url.startsWith('http')) return url;
+    const DEFAULT_PLACEHOLDER = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80';
+    if (!url || typeof url !== 'string' || url.trim() === '') {
+        return DEFAULT_PLACEHOLDER;
+    }
 
-    // Normalize slashes (especially for Windows-style paths)
-    const normalizedUrl = url.replace(/\\/g, '/');
-
-    // Remove /api from end of API_BASE_URL to get server root
+    let normalizedUrl = url.trim().replace(/\\/g, '/');
     const serverRoot = API_BASE_URL.replace(/\/api$/, '');
 
-    // Ensure no double slashes when joining
+    if (normalizedUrl.includes('localhost') || normalizedUrl.includes('127.0.0.1')) {
+        normalizedUrl = normalizedUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1):\d+/, serverRoot);
+    }
+
+    if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
+        if (normalizedUrl.startsWith('http://images.unsplash.com')) {
+            return normalizedUrl.replace('http://', 'https://');
+        }
+        return normalizedUrl;
+    }
+
     const separator = normalizedUrl.startsWith('/') ? '' : '/';
     return `${serverRoot}${separator}${normalizedUrl}`;
 };
