@@ -41,13 +41,13 @@ export default function OrderDetailScreen({ route, navigation }) {
         Animated.loop(
             Animated.sequence([
                 Animated.timing(pulseAnim, {
-                    toValue: 1.12,
-                    duration: 1000,
+                    toValue: 1.15,
+                    duration: 1200,
                     useNativeDriver: true,
                 }),
                 Animated.timing(pulseAnim, {
                     toValue: 1,
-                    duration: 1000,
+                    duration: 1200,
                     useNativeDriver: true,
                 })
             ])
@@ -255,6 +255,12 @@ export default function OrderDetailScreen({ route, navigation }) {
             >
                 {/* Top Section Hero Backdrop (Matching Home & Food Screen) */}
                 <View style={[styles.heroHeaderSection, { backgroundColor: heroBgColor, paddingTop: Math.max(insets.top, 16) + 8 }]}>
+                    {/* Brand Pill */}
+                    <View style={styles.brandTagPill}>
+                        <Ionicons name="flash" size={12} color="#056f36" />
+                        <Text style={styles.brandTagText}>LARO • LIVE ORDER TRACKING</Text>
+                    </View>
+
                     {/* Navigation Header Row */}
                     <View style={styles.topHeaderNavRow}>
                         <TouchableOpacity
@@ -282,17 +288,17 @@ export default function OrderDetailScreen({ route, navigation }) {
                     {/* Main Title & Calligraphy Subtitle with Swoosh */}
                     <View style={styles.heroTextWrapper}>
                         <Text style={[styles.heroTitleText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
-                            LIVE ORDER TRACKING
+                            {statusText.toUpperCase()}
                         </Text>
                         <Text style={styles.heroCalligraphySubText}>
-                            Freshly Prepared & Delivered to Your Hostel
+                            Freshly Prepared & Delivered to Your Doorstep
                         </Text>
                         <View style={styles.curvedSwooshWrapper}>
-                            <Svg width={180} height={15} viewBox="0 0 180 15" fill="none">
+                            <Svg width={190} height={16} viewBox="0 0 190 16" fill="none">
                                 <Path
-                                    d="M 4,5 Q 90,1 175,6 C 181,7 177,13 150,13"
+                                    d="M 4,6 Q 95,1 185,7 C 191,8 187,14 160,14"
                                     stroke="#056f36"
-                                    strokeWidth={2.2}
+                                    strokeWidth={2.4}
                                     strokeLinecap="round"
                                 />
                             </Svg>
@@ -301,12 +307,17 @@ export default function OrderDetailScreen({ route, navigation }) {
 
                     {/* Hero Tracking Status Card */}
                     <View style={[styles.heroTrackingCard, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#dcfce7' }]}>
-                        <Animated.View style={[styles.statusIconCircle, { transform: [{ scale: pulseAnim }] }]}>
-                            <Ionicons name={statusIconName} size={36} color="#056f36" />
-                        </Animated.View>
+                        <View style={styles.iconPulseWrapper}>
+                            <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulseAnim }] }]} />
+                            <View style={styles.statusIconCircle}>
+                                <Ionicons name={statusIconName} size={36} color="#ffffff" />
+                            </View>
+                        </View>
 
-                        <Text style={[styles.statusTitleText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>{statusText}</Text>
-                        <Text style={styles.arrivalSubtitleText}>{arrivalText}</Text>
+                        <View style={styles.etaPillBadge}>
+                            <Ionicons name="time" size={14} color="#056f36" />
+                            <Text style={styles.etaPillText}>{arrivalText}</Text>
+                        </View>
 
                         {/* 4-Step Progress Tracker */}
                         {order.status !== 'cancelled' && (
@@ -372,6 +383,18 @@ export default function OrderDetailScreen({ route, navigation }) {
                         </TouchableOpacity>
                     )}
 
+                    {/* Live Delivery Map Card Preview */}
+                    <View style={[styles.mapCard, { borderColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
+                        <Image
+                            source={{ uri: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&q=80' }}
+                            style={styles.mapImage}
+                        />
+                        <View style={styles.mapOverlayPill}>
+                            <Ionicons name="navigate-circle" size={20} color="#056f36" />
+                            <Text style={styles.mapOverlayText}>Live Driver Route • {mainAddressTitle}</Text>
+                        </View>
+                    </View>
+
                     {/* Delivery Partner Card */}
                     {!['delivered', 'cancelled'].includes(order.status) && (
                         <View style={[styles.card, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
@@ -385,11 +408,19 @@ export default function OrderDetailScreen({ route, navigation }) {
                                     <Ionicons name={rider ? "person" : "hourglass-outline"} size={22} color={rider ? "#056f36" : "#94a3b8"} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={[styles.riderNameText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
-                                        {rider ? rider.name : 'Assigning Campus Rider...'}
-                                    </Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <Text style={[styles.riderNameText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                            {rider ? rider.name : 'Assigning Campus Rider...'}
+                                        </Text>
+                                        {rider && (
+                                            <View style={styles.ratingBadge}>
+                                                <Ionicons name="star" size={10} color="#f59e0b" />
+                                                <Text style={styles.ratingText}>4.9</Text>
+                                            </View>
+                                        )}
+                                    </View>
                                     <Text style={styles.riderSubText}>
-                                        {rider ? 'Laro Express Partner' : 'Finding nearest driver near campus'}
+                                        {rider ? 'Laro Express Partner • 140+ Deliveries' : 'Finding nearest driver near campus'}
                                     </Text>
                                 </View>
                                 <TouchableOpacity
@@ -446,7 +477,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                                         {item.product?.name || item.name || 'Campus Item'}
                                     </Text>
                                     <Text style={styles.itemQtyPriceText}>
-                                        {item.quantity} x {CONSTANTS.CURRENCY}{parseFloat(item.price || 0).toFixed(2)}
+                                        Qty: {item.quantity} • {CONSTANTS.CURRENCY}{parseFloat(item.price || 0).toFixed(2)} each
                                     </Text>
                                 </View>
                                 <Text style={[styles.itemTotalPriceText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
@@ -464,7 +495,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                         </View>
 
                         <View style={styles.billRow}>
-                            <Text style={styles.billLabel}>Item Total</Text>
+                            <Text style={styles.billLabel}>Item Subtotal</Text>
                             <Text style={[styles.billValue, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
                                 {CONSTANTS.CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}
                             </Text>
@@ -589,7 +620,7 @@ const styles = StyleSheet.create({
     },
     center: {
         flex: 1,
-        justify: 'center',
+        justifyContent: 'center',
         alignItems: 'center',
     },
     backBtnWrapper: {
@@ -603,11 +634,28 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingBottom: 20,
     },
+    brandTagPill: {
+        alignSelf: 'center',
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#dcfce7',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+        gap: 4,
+        marginBottom: 12,
+    },
+    brandTagText: {
+        fontSize: 10.5,
+        fontWeight: '900',
+        color: '#056f36',
+        letterSpacing: 1.2,
+    },
     topHeaderNavRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 16,
+        justify: 'space-between',
+        marginBottom: 14,
     },
     backBtnCircle: {
         width: 42,
@@ -637,7 +685,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#dcfce7',
-        paddingHorizontal: 12,
+        paddingHorizontal: 14,
         paddingVertical: 6,
         borderRadius: 16,
         gap: 6,
@@ -654,13 +702,13 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     heroTitleText: {
-        fontSize: 26,
+        fontSize: 24,
         fontWeight: '900',
-        letterSpacing: -0.6,
+        letterSpacing: -0.5,
         textAlign: 'center',
     },
     heroCalligraphySubText: {
-        fontSize: 22,
+        fontSize: 21,
         fontFamily: Platform.select({ ios: 'Snell Roundhand', android: 'cursive', default: 'cursive' }),
         color: '#056f36',
         marginTop: 4,
@@ -674,52 +722,66 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     heroTrackingCard: {
-        borderRadius: 24,
+        borderRadius: 26,
         padding: 22,
         alignItems: 'center',
         borderWidth: 1.5,
         shadowColor: '#056f36',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.08,
-        shadowRadius: 12,
+        shadowRadius: 14,
         elevation: 4,
-        marginHorizontal: 4,
+        marginHorizontal: 2,
     },
-    statusIconCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#dcfce7',
+    iconPulseWrapper: {
+        position: 'relative',
         alignItems: 'center',
         justify: 'center',
         marginBottom: 14,
+    },
+    pulseRing: {
+        position: 'absolute',
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        backgroundColor: '#bbf7d0',
+        opacity: 0.5,
+    },
+    statusIconCircle: {
+        width: 76,
+        height: 76,
+        borderRadius: 38,
+        backgroundColor: '#056f36',
+        alignItems: 'center',
+        justify: 'center',
         shadowColor: '#056f36',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 6,
     },
-    statusTitleText: {
-        fontSize: 22,
-        fontWeight: '900',
-        textAlign: 'center',
-        letterSpacing: -0.5,
-    },
-    arrivalSubtitleText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#056f36',
-        marginTop: 4,
+    etaPillBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#e6f7ed',
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 16,
+        gap: 6,
         marginBottom: 20,
+    },
+    etaPillText: {
+        color: '#056f36',
+        fontSize: 13,
+        fontWeight: '800',
     },
     progressTimelineWrapper: {
         width: '100%',
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justify: 'space-between',
         alignItems: 'flex-start',
         position: 'relative',
-        paddingHorizontal: 8,
-        marginTop: 6,
+        paddingHorizontal: 6,
     },
     progressTrackLineBackground: {
         position: 'absolute',
@@ -780,8 +842,38 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         fontSize: 13,
     },
+    mapCard: {
+        height: 140,
+        borderRadius: 22,
+        overflow: 'hidden',
+        position: 'relative',
+        marginBottom: 16,
+        borderWidth: 1,
+    },
+    mapImage: {
+        width: '100%',
+        height: '100%',
+    },
+    mapOverlayPill: {
+        position: 'absolute',
+        bottom: 12,
+        left: 12,
+        right: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 14,
+        gap: 6,
+    },
+    mapOverlayText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#0f172a',
+    },
     card: {
-        borderRadius: 20,
+        borderRadius: 22,
         padding: 18,
         borderWidth: 1,
         marginBottom: 16,
@@ -793,7 +885,7 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     cardHeaderTitle: {
-        fontSize: 13,
+        fontSize: 12.5,
         fontWeight: '900',
         letterSpacing: 0.8,
     },
@@ -814,15 +906,29 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '800',
     },
+    ratingBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fef3c7',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 8,
+        gap: 2,
+    },
+    ratingText: {
+        fontSize: 10.5,
+        fontWeight: '900',
+        color: '#d97706',
+    },
     riderSubText: {
-        fontSize: 12,
+        fontSize: 11.5,
         color: '#64748b',
         marginTop: 2,
     },
     riderCallBtn: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#056f36',
         alignItems: 'center',
         justify: 'center',
