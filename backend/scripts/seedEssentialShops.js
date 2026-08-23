@@ -38,51 +38,6 @@ async function seedEssentialShopsData() {
             }
         };
 
-        // 2. LARO XEROX
-        await createShopWithProducts(
-            {
-                name: 'LARO XEROX',
-                description: 'Fast printing, Xerox, and Stationery essentials.',
-                category: 'Xerox',
-                imageUrl: 'https://images.unsplash.com/photo-1588421357574-87938a86fa28?w=600&q=80',
-                isOpen: true,
-                isActive: true,
-                latitude: '0.00000000',
-                longitude: '0.00000000',
-                serviceRadius: 9999,
-                isWarehouse: true
-            },
-            [
-                { name: 'A4 B/W Print (Single Sided)', price: 2, category: 'Printing', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1599427389274-846178c19985?w=400&q=80' },
-                { name: 'Color Print (A4)', price: 10, category: 'Printing', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1599427389274-846178c19985?w=400&q=80' },
-                { name: 'Spiral Binding (Medium)', price: 40, category: 'Stationery', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=400&q=80' },
-                { name: 'Classmate Notebook (120 Pages)', price: 45, category: 'Books', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1512314889357-e157c22f938d?w=400&q=80' },
-                { name: 'Reynolds Ball Pen (Blue)', price: 10, category: 'Stationery', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=400&q=80' },
-                { name: 'Scientific Calculator (Casio)', price: 950, category: 'Stationery', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1594819047050-99defca82545?w=400&q=80' }
-            ]
-        );
-
-        // 3. LARO PHARMACY
-        await createShopWithProducts(
-            {
-                name: 'LARO PHARMACY',
-                description: 'Medicines and Healthcare products delivered fast.',
-                category: 'Pharmacy',
-                imageUrl: 'https://images.unsplash.com/photo-1586015555751-63bb77f4322a?q=80&w=1000&auto=format&fit=crop',
-                isOpen: true,
-                isActive: true,
-                latitude: '0.00000000',
-                longitude: '0.00000000',
-                serviceRadius: 9999,
-                isWarehouse: true
-            },
-            [
-                { name: 'PARACETAMOL 500MG', price: 15, category: 'Medicines', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&q=80' },
-                { name: 'BAND-AID (10 PACK)', price: 30, category: 'Healthcare', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=400&q=80' },
-                { name: 'DETTOL ANTISEPTIC 60ML', price: 45, category: 'Healthcare', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&q=80' }
-            ]
-        );
-
         // 4. LARO WAREHOUSE
         await createShopWithProducts(
             {
@@ -105,8 +60,10 @@ async function seedEssentialShopsData() {
                 { name: 'PARLE-G (GOLD)', price: 10, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1510341753381-193498875323?w=400&q=80' },
                 { name: 'MARIE GOLD BISCUITS', price: 25, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1533062601953-7c83ec850197?w=400&q=80' },
                 { name: 'MAGGI NOODLES (4-PACK)', price: 60, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1612927608282-b280ff17540a?w=400&q=80' },
-                { name: 'KURKURE (MASALA MUNCH)', price: 20, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=400&q=80' },
-                { name: 'LAYS POTATO CHIPS', price: 10, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1566478433002-3f746643c14a?w=400&q=80' },
+                { name: "LAYS BLUE - MAGIC MASALA (₹10)", price: 10, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&q=80' },
+                { name: "LAYS GREEN - CREAM & ONION (₹10)", price: 10, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400&q=80' },
+                { name: "LAYS YELLOW - CLASSIC SALTED (₹10)", price: 10, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1566478433002-3f746643c14a?w=400&q=80' },
+                { name: "LAYS ORANGE - SPANISH TOMATO TANGO (₹10)", price: 10, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=400&q=80' },
                 { name: 'COKE 250ML', price: 20, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80' },
                 { name: 'SPRITE 250ML', price: 20, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1625772290748-39126ddd91f1?w=400&q=80' },
                 { name: 'THUMS UP 250ML', price: 20, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80' },

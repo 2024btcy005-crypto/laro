@@ -6,6 +6,38 @@ import { Star, Clock, MapPin, Plus, Minus, ChevronLeft, ShoppingBag, Heart, Uplo
 import { FavouriteService } from '../services/FavouriteService';
 import './ShopDetail.css';
 
+const isEdibleProduct = (item) => {
+    if (!item) return false;
+    if (item.isEdible === false) return false;
+    if (item.isVeg === null) return false;
+
+    const cat = (item.category || '').toLowerCase();
+    const name = (item.name || '').toLowerCase();
+
+    const nonEdibleKeywords = [
+        'a4', 'sheet', 'print', 'xerox', 'paper', 'notebook', 'binding',
+        'pen', 'pencil', 'calculator', 'charger', 'cable', 'bottle', 'water bottle',
+        'stapler', 'folder', 'file', 'sanitizer', 'soap', 'shampoo', 'toothpaste',
+        'mask', 'bandage', 'thermometer', 'medicine'
+    ];
+
+    const nonEdibleCategories = [
+        'xerox', 'printing', 'stationery', 'books', 'study', 'electronics',
+        'accessories', 'hardware', 'utility', 'general', 'pharmacy', 'medicines', 'healthcare'
+    ];
+
+    const foodKeywords = ['milk', 'curd', 'buttermilk', 'butter', 'egg', 'bread', 'chips', 'lays', 'coke', 'campa', 'maggi', 'noodle', 'rice', 'atta', 'dal', 'tea', 'coffee', 'juice', 'soda', 'peanuts', 'chocolate', 'biscuit', 'cookie', 'pizza', 'burger'];
+
+    if (nonEdibleKeywords.some(k => name.includes(k))) return false;
+
+    if (nonEdibleCategories.some(c => cat === c)) {
+        if (foodKeywords.some(f => name.includes(f))) return true;
+        return false;
+    }
+
+    return true;
+};
+
 const MenuItem = ({ item, shop, cart, addToCart, removeFromCart, getItemQuantity, user }) => {
     const [isFav, setIsFav] = useState(false);
     const [showVariants, setShowVariants] = useState(false);
@@ -29,6 +61,7 @@ const MenuItem = ({ item, shop, cart, addToCart, removeFromCart, getItemQuantity
         if (newFavs) setIsFav(!isFav);
     };
 
+    const edible = isEdibleProduct(item);
     const isVeg = item.isVeg !== false;
     const rating = item.rating || (4.2 + (typeof item.id === 'string' ? item.id.charCodeAt(0) % 7 : 3) * 0.1).toFixed(1);
 
@@ -36,9 +69,11 @@ const MenuItem = ({ item, shop, cart, addToCart, removeFromCart, getItemQuantity
         <div className={`menu-item-card ${item.isBestseller ? 'bestseller-card' : ''}`}>
             <div className="item-info">
                 <div className="item-badge-row">
-                    <span className={`veg-badge ${isVeg ? 'veg' : 'non-veg'}`}>
-                        <span className="dot" />
-                    </span>
+                    {edible && (
+                        <span className={`veg-badge ${isVeg ? 'veg' : 'non-veg'}`}>
+                            <span className="dot" />
+                        </span>
+                    )}
                     {item.isBestseller && <span className="bestseller-tag">🔥 MUST TRY</span>}
                     {item.variants?.length > 0 && <span className="customisable-tag">✨ CUSTOMISABLE</span>}
                 </div>

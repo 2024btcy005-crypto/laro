@@ -23,6 +23,38 @@ import { useTheme } from '../../context/ThemeContext';
 import { registerForPushNotificationsAsync } from '../../services/notificationService';
 import { HomeScreenSkeleton } from '../../components/SkeletonLoader';
 
+const isEdibleProduct = (item) => {
+    if (!item) return false;
+    if (item.isEdible === false) return false;
+    if (item.isVeg === null) return false;
+
+    const cat = (item.category || '').toLowerCase();
+    const name = (item.name || '').toLowerCase();
+
+    const nonEdibleKeywords = [
+        'a4', 'sheet', 'print', 'xerox', 'paper', 'notebook', 'binding',
+        'pen', 'pencil', 'calculator', 'charger', 'cable', 'bottle', 'water bottle',
+        'stapler', 'folder', 'file', 'sanitizer', 'soap', 'shampoo', 'toothpaste',
+        'mask', 'bandage', 'thermometer', 'medicine'
+    ];
+
+    const nonEdibleCategories = [
+        'xerox', 'printing', 'stationery', 'books', 'study', 'electronics',
+        'accessories', 'hardware', 'utility', 'general', 'pharmacy', 'medicines', 'healthcare'
+    ];
+
+    const foodKeywords = ['milk', 'curd', 'buttermilk', 'butter', 'egg', 'bread', 'chips', 'lays', 'coke', 'campa', 'maggi', 'noodle', 'rice', 'atta', 'dal', 'tea', 'coffee', 'juice', 'soda', 'peanuts', 'chocolate', 'biscuit', 'cookie', 'pizza', 'burger'];
+
+    if (nonEdibleKeywords.some(k => name.includes(k))) return false;
+
+    if (nonEdibleCategories.some(c => cat === c)) {
+        if (foodKeywords.some(f => name.includes(f))) return true;
+        return false;
+    }
+
+    return true;
+};
+
 export default function HomeScreen({ navigation }) {
 
     const insets = useSafeAreaInsets();
@@ -807,7 +839,7 @@ export default function HomeScreen({ navigation }) {
                     
                     {/* Category and Veg indicator row */}
                     <View style={styles.cardMetaRow}>
-                        {product.isVeg !== undefined && (
+                        {isEdibleProduct(product) && (
                             <View style={[styles.vegSquare, { borderColor: product.isVeg ? '#00b894' : '#d63031' }]}>
                                 <View style={[styles.vegCircle, { backgroundColor: product.isVeg ? '#00b894' : '#d63031' }]} />
                             </View>

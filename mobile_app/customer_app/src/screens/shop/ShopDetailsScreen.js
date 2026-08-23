@@ -20,6 +20,38 @@ import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
+const isEdibleProduct = (item) => {
+    if (!item) return false;
+    if (item.isEdible === false) return false;
+    if (item.isVeg === null) return false;
+
+    const cat = (item.category || '').toLowerCase();
+    const name = (item.name || '').toLowerCase();
+
+    const nonEdibleKeywords = [
+        'a4', 'sheet', 'print', 'xerox', 'paper', 'notebook', 'binding',
+        'pen', 'pencil', 'calculator', 'charger', 'cable', 'bottle', 'water bottle',
+        'stapler', 'folder', 'file', 'sanitizer', 'soap', 'shampoo', 'toothpaste',
+        'mask', 'bandage', 'thermometer', 'medicine'
+    ];
+
+    const nonEdibleCategories = [
+        'xerox', 'printing', 'stationery', 'books', 'study', 'electronics',
+        'accessories', 'hardware', 'utility', 'general', 'pharmacy', 'medicines', 'healthcare'
+    ];
+
+    const foodKeywords = ['milk', 'curd', 'buttermilk', 'butter', 'egg', 'bread', 'chips', 'lays', 'coke', 'campa', 'maggi', 'noodle', 'rice', 'atta', 'dal', 'tea', 'coffee', 'juice', 'soda', 'peanuts', 'chocolate', 'biscuit', 'cookie', 'pizza', 'burger'];
+
+    if (nonEdibleKeywords.some(k => name.includes(k))) return false;
+
+    if (nonEdibleCategories.some(c => cat === c)) {
+        if (foodKeywords.some(f => name.includes(f))) return true;
+        return false;
+    }
+
+    return true;
+};
+
 const SwipeableProductItem = ({
     item,
     isDarkMode,
@@ -38,39 +70,36 @@ const SwipeableProductItem = ({
         Animated.spring(pan, {
             toValue: { x: 0, y: 0 },
             bounciness: 4,
-            speed: 18,
             useNativeDriver: false
         }).start();
     };
 
     const panResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => false,
             onMoveShouldSetPanResponder: (_, gestureState) => {
-                return Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.5;
+                return Math.abs(gestureState.dx) > 15 && Math.abs(gestureState.dy) < 15;
             },
-            onPanResponderGrant: () => {
-                pan.stopAnimation();
+            onPanResponderMove: (_, gestureState) => {
+                pan.setValue({ x: gestureState.dx, y: 0 });
             },
-            onPanResponderMove: Animated.event(
-                [null, { dx: pan.x }],
-                { useNativeDriver: false }
-            ),
             onPanResponderRelease: (_, gestureState) => {
-                if (gestureState.dx > 70) {
+                if (gestureState.dx > 80) {
                     toggleFavProduct(item);
-                } else if (gestureState.dx < -70) {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    resetPosition();
+                } else if (gestureState.dx < -80) {
                     handleAddToCart(item);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    resetPosition();
+                } else {
+                    resetPosition();
                 }
-                resetPosition();
-            },
-            onPanResponderTerminate: () => {
-                resetPosition();
             }
         })
     ).current;
 
     const itemQty = cart.items.find(i => (i.id || i._id) === (item.id || item._id))?.quantity || 0;
+    const edible = isEdibleProduct(item);
     const isVeg = item.isVeg !== false;
 
     const favOpacity = pan.x.interpolate({
@@ -116,9 +145,11 @@ const SwipeableProductItem = ({
                 >
                     <View style={styles.infoWrapper}>
                         <View style={styles.badgeRow}>
-                            <View style={[styles.vegBadgeIcon, { borderColor: isVeg ? '#16a34a' : '#dc2626' }]}>
-                                <View style={[styles.vegBadgeDot, { backgroundColor: isVeg ? '#16a34a' : '#dc2626', borderRadius: isVeg ? 4 : 0 }]} />
-                            </View>
+                            {edible && (
+                                <View style={[styles.vegBadgeIcon, { borderColor: isVeg ? '#16a34a' : '#dc2626' }]}>
+                                    <View style={[styles.vegBadgeDot, { backgroundColor: isVeg ? '#16a34a' : '#dc2626', borderRadius: isVeg ? 4 : 0 }]} />
+                                </View>
+                            )}
                             {item.isBestseller && (
                                 <View style={styles.bestsellerTag}>
                                     <Text style={styles.bestsellerTagText}>🔥 MUST TRY</Text>

@@ -138,7 +138,10 @@ async function seedRestaurants() {
                     { name: 'Campa Lemon (250ml)', price: 15, originalPrice: 20, category: 'Beverages', isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1625772290748-39126ddd91f1?w=500&auto=format&fit=crop' },
                     { name: 'Campa Jeera Masala Soda (250ml)', price: 15, originalPrice: 20, category: 'Beverages', isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&auto=format&fit=crop' },
                     { name: 'Amul Taaza Toned Milk (500ml)', price: 27, originalPrice: 28, category: 'Dairy', imageUrl: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=500&auto=format&fit=crop' },
-                    { name: 'Lays Magic Masala Chips (50g)', price: 20, originalPrice: 20, category: 'Snacks', imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=500&auto=format&fit=crop' },
+                    { name: "Lay's Blue - Magic Masala (₹10)", price: 10, originalPrice: 10, category: 'Snacks', isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=500&auto=format&fit=crop' },
+                    { name: "Lay's Green - Cream & Onion (₹10)", price: 10, originalPrice: 10, category: 'Snacks', isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=500&auto=format&fit=crop' },
+                    { name: "Lay's Yellow - Classic Salted (₹10)", price: 10, originalPrice: 10, category: 'Snacks', isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1566478433002-3f746643c14a?w=500&auto=format&fit=crop' },
+                    { name: "Lay's Orange - Spanish Tomato Tango (₹10)", price: 10, originalPrice: 10, category: 'Snacks', isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=500&auto=format&fit=crop' },
                     { name: 'Maggi 2-Minute Masala Noodles (4-Pack)', price: 56, originalPrice: 60, category: 'Instant Food', imageUrl: 'https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=500&auto=format&fit=crop' }
                 ]
             }

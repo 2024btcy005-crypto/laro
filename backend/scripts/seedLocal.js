@@ -55,7 +55,10 @@ async function seedLocal() {
 
         // 4. Add Products to Warehouse
         const warehouseProducts = [
-            { name: 'LAYS POTATO CHIPS', price: 10, category: 'Snacks', isAvailable: true, universityId: null },
+            { name: "Lay's Magic Masala (Blue)", price: 10, category: 'Snacks', isAvailable: true, universityId: null },
+            { name: "Lay's Cream & Onion (Green)", price: 10, category: 'Snacks', isAvailable: true, universityId: null },
+            { name: "Lay's Classic Salted (Yellow)", price: 10, category: 'Snacks', isAvailable: true, universityId: null },
+            { name: "Lay's Spanish Tomato Tango (Orange)", price: 10, category: 'Snacks', isAvailable: true, universityId: null },
             { name: 'COKE 250ML', price: 20, category: 'Drinks', isAvailable: true, universityId: null }
         ];
 
