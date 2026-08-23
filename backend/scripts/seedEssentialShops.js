@@ -3,23 +3,23 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { sequelize } = require('../src/config/db');
 const { Shop, Product, University } = require('../src/models');
 
-async function seedJoyUniversityData() {
+async function seedEssentialShopsData() {
     try {
         console.log('Connecting to database...');
         await sequelize.authenticate();
-        console.log('Connected! Seeding Joy University data...');
+        console.log('Connected! Seeding Campus data...');
 
-        // 1. Find or Create Joy University
-        const [joyUni] = await University.findOrCreate({
+        // 1. Find or Create University
+        const [uni] = await University.findOrCreate({
             where: { name: 'JOY UNIVERSITY' },
             defaults: {
-                address: 'Main Campus, Joy University',
+                address: 'Main Campus, JOY UNIVERSITY',
                 radius: 10,
                 isActive: true
             }
         });
-        const universityId = joyUni.id;
-        console.log('✅ Using University:', joyUni.name, `(ID: ${universityId})`);
+        const universityId = uni.id;
+        console.log('✅ Using University:', uni.name, `(ID: ${universityId})`);
 
         // Helper to create shop and products
         const createShopWithProducts = async (shopData, productList) => {
@@ -98,6 +98,7 @@ async function seedJoyUniversityData() {
                 isWarehouse: true
             },
             [
+                { name: 'SINGLE FARM EGG (1 PC)', price: 7, category: 'Dairy & Eggs', isAvailable: true, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1587486913049-53fc88980cfc?w=400&q=80' },
                 { name: 'AMUL MILK 500ML', price: 33, category: 'Dairy', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1550583724-12558142ab46?w=400&q=80' },
                 { name: 'MOTHER DAIRY MILK 500ML', price: 32, category: 'Dairy', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1563636619-e9107da5a1b3?w=400&q=80' },
                 { name: 'OREO BISCUITS (FAMILY PACK)', price: 40, category: 'Snacks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&q=80' },
@@ -111,8 +112,11 @@ async function seedJoyUniversityData() {
                 { name: 'THUMS UP 250ML', price: 20, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80' },
                 { name: 'LIMCA 250ML', price: 20, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80' },
                 { name: 'CAMPA COLA 250ML', price: 15, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80' },
+                { name: 'CAMPA ORANGE 250ML', price: 15, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=400&q=80' },
                 { name: 'CAMPA LEMON 250ML', price: 15, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1625772290748-39126ddd91f1?w=400&q=80' },
-                { name: 'CAMPA ORANGE 250ML', price: 15, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80' },
+                { name: 'CAMPA JEERA MASALA SODA 250ML', price: 15, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400&q=80' },
+                { name: 'CAMPA COLA 500ML', price: 30, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=400&q=80' },
+                { name: 'CAMPA ORANGE 500ML', price: 30, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&q=80' },
                 { name: 'BISLERI WATER 1L', price: 20, category: 'Drinks', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1548939619-d9d303273118?w=400&q=80' },
                 { name: 'FROZEN PEAS 500G', price: 80, category: 'Fresh', isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?w=400&q=80' }
             ]
@@ -162,7 +166,7 @@ async function seedJoyUniversityData() {
             ]
         );
 
-        console.log('\n✅ All data seeded specifically for JOY UNIVERSITY!');
+        console.log('\n✅ All essential shops data seeded successfully!');
     } catch (error) {
         console.error('❌ Seeding failed:', error);
     } finally {
@@ -170,4 +174,4 @@ async function seedJoyUniversityData() {
     }
 }
 
-seedJoyUniversityData();
+seedEssentialShopsData();

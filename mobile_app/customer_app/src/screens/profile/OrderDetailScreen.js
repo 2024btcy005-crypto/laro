@@ -455,7 +455,7 @@ export default function OrderDetailScreen({ route, navigation }) {
 
                         <ScrollView contentContainerStyle={styles.receiptScrollContent} showsVerticalScrollIndicator={false}>
                             <Text style={styles.receiptShopName}>{order.shop?.name || 'Laro Store'}</Text>
-                            <Text style={styles.receiptShopAddress}>{order.shop?.address || 'Joy University Campus'}</Text>
+                            <Text style={styles.receiptShopAddress}>{order.shop?.address || order.shop?.university?.name || 'Campus Store'}</Text>
                             
                             <View style={styles.receiptDivider} />
                             

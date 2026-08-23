@@ -10,12 +10,22 @@ const cloudinary = require('../config/cloudinaryConfig');
 // @desc    Upload product image (admin)
 // @route   POST /api/upload
 // @access  Private/Admin
-router.post('/', protect, admin, upload.single('image'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ message: 'No file uploaded' });
-    }
-    // With CloudinaryStorage in multerConfig, req.file.path contains the full secure URL
-    res.json({ message: 'Image uploaded successfully', url: req.file.path });
+router.post('/', protect, admin, (req, res) => {
+    upload.single('image')(req, res, (err) => {
+        if (err) {
+            console.error('[IMAGE UPLOAD ERROR]', err);
+            return res.status(500).json({ message: 'Image upload failed', error: err.message });
+        }
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+        let fileUrl = req.file.path || req.file.secure_url || req.file.url;
+        if (fileUrl && !fileUrl.startsWith('http')) {
+            const filename = req.file.filename;
+            fileUrl = `/uploads/products/${filename}`;
+        }
+        res.json({ message: 'Image uploaded successfully', url: fileUrl });
+    });
 });
 
 // @desc    Upload a file for xerox/printing order

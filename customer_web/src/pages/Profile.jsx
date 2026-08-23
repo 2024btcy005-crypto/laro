@@ -127,7 +127,8 @@ export default function Profile() {
     };
 
     const syncAddressToBackend = async (addrObj) => {
-        const fullAddress = `${addrObj.hostel}, ${addrObj.room}, Joy University`;
+        const uniName = localStorage.getItem('selectedUniversityName') || 'Campus';
+        const fullAddress = `${addrObj.hostel}, ${addrObj.room}, ${uniName}`;
         if (user.address === fullAddress) return; // Already in sync
 
         try {
@@ -177,7 +178,8 @@ export default function Profile() {
 
     const handleSaveAddress = (e) => {
         e.preventDefault();
-        const fullAddress = `${addressForm.hostel}, ${addressForm.room}, Joy University`;
+        const uniName = localStorage.getItem('selectedUniversityName') || 'Campus';
+        const fullAddress = `${addressForm.hostel}, ${addressForm.room}, ${uniName}`;
         const updatedItem = {
             id: editingAddressId || Date.now().toString(),
             ...addressForm,

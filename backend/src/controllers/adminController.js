@@ -295,7 +295,7 @@ const createProduct = async (req, res) => {
         res.status(201).json(product);
     } catch (error) {
         console.error('[ADMIN CREATE PRODUCT ERROR]', error);
-        res.status(500).json({ error: 'Failed to create product' });
+        res.status(500).json({ error: 'Failed to create product', message: error.message });
     }
 };
 
@@ -311,8 +311,8 @@ const updateProduct = async (req, res) => {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        // Campus Admin Isolation Check
-        if (req.user.role === 'campus_admin' && product.universityId !== req.user.universityId) {
+        // Campus Admin Isolation Check - allow updates if product belongs to their university OR is a global product
+        if (req.user.role === 'campus_admin' && product.universityId !== req.user.universityId && product.universityId !== null) {
             return res.status(403).json({ message: 'Not authorized to update this product' });
         }
 
@@ -333,7 +333,7 @@ const updateProduct = async (req, res) => {
         res.json(product);
     } catch (error) {
         console.error('[ADMIN UPDATE PRODUCT ERROR]', error);
-        res.status(500).json({ error: 'Failed to update product' });
+        res.status(500).json({ error: 'Failed to update product', message: error.message });
     }
 };
 

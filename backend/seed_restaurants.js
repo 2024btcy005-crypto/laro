@@ -132,6 +132,11 @@ async function seedRestaurants() {
                 closingTime: '23:59:00',
                 universityId: uniId,
                 items: [
+                    { name: 'Single Farm Egg (1 Pc)', price: 7, originalPrice: 8, category: 'Dairy & Eggs', isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1587486913049-53fc88980cfc?w=500&auto=format&fit=crop' },
+                    { name: 'Campa Cola (250ml)', price: 15, originalPrice: 20, category: 'Beverages', isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&auto=format&fit=crop' },
+                    { name: 'Campa Orange (250ml)', price: 15, originalPrice: 20, category: 'Beverages', isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=500&auto=format&fit=crop' },
+                    { name: 'Campa Lemon (250ml)', price: 15, originalPrice: 20, category: 'Beverages', isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1625772290748-39126ddd91f1?w=500&auto=format&fit=crop' },
+                    { name: 'Campa Jeera Masala Soda (250ml)', price: 15, originalPrice: 20, category: 'Beverages', isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&auto=format&fit=crop' },
                     { name: 'Amul Taaza Toned Milk (500ml)', price: 27, originalPrice: 28, category: 'Dairy', imageUrl: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=500&auto=format&fit=crop' },
                     { name: 'Lays Magic Masala Chips (50g)', price: 20, originalPrice: 20, category: 'Snacks', imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=500&auto=format&fit=crop' },
                     { name: 'Maggi 2-Minute Masala Noodles (4-Pack)', price: 56, originalPrice: 60, category: 'Instant Food', imageUrl: 'https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=500&auto=format&fit=crop' }

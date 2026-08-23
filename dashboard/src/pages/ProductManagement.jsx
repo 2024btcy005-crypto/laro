@@ -202,7 +202,8 @@ export default function ProductManagement() {
             fetchInitialData();
         } catch (error) {
             console.error('Error saving product:', error);
-            alert('Failed to save product');
+            const errMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to save product';
+            alert(`Failed to save product: ${errMsg}`);
         } finally {
             setActionLoading(false);
         }

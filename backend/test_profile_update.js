@@ -3,7 +3,7 @@ const axios = require('axios');
 async function testUpdateProfile() {
     const BASE_URL = 'http://localhost:5000/api'; // Update if needed
     const TOKEN = 'YOUR_TEST_TOKEN'; // You need a valid token to test this live
-    const UNIVERSITY_ID = 'b0ad783b-af1f-4a90-a757-c66fb5e5b265'; // Joy University
+    const UNIVERSITY_ID = 'b0ad783b-af1f-4a90-a757-c66fb5e5b265'; // Test University
 
     try {
         console.log('Testing Profile Update...');

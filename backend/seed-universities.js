@@ -8,11 +8,11 @@ async function seed() {
 
         const unis = [
             {
-                name: 'Joyy University',
+                name: 'JOY UNIVERSITY',
                 address: 'Kanyakumari, Tamil Nadu',
                 latitude: 8.0883,
                 longitude: 77.5385,
-                radius: 3.0
+                radius: 5.0
             }
         ];
 

@@ -84,8 +84,7 @@ export default function UniversitySelectionScreen({ navigation, route }) {
         const isSelected = selectedUni && (selectedUni.id === item.id || selectedUni._id === item._id);
         
         // Custom location mapping if not provided in database
-        let locationText = item.address || 'Kanyakumari, Tamil Nadu';
-        if (item.name.toLowerCase().includes('joy')) locationText = item.address || 'Kanyakumari, Tamil Nadu';
+        let locationText = item.address || 'Campus Location';
 
         // Logo initials or icon container
         const initials = item.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();

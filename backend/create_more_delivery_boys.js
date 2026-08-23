@@ -7,8 +7,7 @@ async function createDeliveryBoys() {
         await sequelize.authenticate();
         console.log('✅ DB Connected');
 
-        let uni = await University.findOne({ where: { name: 'Joyy University' } });
-        if (!uni) uni = await University.findOne();
+        let uni = await University.findOne();
         const uniId = uni ? uni.id : null;
 
         const passwordHash = await bcrypt.hash('rider123', 10);

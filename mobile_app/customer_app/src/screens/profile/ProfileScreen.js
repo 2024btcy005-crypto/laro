@@ -19,7 +19,7 @@ const { width } = Dimensions.get('window');
 export default function ProfileScreen({ navigation }) {
     const dispatch = useDispatch();
     const { colors, isDarkMode } = useTheme();
-    const user = useSelector(state => state.auth.user);
+    const { user, selectedUniversity } = useSelector(state => state.auth);
     const [alertVisible, setAlertVisible] = useState(false);
     const [stats, setStats] = useState({ orderCount: 0, laroCurrency: 0, loyaltyLevel: 'Learner' });
     const [recentOrder, setRecentOrder] = useState(null);
@@ -167,7 +167,7 @@ export default function ProfileScreen({ navigation }) {
                                     activeOpacity={0.8}
                                 >
                                     <Ionicons name="school" size={12} color="#ffffff" />
-                                    <Text style={styles.flagshipBadgeText}>Joyy University • Change ➔</Text>
+                                    <Text style={styles.flagshipBadgeText}>{selectedUniversity?.name || 'Select Campus'} • Change ➔</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>

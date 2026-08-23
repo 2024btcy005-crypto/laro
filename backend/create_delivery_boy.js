@@ -7,11 +7,8 @@ async function createDeliveryBoy() {
         await sequelize.authenticate();
         console.log('✅ DB Connected');
 
-        // Find Joyy University or first university
-        let uni = await University.findOne({ where: { name: 'Joyy University' } });
-        if (!uni) {
-            uni = await University.findOne();
-        }
+        // Find default university
+        let uni = await University.findOne();
 
         const uniId = uni ? uni.id : null;
         console.log('Using University:', uni ? uni.name : 'None');

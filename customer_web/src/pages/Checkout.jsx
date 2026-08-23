@@ -65,7 +65,8 @@ export default function Checkout() {
                 const addresses = JSON.parse(storedAddresses);
                 const defaultAddr = addresses.find(a => a.isDefault);
                 if (defaultAddr) {
-                    setAddress(`${defaultAddr.hostel}, ${defaultAddr.room}, Joy University`);
+                    const uniName = localStorage.getItem('selectedUniversityName') || 'Campus';
+                    setAddress(`${defaultAddr.hostel}, ${defaultAddr.room}, ${uniName}`);
                     return;
                 }
             }

@@ -105,6 +105,11 @@ export const mockDailyItemsShops = [
 
 export const mockDailyItemsProducts = {
     'ds1': [
+        { id: 'dp1_0', name: 'Single Farm Egg (1 Pc)', description: 'Fresh farm egg (1 Piece).', price: 7, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1587486913049-53fc88980cfc?q=80&w=500&auto=format&fit=crop', isVeg: false },
+        { id: 'dp1_campa_cola', name: 'Campa Cola, 250ml', description: 'Classic fizzy Campa Cola soft drink.', price: 15, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=500&auto=format&fit=crop', isVeg: true },
+        { id: 'dp1_campa_orange', name: 'Campa Orange, 250ml', description: 'Tangy and citrusy Campa Orange soda.', price: 15, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?q=80&w=500&auto=format&fit=crop', isVeg: true },
+        { id: 'dp1_campa_lemon', name: 'Campa Lemon, 250ml', description: 'Refreshing crisp lemon lime drink.', price: 15, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1625772290748-39126ddd91f1?q=80&w=500&auto=format&fit=crop', isVeg: true },
+        { id: 'dp1_campa_jeera', name: 'Campa Jeera Masala Soda, 250ml', description: 'Indian spiced fizzy jeera drink.', price: 15, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?q=80&w=500&auto=format&fit=crop', isVeg: true },
         { id: 'dp1_1', name: 'Farm Fresh Eggs, 6 Pcs', description: 'Locally sourced farm fresh eggs.', price: 45, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1587486913049-53fc88980cfc?q=80&w=500&auto=format&fit=crop', isVeg: false },
         { id: 'dp1_2', name: 'Full Cream Milk, 1L', description: 'Rich and creamy farm fresh cow milk.', price: 60, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1570197781417-0e82375c9371?q=80&w=500&auto=format&fit=crop', isVeg: true },
         { id: 'dp1_3', name: 'Brown Bread', description: 'Healthy and soft whole wheat bread.', price: 40, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=500&auto=format&fit=crop', isVeg: true },

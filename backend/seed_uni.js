@@ -10,12 +10,12 @@ async function seed() {
         }
 
         await University.create({
-            name: 'VIT Vellore',
-            address: 'Katpadi, Vellore, Tamil Nadu',
+            name: 'JOY UNIVERSITY',
+            address: 'Kanyakumari, Tamil Nadu',
             radius: 5,
             isActive: true
         });
-        console.log('Seeded VIT Vellore.');
+        console.log('Seeded JOY UNIVERSITY.');
     } catch (e) {
         console.error(e);
     } finally {
