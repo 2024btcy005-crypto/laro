@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, StatusBar, Image, Animated
+    View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, StatusBar, Animated, Platform, Dimensions
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Svg, { Path, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
-import { COLORS, CONSTANTS } from '../../theme';
+import { COLORS } from '../../theme';
+
+const { width } = Dimensions.get('window');
 
 export default function StreakScreen({ navigation }) {
     const { colors, isDarkMode } = useTheme();
@@ -14,15 +17,33 @@ export default function StreakScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [userSummary, setUserSummary] = useState(null);
 
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+
     useEffect(() => {
         fetchStreakData();
+
+        // Pulsing Flame Animation
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 1.15,
+                    duration: 1000,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 1,
+                    duration: 1000,
+                    useNativeDriver: true,
+                })
+            ])
+        ).start();
     }, []);
 
     const fetchStreakData = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/orders/user-summary');
-            if (res.data) {
+            const res = await api.get('/orders/user-summary').catch(() => api.get('/orders/summary'));
+            if (res && res.data) {
                 setUserSummary(res.data);
             } else {
                 setUserSummary({ currentStreak: 0, longestStreak: 0, totalStreakCoins: 0 });
@@ -51,133 +72,197 @@ export default function StreakScreen({ navigation }) {
         { day: 50, coins: 50 },
     ];
 
+    const heroBgColor = isDarkMode ? '#0f172a' : '#f0fdf4';
+
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? '#121212' : '#f8fafc' }]} edges={['top']}>
-            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={heroBgColor} />
 
-            {/* Top Bar Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={22} color={colors.black} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>🔥 Ordering Streak</Text>
-                <View style={{ width: 40 }} />
-            </View>
-
-            {loading ? (
-                <View style={styles.center}>
-                    <ActivityIndicator size="large" color="#ff6b00" />
-                    <Text style={{ marginTop: 12, color: '#666', fontWeight: '700' }}>Loading streak data...</Text>
-                </View>
-            ) : (
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    
-                    {/* Hero Streak Flame Card */}
-                    <View style={styles.heroCard}>
-                        <View style={styles.flameCircle}>
-                            <Text style={{ fontSize: 52 }}>🔥</Text>
+            <ScrollView contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 20 }} showsVerticalScrollIndicator={false}>
+                {/* Top Section Hero Backdrop (Matching Home & Food Screen) */}
+                <View style={[styles.heroHeaderSection, { backgroundColor: heroBgColor, paddingTop: Math.max(insets.top, 16) + 8 }]}>
+                    {/* Navigation Header Row */}
+                    <View style={styles.topHeaderNavRow}>
+                        <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff' }]} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+                            <Ionicons name="arrow-back" size={20} color={isDarkMode ? '#ffffff' : '#0f172a'} />
+                        </TouchableOpacity>
+                        <View style={styles.topTitleBadge}>
+                            <Ionicons name="sparkles" size={14} color="#056f36" />
+                            <Text style={styles.topTitleBadgeText}>LARO STREAKS</Text>
                         </View>
+                        <View style={{ width: 42 }} />
+                    </View>
+
+                    {/* Main Title & Calligraphy Subtitle with Swoosh */}
+                    <View style={styles.heroTextWrapper}>
+                        <Text style={[styles.heroTitleText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                            CAMPUS STREAKS
+                        </Text>
+                        <Text style={styles.heroCalligraphySubText}>
+                            Order Daily, Unlock Epic Perks
+                        </Text>
+                        <View style={styles.curvedSwooshWrapper}>
+                            <Svg width={170} height={15} viewBox="0 0 170 15" fill="none">
+                                <Path
+                                    d="M 4,5 Q 85,1 165,6 C 171,7 167,13 140,13"
+                                    stroke="#056f36"
+                                    strokeWidth={2.2}
+                                    strokeLinecap="round"
+                                />
+                            </Svg>
+                        </View>
+                    </View>
+
+                    {/* Hero Streak Flame Display Card */}
+                    <View style={[styles.heroStreakCard, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#dcfce7' }]}>
+                        <Animated.View style={[styles.flameCircle, { transform: [{ scale: pulseAnim }] }]}>
+                            <MaterialCommunityIcons name="fire" size={46} color="#ea580c" />
+                        </Animated.View>
                         <Text style={styles.heroStreakCount}>{currentStreak} Days</Text>
                         <Text style={styles.heroStreakLabel}>ACTIVE ORDERING STREAK</Text>
 
-                        {/* Subtext */}
-                        <View style={styles.heroPill}>
-                            <Ionicons name="trophy-outline" size={14} color="#fff" />
-                            <Text style={styles.heroPillText}>Personal Best: {longestStreak} Days</Text>
+                        {/* Personal Best Badge */}
+                        <View style={styles.personalBestPill}>
+                            <Ionicons name="trophy" size={14} color="#ffffff" style={{ marginRight: 5 }} />
+                            <Text style={styles.personalBestText}>Personal Best: {longestStreak} Days</Text>
                         </View>
 
-                        <Text style={styles.heroDescription}>
+                        <Text style={[styles.heroDescription, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>
                             {currentStreak > 0
                                 ? `Keep your streak alive! Order daily to reach Day ${currentMilestoneBlock * 10} and earn +${nextMilestoneCoins} Laro Coins.`
-                                : 'Order daily to start your streak and unlock progressive Laro Coin bonuses every 10 days!'}
+                                : 'Order daily to start your streak and unlock progressive Laro Wallet Coin bonuses every 10 days!'}
                         </Text>
                     </View>
+                </View>
 
-                    {/* Quick Stats Grid */}
-                    <View style={styles.statsRow}>
-                        <View style={styles.statCard}>
-                            <Text style={styles.statNumber}>+{nextMilestoneCoins} Ł</Text>
-                            <Text style={styles.statLabel}>Next Milestone Bonus</Text>
-                        </View>
-                        <View style={styles.statCard}>
-                            <Text style={styles.statNumber}>{daysLeftForNext} Days</Text>
-                            <Text style={styles.statLabel}>Until Next Bonus</Text>
-                        </View>
-                        <View style={styles.statCard}>
-                            <Text style={styles.statNumber}>{totalStreakCoins} Ł</Text>
-                            <Text style={styles.statLabel}>Total Coins Won</Text>
-                        </View>
-                    </View>
+                {/* Soft Edge Blend Transition Strip where Green meets White */}
+                <View style={{ height: 26, width: '100%', backgroundColor: colors.background }}>
+                    <Svg width="100%" height={26} preserveAspectRatio="none">
+                        <Defs>
+                            <LinearGradient id="streakEdgeBlend" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <Stop offset="0%" stopColor={heroBgColor} stopOpacity="1" />
+                                <Stop offset="100%" stopColor={colors.background} stopOpacity="1" />
+                            </LinearGradient>
+                        </Defs>
+                        <Rect width="100%" height={26} fill="url(#streakEdgeBlend)" />
+                    </Svg>
+                </View>
 
-                    {/* Progress Bar Section */}
-                    <View style={styles.progressCard}>
-                        <View style={styles.progressCardHeader}>
-                            <Text style={styles.progressTitle}>Milestone Progress</Text>
-                            <Text style={styles.progressPercent}>{daysInCurrentBlock} / 10 Days</Text>
+                {/* Main Content Area */}
+                <View style={styles.contentBody}>
+                    {loading ? (
+                        <View style={styles.centerLoading}>
+                            <ActivityIndicator size="large" color="#056f36" />
+                            <Text style={[styles.loadingText, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>Loading streak data...</Text>
                         </View>
-                        <View style={styles.trackBackground}>
-                            <View style={[styles.trackFill, { width: `${(daysInCurrentBlock / 10) * 100}%` }]} />
-                        </View>
-                        <Text style={styles.progressSubtext}>
-                            {10 - daysInCurrentBlock} more daily order(s) needed to claim +{nextMilestoneCoins} Laro Coins!
-                        </Text>
-                    </View>
-
-                    {/* 10-Day Milestone Reward Roadmap */}
-                    <Text style={styles.sectionTitle}>🏆 10-Day Milestone Roadmap</Text>
-                    
-                    <View style={styles.milestonesList}>
-                        {milestones.map((m, index) => {
-                            const isReached = currentStreak >= m.day;
-                            const isNext = !isReached && currentStreak < m.day && (index === 0 || currentStreak >= milestones[index - 1].day);
-
-                            return (
-                                <View key={m.day} style={[styles.milestoneItem, isReached && styles.milestoneItemReached, isNext && styles.milestoneItemNext]}>
-                                    <View style={[styles.milestoneIconBox, isReached && styles.milestoneIconBoxReached]}>
-                                        {isReached ? (
-                                            <Ionicons name="checkmark-circle" size={24} color="#16a34a" />
-                                        ) : (
-                                            <Text style={{ fontSize: 20 }}>🎁</Text>
-                                        )}
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.milestoneDayText}>Day {m.day} Milestone</Text>
-                                        <Text style={styles.milestoneCoinsText}>+{m.coins} Laro Wallet Coins</Text>
-                                    </View>
-                                    <View style={[styles.statusBadge, isReached ? styles.statusBadgeDone : (isNext ? styles.statusBadgeActive : styles.statusBadgeLocked)]}>
-                                        <Text style={[styles.statusBadgeText, isReached ? styles.statusBadgeTextDone : (isNext ? styles.statusBadgeTextActive : styles.statusBadgeTextLocked)]}>
-                                            {isReached ? 'CLAIMED' : (isNext ? 'IN PROGRESS' : 'LOCKED')}
-                                        </Text>
-                                    </View>
+                    ) : (
+                        <View>
+                            {/* Quick Stats Grid */}
+                            <View style={styles.statsRow}>
+                                <View style={[styles.statCard, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
+                                    <Text style={styles.statNumber}>+{nextMilestoneCoins} Ł</Text>
+                                    <Text style={styles.statLabel}>Next Milestone</Text>
                                 </View>
-                            );
-                        })}
-                    </View>
+                                <View style={[styles.statCard, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
+                                    <Text style={styles.statNumber}>{daysLeftForNext} Days</Text>
+                                    <Text style={styles.statLabel}>Until Bonus</Text>
+                                </View>
+                                <View style={[styles.statCard, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
+                                    <Text style={styles.statNumber}>{totalStreakCoins} Ł</Text>
+                                    <Text style={styles.statLabel}>Total Coins</Text>
+                                </View>
+                            </View>
 
-                    {/* Streak Rules Card */}
-                    <View style={styles.rulesCard}>
-                        <Text style={styles.rulesTitle}>🔥 Streak Rules</Text>
-                        <View style={styles.ruleRow}>
-                            <Text style={styles.ruleBullet}>•</Text>
-                            <Text style={styles.ruleText}>Place at least 1 food or grocery order every day to maintain your streak.</Text>
-                        </View>
-                        <View style={styles.ruleRow}>
-                            <Text style={styles.ruleBullet}>•</Text>
-                            <Text style={styles.ruleText}>Every 10 streak days (10, 20, 30 days...), bonus Laro Coins are credited automatically to your wallet.</Text>
-                        </View>
-                        <View style={styles.ruleRow}>
-                            <Text style={styles.ruleBullet}>•</Text>
-                            <Text style={styles.ruleText}>Missing a day will reset your current streak back to Day 1.</Text>
-                        </View>
-                    </View>
+                            {/* Progress Bar Section */}
+                            <View style={[styles.progressCard, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
+                                <View style={styles.progressCardHeader}>
+                                    <Text style={[styles.progressTitle, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>Milestone Progress</Text>
+                                    <Text style={styles.progressPercent}>{daysInCurrentBlock} / 10 Days</Text>
+                                </View>
+                                <View style={styles.trackBackground}>
+                                    <View style={[styles.trackFill, { width: `${(daysInCurrentBlock / 10) * 100}%` }]} />
+                                </View>
+                                <Text style={styles.progressSubtext}>
+                                    {10 - daysInCurrentBlock} more daily order(s) needed to claim +{nextMilestoneCoins} Laro Wallet Coins!
+                                </Text>
+                            </View>
 
-                    <TouchableOpacity style={styles.orderNowBtn} onPress={() => navigation.navigate('Home')}>
-                        <Text style={styles.orderNowBtnText}>Keep Streak Alive • Order Now</Text>
-                    </TouchableOpacity>
+                            {/* 10-Day Milestone Reward Roadmap */}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                                <MaterialCommunityIcons name="trophy-award" size={22} color="#056f36" />
+                                <Text style={[styles.sectionTitle, { color: isDarkMode ? '#ffffff' : '#0f172a', marginBottom: 0 }]}>10-Day Milestone Roadmap</Text>
+                            </View>
 
-                </ScrollView>
-            )}
-        </SafeAreaView>
+                            <View style={styles.milestonesList}>
+                                {milestones.map((m, index) => {
+                                    const isReached = currentStreak >= m.day;
+                                    const isNext = !isReached && currentStreak < m.day && (index === 0 || currentStreak >= milestones[index - 1].day);
+
+                                    return (
+                                        <View
+                                            key={m.day}
+                                            style={[
+                                                styles.milestoneItem,
+                                                { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#f1f5f9' },
+                                                isReached && styles.milestoneItemReached,
+                                                isNext && styles.milestoneItemNext
+                                            ]}
+                                        >
+                                            <View style={[styles.milestoneIconBox, isReached && styles.milestoneIconBoxReached]}>
+                                                {isReached ? (
+                                                    <Ionicons name="checkmark-circle" size={24} color="#056f36" />
+                                                ) : (
+                                                    <MaterialCommunityIcons name="gift-outline" size={22} color={isNext ? '#056f36' : '#94a3b8'} />
+                                                )}
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={[styles.milestoneDayText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>Day {m.day} Milestone</Text>
+                                                <Text style={styles.milestoneCoinsText}>+{m.coins} Laro Wallet Coins</Text>
+                                            </View>
+                                            <View style={[styles.statusBadge, isReached ? styles.statusBadgeDone : (isNext ? styles.statusBadgeActive : styles.statusBadgeLocked)]}>
+                                                <Text style={[styles.statusBadgeText, isReached ? styles.statusBadgeTextDone : (isNext ? styles.statusBadgeTextActive : styles.statusBadgeTextLocked)]}>
+                                                    {isReached ? 'CLAIMED' : (isNext ? 'IN PROGRESS' : 'LOCKED')}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+
+                            {/* Streak Rules Card */}
+                            <View style={[styles.rulesCard, { backgroundColor: isDarkMode ? '#1e293b' : '#f0fdf4', borderColor: isDarkMode ? '#334155' : '#bbf7d0' }]}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                                    <MaterialCommunityIcons name="fire" size={20} color="#ea580c" />
+                                    <Text style={styles.rulesTitle}>How Campus Streaks Work</Text>
+                                </View>
+                                <View style={styles.ruleRow}>
+                                    <Text style={styles.ruleBullet}>•</Text>
+                                    <Text style={[styles.ruleText, { color: isDarkMode ? '#cbd5e1' : '#334155' }]}>Place at least 1 food or grocery order every day to maintain your streak.</Text>
+                                </View>
+                                <View style={styles.ruleRow}>
+                                    <Text style={styles.ruleBullet}>•</Text>
+                                    <Text style={[styles.ruleText, { color: isDarkMode ? '#cbd5e1' : '#334155' }]}>Every 10 streak days (10, 20, 30 days...), bonus Laro Coins are credited automatically to your wallet.</Text>
+                                </View>
+                                <View style={styles.ruleRow}>
+                                    <Text style={styles.ruleBullet}>•</Text>
+                                    <Text style={[styles.ruleText, { color: isDarkMode ? '#cbd5e1' : '#334155' }]}>Missing a day will reset your current streak back to Day 1.</Text>
+                                </View>
+                            </View>
+
+                            {/* Order Now Action CTA */}
+                            <TouchableOpacity
+                                style={styles.orderNowBtn}
+                                onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+                                activeOpacity={0.9}
+                            >
+                                <Text style={styles.orderNowBtnText}>Keep Streak Alive • Order Now</Text>
+                                <Ionicons name="arrow-forward" size={18} color="#ffffff" style={{ marginLeft: 6 }} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
+            </ScrollView>
+        </View>
     );
 }
 
@@ -185,94 +270,140 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    center: {
-        flex: 1,
-        justify: 'center',
+    centerLoading: {
         alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 60,
     },
-    header: {
+    loadingText: {
+        marginTop: 12,
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    heroHeaderSection: {
+        paddingHorizontal: 16,
+        paddingBottom: 20,
+    },
+    topHeaderNavRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#edf2f7',
-        backgroundColor: '#fff',
-    },
-    backBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f1f5f9',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '900',
-        color: '#0f172a',
-    },
-    scrollContent: {
-        padding: 16,
-        paddingBottom: 40,
-    },
-    heroCard: {
-        backgroundColor: '#fff4eb',
-        borderRadius: 24,
-        padding: 24,
-        alignItems: 'center',
-        borderWidth: 1.5,
-        borderColor: '#ffd8be',
-        shadowColor: '#ff6b00',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        elevation: 4,
         marginBottom: 16,
     },
-    flameCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#ffe4d1',
-        justifyContent: 'center',
+    backBtn: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         alignItems: 'center',
-        marginBottom: 12,
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 2,
     },
-    heroStreakCount: {
-        fontSize: 36,
-        fontWeight: '900',
-        color: '#d94600',
-    },
-    heroStreakLabel: {
-        fontSize: 12,
-        fontWeight: '900',
-        color: '#994d00',
-        letterSpacing: 1,
-        marginBottom: 10,
-    },
-    heroPill: {
+    topTitleBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        backgroundColor: '#ff6b00',
+        backgroundColor: '#dcfce7',
         paddingHorizontal: 12,
         paddingVertical: 6,
+        borderRadius: 16,
+        gap: 6,
+    },
+    topTitleBadgeText: {
+        color: '#056f36',
+        fontSize: 12,
+        fontWeight: '900',
+        letterSpacing: 1.2,
+    },
+    heroTextWrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+    },
+    heroTitleText: {
+        fontSize: 26,
+        fontWeight: '900',
+        letterSpacing: -0.6,
+        textAlign: 'center',
+    },
+    heroCalligraphySubText: {
+        fontSize: 24,
+        fontFamily: Platform.select({ ios: 'Snell Roundhand', android: 'cursive', default: 'cursive' }),
+        color: '#056f36',
+        marginTop: 4,
+        textAlign: 'center',
+        fontWeight: '700',
+        letterSpacing: 0.5,
+    },
+    curvedSwooshWrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 4,
+    },
+    heroStreakCard: {
+        borderRadius: 24,
+        padding: 22,
+        alignItems: 'center',
+        borderWidth: 1.5,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
+        marginHorizontal: 4,
+    },
+    flameCircle: {
+        width: 84,
+        height: 84,
+        borderRadius: 42,
+        backgroundColor: '#ffedd5',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+        shadowColor: '#f97316',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    heroStreakCount: {
+        fontSize: 38,
+        fontWeight: '900',
+        color: '#ea580c',
+        letterSpacing: -1,
+    },
+    heroStreakLabel: {
+        fontSize: 11.5,
+        fontWeight: '900',
+        color: '#94a3b8',
+        letterSpacing: 1.5,
+        marginTop: 2,
+        marginBottom: 14,
+    },
+    personalBestPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#056f36',
+        paddingHorizontal: 14,
+        paddingVertical: 7,
         borderRadius: 20,
         marginBottom: 14,
     },
-    heroPillText: {
-        color: '#fff',
-        fontSize: 12,
+    personalBestText: {
+        color: '#ffffff',
+        fontSize: 12.5,
         fontWeight: '800',
     },
     heroDescription: {
-        fontSize: 13,
-        color: '#7c3a00',
-        textAlign: 'center',
-        lineHeight: 18,
+        fontSize: 13.5,
         fontWeight: '600',
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    contentBody: {
+        paddingHorizontal: 16,
     },
     statsRow: {
         flexDirection: 'row',
@@ -281,188 +412,178 @@ const styles = StyleSheet.create({
     },
     statCard: {
         flex: 1,
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 12,
-        alignItems: 'center',
+        padding: 14,
+        borderRadius: 18,
         borderWidth: 1,
-        borderColor: '#e2e8f0',
+        alignItems: 'center',
     },
     statNumber: {
         fontSize: 16,
         fontWeight: '900',
-        color: '#d94600',
+        color: '#056f36',
     },
     statLabel: {
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: '700',
         color: '#64748b',
-        marginTop: 2,
+        marginTop: 4,
         textAlign: 'center',
     },
     progressCard: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 16,
+        padding: 18,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#e2e8f0',
-        marginBottom: 20,
+        marginBottom: 22,
     },
     progressCardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 12,
     },
     progressTitle: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: '800',
-        color: '#0f172a',
     },
     progressPercent: {
         fontSize: 13,
         fontWeight: '900',
-        color: '#d94600',
+        color: '#056f36',
     },
     trackBackground: {
         height: 10,
-        backgroundColor: '#ffe4d6',
+        backgroundColor: '#e2e8f0',
         borderRadius: 5,
         overflow: 'hidden',
-        marginBottom: 8,
+        marginBottom: 10,
     },
     trackFill: {
         height: '100%',
-        backgroundColor: '#ff6b00',
+        backgroundColor: '#056f36',
         borderRadius: 5,
     },
     progressSubtext: {
-        fontSize: 11,
-        color: '#64748b',
+        fontSize: 12.5,
         fontWeight: '600',
+        color: '#64748b',
     },
     sectionTitle: {
-        fontSize: 16,
-        fontWeight: '900',
-        color: '#0f172a',
-        marginBottom: 12,
+        fontSize: 18,
+        fontWeight: '800',
+        marginBottom: 14,
     },
     milestonesList: {
         gap: 10,
-        marginBottom: 20,
+        marginBottom: 24,
     },
     milestoneItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
         padding: 14,
-        borderRadius: 16,
+        borderRadius: 18,
         borderWidth: 1,
-        borderColor: '#e2e8f0',
         gap: 12,
     },
     milestoneItemReached: {
         borderColor: '#bbf7d0',
-        backgroundColor: '#f0fdf4',
     },
     milestoneItemNext: {
-        borderColor: '#ffedd5',
-        backgroundColor: '#fff7ed',
+        borderColor: '#056f36',
+        borderWidth: 1.5,
     },
     milestoneIconBox: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#f8fafc',
-        justifyContent: 'center',
+        backgroundColor: '#f1f5f9',
         alignItems: 'center',
+        justifyContent: 'center',
     },
     milestoneIconBoxReached: {
         backgroundColor: '#dcfce7',
     },
     milestoneDayText: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: '#0f172a',
+        fontSize: 14.5,
+        fontWeight: '800',
     },
     milestoneCoinsText: {
-        fontSize: 12,
+        fontSize: 12.5,
         fontWeight: '700',
-        color: '#ea580c',
+        color: '#056f36',
         marginTop: 2,
     },
     statusBadge: {
         paddingHorizontal: 10,
-        paddingVertical: 4,
+        paddingVertical: 5,
         borderRadius: 12,
     },
     statusBadgeDone: {
         backgroundColor: '#dcfce7',
     },
     statusBadgeActive: {
-        backgroundColor: '#ffedd5',
+        backgroundColor: '#fef3c7',
     },
     statusBadgeLocked: {
         backgroundColor: '#f1f5f9',
     },
     statusBadgeText: {
-        fontSize: 10,
+        fontSize: 10.5,
         fontWeight: '900',
+        letterSpacing: 0.5,
     },
     statusBadgeTextDone: {
-        color: '#16a34a',
+        color: '#056f36',
     },
     statusBadgeTextActive: {
-        color: '#ea580c',
+        color: '#d97706',
     },
     statusBadgeTextLocked: {
         color: '#94a3b8',
     },
     rulesCard: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-        marginBottom: 24,
+        padding: 18,
+        borderRadius: 20,
+        borderWidth: 1.5,
+        marginBottom: 20,
     },
     rulesTitle: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: '#0f172a',
-        marginBottom: 10,
+        fontSize: 15.5,
+        fontWeight: '800',
+        color: '#056f36',
     },
     ruleRow: {
         flexDirection: 'row',
-        gap: 8,
-        marginBottom: 6,
+        alignItems: 'flex-start',
+        marginBottom: 8,
     },
     ruleBullet: {
-        color: '#ff6b00',
-        fontWeight: '900',
-        fontSize: 14,
+        fontSize: 16,
+        color: '#056f36',
+        marginRight: 8,
+        marginTop: -2,
     },
     ruleText: {
         flex: 1,
-        fontSize: 12,
-        color: '#475569',
+        fontSize: 13,
         fontWeight: '600',
-        lineHeight: 16,
+        lineHeight: 18,
     },
     orderNowBtn: {
-        backgroundColor: '#ff6b00',
-        paddingVertical: 16,
-        borderRadius: 20,
+        flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: '#ff6b00',
+        justifyContent: 'center',
+        backgroundColor: '#056f36',
+        paddingVertical: 15,
+        borderRadius: 24,
+        shadowColor: '#056f36',
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
         elevation: 6,
     },
     orderNowBtnText: {
-        color: '#fff',
-        fontSize: 16,
+        color: '#ffffff',
+        fontSize: 15,
         fontWeight: '900',
     },
 });

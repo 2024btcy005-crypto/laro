@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import { clearCart } from '../../store/cartSlice';
-import { authAPI, orderAPI, couponAPI } from '../../services/api';
+import { authAPI, orderAPI, couponAPI, resolveImageUrl } from '../../services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, CONSTANTS } from '../../theme';
 import OrderSuccessOverlay from '../../components/OrderSuccessOverlay';
@@ -355,7 +355,7 @@ export default function CheckoutScreen({ navigation }) {
                             {cart.items.map((item, idx) => (
                                 <View key={item.id || item._id} style={[styles.summaryRow, idx > 0 && styles.summaryRowBorder]}>
                                     {item.imageUrl ? (
-                                        <Image source={{ uri: item.imageUrl }} style={styles.summaryProductImage} />
+                                        <Image source={{ uri: resolveImageUrl(item.imageUrl) }} style={styles.summaryProductImage} />
                                     ) : (
                                         <View style={[styles.summaryProductImage, styles.summaryProductPlaceholder]}>
                                             <Ionicons name="cube-outline" size={16} color="#056f36" />

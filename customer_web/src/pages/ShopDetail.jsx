@@ -77,6 +77,8 @@ const MenuItem = ({ item, shop, cart, addToCart, removeFromCart, getItemQuantity
                     {item.isBestseller && <span className="bestseller-tag">🔥 MUST TRY</span>}
                     {item.variants?.length > 0 && <span className="customisable-tag">✨ CUSTOMISABLE</span>}
                 </div>
+                {item.isB2G1 && <span className="b2g1-badge" style={{ display: 'inline-block', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', fontSize: '0.65rem', fontWeight: 900, padding: '2px 8px', borderRadius: '4px', marginBottom: '4px' }}>🎁 BUY 2 GET 1 FREE</span>}
+                {item.isCombo && <span className="combo-badge" style={{ display: 'inline-block', background: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#fff', fontSize: '0.65rem', fontWeight: 900, padding: '2px 8px', borderRadius: '4px', marginBottom: '4px' }}>🔥 COMBO MEAL</span>}
                 <h3 className="item-name">{item.name}</h3>
                 <div className="item-price-rating-row">
                     <span className="item-price">₹{item.price}{item.variants?.length > 0 && <span className="onwards-tag"> onwards</span>}</span>

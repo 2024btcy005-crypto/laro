@@ -28,6 +28,8 @@ const INITIAL_FORM_STATE = {
     itemType: 'veg',
     isVeg: true,
     isEdible: true,
+    isB2G1: false,
+    isCombo: false,
     isAvailable: true,
     variantOf: null,
     variantName: '',
@@ -381,6 +383,18 @@ export default function ProductManagement() {
                                                                     border: `1px solid ${product.isEdible === false || product.isVeg === null ? 'rgba(100, 116, 139, 0.3)' : (product.isVeg ? 'rgba(22, 163, 74, 0.3)' : 'rgba(220, 38, 38, 0.3)')}`
                                                                 }}
                                                             />
+                                                            {product.isB2G1 && (
+                                                                <Chip
+                                                                    label="B2G1 🎁"
+                                                                    sx={{ fontWeight: 900, fontSize: '0.66rem', borderRadius: 1, bgcolor: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+                                                                />
+                                                            )}
+                                                            {product.isCombo && (
+                                                                <Chip
+                                                                    label="COMBO 🔥"
+                                                                    sx={{ fontWeight: 900, fontSize: '0.66rem', borderRadius: 1, bgcolor: 'rgba(236, 72, 153, 0.2)', color: '#ec4899', border: '1px solid rgba(236, 72, 153, 0.3)' }}
+                                                                />
+                                                            )}
                                                         </Box>
                                                     </Box>
                                                     <CardContent sx={{ flexGrow: 1, p: 3 }}>
@@ -671,10 +685,22 @@ export default function ProductManagement() {
                                          </RadioGroup>
                                      </FormControl>
                                  </Grid>
-                                <Grid item xs={6}>
+                                <Grid item xs={4}>
                                     <FormControlLabel
                                         control={<Switch checked={formData.isAvailable} onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })} />}
-                                        label="Is Available?"
+                                        label={<Typography fontSize="0.85rem" fontWeight="700">Is Available?</Typography>}
+                                    />
+                                </Grid>
+                                <Grid item xs={4}>
+                                    <FormControlLabel
+                                        control={<Switch checked={formData.isB2G1} onChange={(e) => setFormData({ ...formData, isB2G1: e.target.checked })} color="warning" />}
+                                        label={<Typography fontSize="0.85rem" fontWeight="700">🎁 Buy 2 Get 1 Free?</Typography>}
+                                    />
+                                </Grid>
+                                <Grid item xs={4}>
+                                    <FormControlLabel
+                                        control={<Switch checked={formData.isCombo} onChange={(e) => setFormData({ ...formData, isCombo: e.target.checked })} color="secondary" />}
+                                        label={<Typography fontSize="0.85rem" fontWeight="700">🔥 Is Combo Meal?</Typography>}
                                     />
                                 </Grid>
                                 <Grid item xs={12}>

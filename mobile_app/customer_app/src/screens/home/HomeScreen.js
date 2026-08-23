@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
     View, Text, StyleSheet, TouchableOpacity,
     Image, TextInput, ScrollView, RefreshControl, StatusBar, Alert,
-    Animated, Dimensions, ActivityIndicator, Modal, Linking, FlatList, Platform
+    Animated, Dimensions, ActivityIndicator, Modal, Linking, FlatList, Platform, Keyboard, Easing
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -21,6 +21,7 @@ import LaroToast from '../../components/LaroToast';
 import { COLORS, CONSTANTS } from '../../theme';
 import { useTheme } from '../../context/ThemeContext';
 import { registerForPushNotificationsAsync } from '../../services/notificationService';
+import Svg, { Path, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { HomeScreenSkeleton } from '../../components/SkeletonLoader';
 
 const isEdibleProduct = (item) => {
@@ -100,23 +101,78 @@ export default function HomeScreen({ navigation }) {
     const searchFadeAnim = useRef(new Animated.Value(1)).current;
     const searchTranslateY = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            Animated.parallel([
-                Animated.timing(searchFadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
-                Animated.timing(searchTranslateY, { toValue: -10, duration: 250, useNativeDriver: true })
-            ]).start(() => {
-                setPlaceholderIndex(prev => (prev + 1) % SEARCH_SUGGESTIONS.length);
-                searchTranslateY.setValue(10);
-                Animated.parallel([
-                    Animated.timing(searchFadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
-                    Animated.timing(searchTranslateY, { toValue: 0, duration: 300, useNativeDriver: true })
-                ]).start();
-            });
-        }, 2800);
+    // Animated Expanding Search Overlay State & Recent Searches
+    const RECENT_SEARCHES_KEY = '@recent_searches_history';
+    const [recentSearches, setRecentSearches] = useState([]);
+    const [isSearchOverlayVisible, setIsSearchOverlayVisible] = useState(false);
+    const searchExpandAnim = useRef(new Animated.Value(0)).current;
+    const searchInputRef = useRef(null);
 
-        return () => clearInterval(interval);
-    }, []);
+    const loadRecentSearches = async () => {
+        try {
+            const data = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+            if (data) setRecentSearches(JSON.parse(data));
+        } catch (e) {
+            console.error('Failed to load recent searches:', e);
+        }
+    };
+
+    const saveRecentSearch = async (searchTerm) => {
+        if (!searchTerm || !searchTerm.trim()) return;
+        const clean = searchTerm.trim();
+        try {
+            const filtered = recentSearches.filter(s => s.toLowerCase() !== clean.toLowerCase());
+            const updated = [clean, ...filtered].slice(0, 6);
+            setRecentSearches(updated);
+            await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+        } catch (e) {
+            console.error('Failed to save search:', e);
+        }
+    };
+
+    const removeRecentSearch = async (searchTerm) => {
+        try {
+            const updated = recentSearches.filter(s => s !== searchTerm);
+            setRecentSearches(updated);
+            await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+        } catch (e) {
+            console.error('Failed to remove search:', e);
+        }
+    };
+
+    const clearRecentSearches = async () => {
+        try {
+            setRecentSearches([]);
+            await AsyncStorage.removeItem(RECENT_SEARCHES_KEY);
+        } catch (e) {
+            console.error('Failed to clear searches:', e);
+        }
+    };
+
+    const openSearchOverlay = () => {
+        loadRecentSearches();
+        setIsSearchOverlayVisible(true);
+        Animated.spring(searchExpandAnim, {
+            toValue: 1,
+            tension: 70,
+            friction: 8,
+            useNativeDriver: true,
+        }).start(() => {
+            if (searchInputRef.current) {
+                searchInputRef.current.focus();
+            }
+        });
+    };
+
+    const closeSearchOverlay = () => {
+        Keyboard.dismiss();
+        if (searchInputRef.current) {
+            searchInputRef.current.blur();
+        }
+        setIsSearchOverlayVisible(false);
+        searchExpandAnim.setValue(0);
+        setSearchQuery('');
+    };
 
 
     const cart = useSelector(state => state.cart);
@@ -427,6 +483,15 @@ export default function HomeScreen({ navigation }) {
         dispatch(addToCart({ ...product, shopId: product.shopId }));
     };
 
+    const matchingProducts = useMemo(() => {
+        if (!searchQuery.trim()) return [];
+        const q = searchQuery.toLowerCase();
+        return (products || []).filter(p =>
+            p.name?.toLowerCase().includes(q) ||
+            (p.category || '').toLowerCase().includes(q)
+        );
+    }, [products, searchQuery]);
+
     // Grouping logic for sections with Search Filtering
     const sections = useMemo(() => {
         let allProducts = products;
@@ -484,7 +549,7 @@ export default function HomeScreen({ navigation }) {
             if (remainingItems.length > 0) {
                 const customCategoryGroups = {};
                 remainingItems.forEach(item => {
-                    const catName = item.category || 'General';
+                    const catName = item.category || 'Essential Items';
                     if (!customCategoryGroups[catName]) customCategoryGroups[catName] = [];
                     customCategoryGroups[catName].push(item);
                 });
@@ -497,8 +562,8 @@ export default function HomeScreen({ navigation }) {
                 });
             }
 
-            if (searchQuery && filtered.length === 0 && filteredProducts.length > 0) {
-                return [{ title: 'Search Results', data: filteredProducts }];
+            if (filtered.length === 0 && filteredProducts.length > 0) {
+                return [{ title: searchQuery ? 'Search Results' : 'Explore Products', data: filteredProducts }];
             }
 
             if (!searchQuery && recentProducts.length > 0) {
@@ -511,16 +576,31 @@ export default function HomeScreen({ navigation }) {
             console.log(`[HomeScreen] 'All' selected. Sections count: ${filtered.length}`);
             return filtered;
         } else {
-            const categoryMap = {
-                'Grocery': 'Grocery & kitchen',
-                'Fresh': 'Fresh',
-                'Laro Care': 'Medicines'
-            };
-            const mappedCat = categoryMap[selectedCategory] || selectedCategory;
-            const filteredData = filteredProducts.filter(p => p.category === mappedCat);
-
             const isXerox = selectedCategory === 'Xerox';
-            return (filteredData.length > 0 || isXerox) ? [{ title: selectedCategory, data: filteredData }] : [];
+            const targetCatLower = selectedCategory.toLowerCase();
+
+            const filteredData = filteredProducts.filter(p => {
+                const catLower = (p.category || '').toLowerCase();
+                const nameLower = (p.name || '').toLowerCase();
+                const shopCatLower = (p.shopCategory || '').toLowerCase();
+
+                if (targetCatLower === 'grocery') {
+                    return catLower.includes('groc') || catLower.includes('dairy') || catLower.includes('egg') || catLower.includes('bread') || catLower.includes('kitchen') || catLower.includes('general') || shopCatLower.includes('groc');
+                }
+                if (targetCatLower === 'fresh') {
+                    return catLower.includes('fresh') || catLower.includes('veg') || catLower.includes('fruit') || catLower.includes('dairy') || catLower.includes('curd') || catLower.includes('milk');
+                }
+                if (targetCatLower === 'stationery') {
+                    return catLower.includes('station') || catLower.includes('book') || catLower.includes('xerox') || catLower.includes('pen') || catLower.includes('paper') || catLower.includes('sheet') || shopCatLower.includes('station');
+                }
+                if (targetCatLower === 'laro care' || targetCatLower === 'pharmacy' || targetCatLower === 'care') {
+                    return catLower.includes('med') || catLower.includes('care') || catLower.includes('soap') || catLower.includes('shampoo') || catLower.includes('health') || catLower.includes('hygiene') || catLower.includes('toothpaste') || catLower.includes('paste');
+                }
+                return catLower.includes(targetCatLower) || targetCatLower.includes(catLower) || nameLower.includes(targetCatLower);
+            });
+
+            const resultData = filteredData.length > 0 ? filteredData : filteredProducts;
+            return (resultData.length > 0 || isXerox) ? [{ title: selectedCategory, data: resultData }] : [];
         }
     }, [products, selectedCategory, searchQuery, recentProducts]);
 
@@ -548,66 +628,101 @@ export default function HomeScreen({ navigation }) {
         { id: 'b2', image: 'https://img.freepik.com/free-vector/healthy-food-banner-template_23-2148496494.jpg' },
     ];
 
+    const homeHeroBgColor = isDarkMode ? '#0f172a' : '#f0fdf4';
+
     const renderHeader = () => {
         return (
-            <View style={[styles.headerContainer, { paddingTop: (insets?.top || 0) + 10 }]}>
-                <View style={styles.locationHeader}>
-                    <View style={styles.locationContainer}>
-                        {/* Top Left: Deliver To User Address Selector */}
-                        <TouchableOpacity 
-                            style={styles.addressSelector} 
-                            onPress={() => {
-                                Haptics.selectionAsync();
-                                navigation.navigate('AddressBook');
-                            }}
-                            activeOpacity={0.8}
-                        >
-                            <View style={{ maxWidth: width * 0.58 }}>
-                                <Text style={styles.deliverToText}>DELIVER TO</Text>
-                                <View style={styles.addressRow}>
-                                    <Ionicons name="location-sharp" size={13} color="#056f36" style={{ marginRight: 3 }} />
-                                    <Text style={styles.addressMainText} numberOfLines={1}>
-                                        {defaultAddress?.title && defaultAddress?.title !== 'Set up delivery address'
-                                            ? `${defaultAddress.title}${defaultAddress.subtitle ? ` • ${defaultAddress.subtitle}` : ''}`
-                                            : (user?.address || selectedUniversity?.name || 'Set Delivery Location')}
-                                    </Text>
-                                    <Ionicons name="chevron-down" size={15} color="#056f36" style={styles.chevronIcon} />
+            <View style={[styles.headerContainer, { paddingHorizontal: 0 }]}>
+                {/* Light Green Hero Backdrop Container */}
+                <View style={[
+                    styles.homeHeroBackdropSection,
+                    { 
+                        backgroundColor: homeHeroBgColor,
+                        paddingTop: (insets?.top || 0) + 12,
+                    }
+                ]}>
+                    {/* Top Row: Deliver To Address Selector + Streak & Profile */}
+                    <View style={styles.locationHeader}>
+                        <View style={styles.locationContainer}>
+                            <TouchableOpacity 
+                                style={styles.addressSelector} 
+                                onPress={() => {
+                                    Haptics.selectionAsync();
+                                    navigation.navigate('AddressBook');
+                                }}
+                                activeOpacity={0.8}
+                            >
+                                <View style={{ maxWidth: width * 0.58 }}>
+                                    <Text style={styles.deliverToText}>DELIVER TO</Text>
+                                    <View style={styles.addressRow}>
+                                        <Ionicons name="location-sharp" size={13} color="#056f36" style={{ marginRight: 3 }} />
+                                        <Text style={styles.addressMainText} numberOfLines={1}>
+                                            {defaultAddress?.title && defaultAddress?.title !== 'Set up delivery address'
+                                                ? `${defaultAddress.title}${defaultAddress.subtitle ? ` • ${defaultAddress.subtitle}` : ''}`
+                                                : (user?.address || selectedUniversity?.name || 'Set Delivery Location')}
+                                        </Text>
+                                        <Ionicons name="chevron-down" size={15} color="#056f36" style={styles.chevronIcon} />
+                                    </View>
                                 </View>
+                            </TouchableOpacity>
+
+                            <View style={{ flex: 1 }} />
+
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <TouchableOpacity 
+                                    style={styles.headerStreakPill} 
+                                    onPress={() => navigation.navigate('Streak')}
+                                >
+                                    <Text style={{ fontSize: 14 }}>🔥</Text>
+                                    <Text style={{ fontSize: 12, fontWeight: '900', color: '#d94600', marginLeft: 2 }}>
+                                        {userSummary?.currentStreak > 0 ? `${userSummary.currentStreak}d` : '0d'}
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity 
+                                    onPress={() => navigation.navigate('Profile')} 
+                                    style={[styles.profileAvatarWrapper, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: isDarkMode ? '#334155' : '#dcecdc' }]}
+                                >
+                                    {user?.avatarUrl ? (
+                                        <Image source={{ uri: user.avatarUrl }} style={styles.profileAvatar} />
+                                    ) : (
+                                        <Ionicons name="person" size={18} color="#056f36" />
+                                    )}
+                                </TouchableOpacity>
                             </View>
-                        </TouchableOpacity>
-
-                        <View style={{ flex: 1 }} />
-
-                        {/* Top Right: Streak Pill & Profile Avatar */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <TouchableOpacity 
-                                style={styles.headerStreakPill} 
-                                onPress={() => navigation.navigate('Streak')}
-                            >
-                                <Text style={{ fontSize: 15 }}>🔥</Text>
-                                <Text style={{ fontSize: 13, fontWeight: '900', color: '#d94600', marginLeft: 3 }}>
-                                    {userSummary?.currentStreak > 0 ? `${userSummary.currentStreak}d` : '0d'}
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity 
-                                onPress={() => navigation.navigate('Profile')} 
-                                style={[styles.profileAvatarWrapper, { backgroundColor: '#f3fbf4', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#dcecdc' }]}
-                            >
-                                {user?.avatarUrl ? (
-                                    <Image source={{ uri: user.avatarUrl }} style={styles.profileAvatar} />
-                                ) : (
-                                    <Ionicons name="person" size={20} color="#056f36" />
-                                )}
-                            </TouchableOpacity>
                         </View>
                     </View>
-                </View>
 
-                <View style={[styles.searchBarContainer, { backgroundColor: isDarkMode ? colors.white + '10' : '#fff', borderColor: isDarkMode ? colors.border : '#e6ede6' }]}>
-                    <Ionicons name="search" size={20} color={colors.gray} style={{ marginRight: 8 }} />
-                    <View style={{ flex: 1, justifyContent: 'center', height: 40, position: 'relative' }}>
-                        {!searchQuery && (
+                    {/* Hero Headline Box with Calligraphy Subtitle & Curved Swoosh */}
+                    <View style={styles.homeHeroContentBox}>
+                        <Text style={[styles.homeHeroTitleText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                            CAMPUS SUPERSTORE
+                        </Text>
+                        <Text style={styles.homeHeroCalligraphySubText}>
+                            Hostel Life, Made Effortless
+                        </Text>
+                        <View style={styles.homeCurvedSwooshWrapper}>
+                            <Svg width={170} height={15} viewBox="0 0 170 15" fill="none">
+                                <Path
+                                    d="M 4,5 Q 85,1 165,6 C 171,7 167,13 140,13"
+                                    stroke="#056f36"
+                                    strokeWidth={2.2}
+                                    strokeLinecap="round"
+                                />
+                            </Svg>
+                        </View>
+                    </View>
+
+                    {/* Redesigned Search Pill UI */}
+                    <TouchableOpacity 
+                        style={[styles.homeSearchPillContainer, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]}
+                        onPress={openSearchOverlay}
+                        activeOpacity={0.9}
+                    >
+                        <View style={styles.homeSearchIconBadge}>
+                            <Ionicons name="search" size={16} color="#ffffff" />
+                        </View>
+                        <View style={{ flex: 1, justifyContent: 'center', height: 44, position: 'relative' }}>
                             <Animated.View
                                 pointerEvents="none"
                                 style={{
@@ -618,28 +733,25 @@ export default function HomeScreen({ navigation }) {
                                     transform: [{ translateY: searchTranslateY }]
                                 }}
                             >
-                                <Text style={{ color: '#888888', fontSize: 14, fontWeight: '500' }}>
+                                <Text style={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 13.5, fontWeight: '500' }}>
                                     {SEARCH_SUGGESTIONS[placeholderIndex]}
                                 </Text>
                             </Animated.View>
-                        )}
-                        <TextInput
-                            placeholder=""
-                            placeholderTextColor="transparent"
-                            style={[styles.headerSearchInput, { color: colors.black, width: '100%' }]}
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                        />
-                    </View>
-                    {searchQuery.length > 0 ? (
-                        <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
-                            <Ionicons name="close-circle" size={18} color={colors.gray} />
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity style={{ padding: 4 }}>
-                            <Ionicons name="mic" size={20} color="#006d33" />
-                        </TouchableOpacity>
-                    )}
+                        </View>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Soft Edge Blend Transition Strip where Green meets White */}
+                <View style={{ height: 26, width: '100%', backgroundColor: colors.background }}>
+                    <Svg width="100%" height={26} preserveAspectRatio="none">
+                        <Defs>
+                            <LinearGradient id="homeEdgeBlend" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <Stop offset="0%" stopColor={homeHeroBgColor} stopOpacity="1" />
+                                <Stop offset="100%" stopColor={colors.background} stopOpacity="1" />
+                            </LinearGradient>
+                        </Defs>
+                        <Rect width="100%" height={26} fill="url(#homeEdgeBlend)" />
+                    </Svg>
                 </View>
 
 
@@ -647,43 +759,6 @@ export default function HomeScreen({ navigation }) {
 
 
 
-                {/* Filter Pills */}
-                <View style={{ marginBottom: 15 }}>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingRight: 20, gap: 10 }}
-                    >
-                        {categoriesList.map((cat, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={[{
-                                    alignItems: 'center',
-                                    paddingHorizontal: 16,
-                                    paddingVertical: 8,
-                                    borderRadius: 12,
-                                    backgroundColor: selectedCategory === cat.name ? '#edf5ed' : '#f8fafc',
-                                    borderWidth: 1,
-                                    borderColor: selectedCategory === cat.name ? '#d5edd5' : '#e2e8f0',
-                                    flexDirection: 'row',
-                                    gap: 6
-                                }]}
-                                onPress={() => setSelectedCategory(cat.name)}
-                            >
-                                <MaterialCommunityIcons
-                                    name={cat.icon}
-                                    size={16}
-                                    color={selectedCategory === cat.name ? '#056f36' : '#666'}
-                                />
-                                <Text style={{
-                                    fontSize: 13,
-                                    fontWeight: '700',
-                                    color: selectedCategory === cat.name ? '#056f36' : '#666'
-                                }}>{cat.name}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
             </View>
         );
     };
@@ -1075,33 +1150,40 @@ export default function HomeScreen({ navigation }) {
                     data={sections}
                     keyExtractor={(item) => item.title}
                     renderItem={renderSection}
-                    contentContainerStyle={{ paddingBottom: 150 }}
+                    contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 12 }}
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         !loading && (
-                            <View style={{ padding: 40, alignItems: 'center' }}>
-                                <Text style={{ color: '#999' }}>No items found in this category.</Text>
+                            <View style={styles.emptyContainer}>
+                                <View style={styles.outlineArtWrapper}>
+                                    <View style={[styles.dashedCircleOrbit, { borderColor: isDarkMode ? '#334155' : '#cbd5e1' }]}>
+                                        <MaterialCommunityIcons name="storefront-outline" size={44} color="#056f36" />
+                                        <Ionicons name="sparkles-outline" size={16} color="#fbbf24" style={styles.sparkleAccentTop} />
+                                        <Ionicons name="search-outline" size={14} color="#94a3b8" style={styles.searchAccentBottom} />
+                                    </View>
+                                    <View style={styles.outlineStatusPill}>
+                                        <Text style={styles.outlineStatusPillText}>0 STORES OPEN</Text>
+                                    </View>
+                                </View>
+                                <Text style={[styles.emptyText, { color: isDarkMode ? colors.white : '#0f172a' }]}>
+                                    No Stores Found
+                                </Text>
+                                <Text style={[styles.emptySub, { color: isDarkMode ? colors.gray : '#64748b' }]}>
+                                    We couldn't find any stores matching your current search or category in Kanyakumari.
+                                </Text>
                             </View>
                         )
                     }
                     ListFooterComponent={
-                        <View style={{ alignItems: 'center', marginVertical: 32, paddingHorizontal: 20 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                                <Ionicons name="sparkles" size={14} color="#056f36" />
-                                <Text style={{ fontSize: 13, fontWeight: '900', color: '#056f36', letterSpacing: 1.5 }}>
-                                    LARO
-                                </Text>
-                                <Ionicons name="sparkles" size={14} color="#056f36" />
-                            </View>
-                            <Text style={{
-                                fontSize: 13,
-                                fontWeight: '700',
-                                color: '#64748b',
-                                textAlign: 'center',
-                                letterSpacing: 0.3
-                            }}>
-                                Hostel Life Made Easy 💚
+                        <View style={styles.brandFooterCard}>
+                            <Text style={styles.brandFooterTitle}>
+                                {"Hostel\nlife, easy!"}
                             </Text>
+                            <View style={styles.brandFooterSubRow}>
+                                <Text style={styles.brandFooterSubText}>Crafted with </Text>
+                                <Ionicons name="heart" size={16} color="#ff385c" style={{ marginHorizontal: 2 }} />
+                                <Text style={styles.brandFooterSubText}> in Kanyakumari, India</Text>
+                            </View>
                         </View>
                     }
                     refreshControl={
@@ -1242,6 +1324,212 @@ export default function HomeScreen({ navigation }) {
                         </View>
                     </View>
                 </View>
+            </Modal>
+
+            {/* Smooth Expanding Search Page Overlay Modal */}
+            <Modal
+                visible={isSearchOverlayVisible}
+                animationType="none"
+                transparent={true}
+                onRequestClose={closeSearchOverlay}
+            >
+                <Animated.View style={[
+                    styles.searchMorphOverlayContainer,
+                    {
+                        backgroundColor: colors.background,
+                        opacity: searchExpandAnim,
+                        transform: [
+                            {
+                                translateY: searchExpandAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [50, 0]
+                                })
+                            },
+                            {
+                                scale: searchExpandAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [0.94, 1]
+                                })
+                            }
+                        ]
+                    }
+                ]}>
+                    {/* Top Header Row in Expanded Overlay */}
+                    <View style={[
+                        styles.overlaySearchHeader,
+                        {
+                            backgroundColor: isDarkMode ? '#0f172a' : '#f0fdf4',
+                            paddingTop: Math.max(insets.top, 20) + 8,
+                        }
+                    ]}>
+                        <View style={styles.overlayHeaderRow}>
+                            <TouchableOpacity onPress={closeSearchOverlay} style={styles.overlayBackBtn} activeOpacity={0.8}>
+                                <Ionicons name="arrow-back" size={20} color={isDarkMode ? '#ffffff' : '#0f172a'} />
+                            </TouchableOpacity>
+
+                            <View style={[
+                                styles.overlayInputBox,
+                                {
+                                    backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
+                                    borderColor: isDarkMode ? '#334155' : '#dcfce7',
+                                }
+                            ]}>
+                                <Ionicons name="search" size={18} color="#056f36" style={{ marginRight: 8 }} />
+                                <TextInput
+                                    ref={searchInputRef}
+                                    style={[styles.overlayTextInput, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}
+                                    placeholder="Search snacks, groceries, food..."
+                                    placeholderTextColor={isDarkMode ? '#94a3b8' : '#64748b'}
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                    returnKeyType="search"
+                                />
+                                {searchQuery.length > 0 && (
+                                    <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
+                                        <Ionicons name="close-circle" size={18} color="#94a3b8" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Live Search Content & Suggestions */}
+                    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18 }} keyboardShouldPersistTaps="handled">
+                        {searchQuery.trim().length === 0 ? (
+                            <View>
+                                {/* Recent Search History */}
+                                {recentSearches.length > 0 && (
+                                    <View style={{ marginBottom: 22 }}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                            <Text style={[styles.overlaySectionTitle, { color: isDarkMode ? '#ffffff' : '#0f172a', marginBottom: 0 }]}>
+                                                🕒 Recent Searches
+                                            </Text>
+                                            <TouchableOpacity onPress={clearRecentSearches} activeOpacity={0.7}>
+                                                <Text style={{ fontSize: 13, fontWeight: '700', color: '#dc2626' }}>Clear All</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        <View style={styles.trendingChipsContainer}>
+                                            {recentSearches.map((term, idx) => (
+                                                <View
+                                                    key={idx}
+                                                    style={[
+                                                        styles.recentSearchChip,
+                                                        { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', borderColor: isDarkMode ? '#334155' : '#e2e8f0' }
+                                                    ]}
+                                                >
+                                                    <TouchableOpacity
+                                                        style={{ flexDirection: 'row', alignItems: 'center' }}
+                                                        onPress={() => {
+                                                            setSearchQuery(term);
+                                                            saveRecentSearch(term);
+                                                        }}
+                                                    >
+                                                        <Ionicons name="time-outline" size={14} color="#64748b" style={{ marginRight: 6 }} />
+                                                        <Text style={{ fontSize: 13, fontWeight: '600', color: isDarkMode ? '#e2e8f0' : '#334155' }}>{term}</Text>
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity onPress={() => removeRecentSearch(term)} style={{ marginLeft: 8, padding: 2 }}>
+                                                        <Ionicons name="close" size={14} color="#94a3b8" />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    </View>
+                                )}
+
+                                {/* Trending Searches */}
+                                <Text style={[styles.overlaySectionTitle, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>🔥 Trending Campus Items</Text>
+                                <View style={styles.trendingChipsContainer}>
+                                    {['Maggi', 'Amul Milk', 'Notebooks', 'Chicken Biryani', 'Cold Coffee', 'Xerox Printing', 'Chocolates'].map((item, idx) => (
+                                        <TouchableOpacity
+                                            key={idx}
+                                            style={[styles.trendingChip, { backgroundColor: isDarkMode ? '#1e293b' : '#f0fdf4', borderColor: isDarkMode ? '#334155' : '#bbf7d0' }]}
+                                            onPress={() => {
+                                                setSearchQuery(item);
+                                                saveRecentSearch(item);
+                                            }}
+                                        >
+                                            <Ionicons name="sparkles-outline" size={14} color="#056f36" style={{ marginRight: 5 }} />
+                                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#056f36' }}>{item}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        ) : (
+                            <View>
+                                <Text style={[styles.overlaySectionTitle, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                    Search Results ({matchingProducts.length})
+                                </Text>
+                                {matchingProducts.slice(0, 15).map((prod) => (
+                                    <TouchableOpacity
+                                        key={prod.id || prod._id}
+                                        style={[styles.searchResultRow, { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#f1f5f9' }]}
+                                        onPress={() => {
+                                            saveRecentSearch(searchQuery || prod.name);
+                                            closeSearchOverlay();
+                                            navigation.navigate('ProductDetail', { productId: prod.id || prod._id });
+                                        }}
+                                    >
+                                        <Image source={{ uri: resolveImageUrl(prod.imageUrl) }} style={styles.searchResultThumb} />
+                                        <View style={{ flex: 1, marginLeft: 12 }}>
+                                            <Text style={[styles.searchResultName, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>{prod.name}</Text>
+                                            <Text style={styles.searchResultPrice}>₹{prod.price}</Text>
+                                        </View>
+                                        <TouchableOpacity
+                                            style={styles.addSmallBtn}
+                                            onPress={() => {
+                                                const prodId = prod.id || prod._id;
+                                                const shopId = prod.shopId || prod.shop?._id || prod.shop?.id;
+                                                dispatch(addToCart({
+                                                    ...prod,
+                                                    id: prodId,
+                                                    _id: prodId,
+                                                    shopId: shopId,
+                                                    price: parseFloat(prod.price || 0)
+                                                }));
+                                                setToastMessage(`${prod.name} added to cart`);
+                                                setToastVisible(true);
+                                            }}
+                                        >
+                                            <Text style={styles.addSmallBtnText}>+ ADD</Text>
+                                        </TouchableOpacity>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
+                    </ScrollView>
+
+                    {/* Floating Smart Cart FAB inside Search Overlay */}
+                    {cartItemCount > 0 && (
+                        <View style={[styles.floatingCartOverlayBar, { bottom: Math.max(insets.bottom, 12) + 6 }]}>
+                            <TouchableOpacity
+                                style={styles.floatingCartBtn}
+                                onPress={() => {
+                                    closeSearchOverlay();
+                                    navigation.navigate('Cart');
+                                }}
+                                activeOpacity={0.9}
+                            >
+                                <View style={styles.cartInfoGroup}>
+                                    <View style={styles.cartIconCircle}>
+                                        <Ionicons name="basket" size={20} color="#ffffff" />
+                                        <View style={styles.cartBadgeDot}>
+                                            <Text style={styles.cartBadgeDotText}>{cartItemCount}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={{ marginLeft: 10 }}>
+                                        <Text style={styles.cartBarPrice}>{CONSTANTS.CURRENCY}{parseFloat(cart.totalAmount || 0).toFixed(2)}</Text>
+                                        <Text style={styles.cartBarItems}>{cartItemCount} {cartItemCount === 1 ? 'item' : 'items'} in cart</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.viewCartActionBox}>
+                                    <Text style={styles.viewCartActionText}>View Cart</Text>
+                                    <Ionicons name="arrow-forward" size={16} color="#ffffff" />
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </Animated.View>
             </Modal>
         </View>
     );
@@ -2230,5 +2518,327 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 2,
+    },
+    brandFooterCard: {
+        paddingHorizontal: 20,
+        paddingTop: 28,
+        paddingBottom: 16,
+        marginTop: 20,
+        marginBottom: 8,
+    },
+    brandFooterTitle: {
+        fontSize: 42,
+        fontWeight: '900',
+        color: '#7d8590',
+        lineHeight: 46,
+        letterSpacing: -1,
+        marginBottom: 20,
+    },
+    brandFooterSubRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+    },
+    brandFooterSubText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#7d8590',
+        letterSpacing: -0.2,
+    },
+    emptyContainer: {
+        paddingVertical: 48,
+        paddingHorizontal: 24,
+        alignItems: 'center',
+    },
+    outlineArtWrapper: {
+        marginBottom: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    dashedCircleOrbit: {
+        width: 110,
+        height: 110,
+        borderRadius: 55,
+        borderWidth: 1.5,
+        borderStyle: 'dashed',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+    },
+    sparkleAccentTop: {
+        position: 'absolute',
+        top: 12,
+        right: 14,
+    },
+    searchAccentBottom: {
+        position: 'absolute',
+        bottom: 12,
+        left: 14,
+    },
+    outlineStatusPill: {
+        backgroundColor: '#056f36',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+        marginTop: -12,
+    },
+    outlineStatusPillText: {
+        color: '#ffffff',
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    emptyText: {
+        fontSize: 20,
+        fontWeight: '900',
+        marginTop: 4,
+        letterSpacing: -0.3,
+    },
+    emptySub: {
+        fontSize: 14,
+        lineHeight: 20,
+        textAlign: 'center',
+        marginTop: 8,
+        paddingHorizontal: 12,
+    },
+
+    /* Home Hero Header Styling */
+    homeHeroBackdropSection: {
+        paddingHorizontal: 16,
+        paddingBottom: 8,
+    },
+    homeHeroContentBox: {
+        alignItems: 'center',
+        marginTop: 14,
+        marginBottom: 18,
+        paddingHorizontal: 10,
+    },
+    homeHeroTitleText: {
+        fontSize: 26,
+        fontWeight: '900',
+        letterSpacing: -0.6,
+        textAlign: 'center',
+        lineHeight: 32,
+    },
+    homeHeroCalligraphySubText: {
+        fontSize: 24,
+        fontFamily: Platform.select({ ios: 'Snell Roundhand', android: 'cursive', default: 'cursive' }),
+        color: '#056f36',
+        marginTop: 4,
+        textAlign: 'center',
+        fontWeight: '700',
+        letterSpacing: 0.5,
+    },
+    homeCurvedSwooshWrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 4,
+    },
+    homeSearchPillContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 52,
+        borderRadius: 26,
+        borderWidth: 1.5,
+        paddingHorizontal: 12,
+        marginHorizontal: 16,
+        marginBottom: 16,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
+    },
+    homeSearchIconBadge: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: '#056f36',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
+    },
+
+    /* Morphing Search Overlay Styles */
+    searchMorphOverlayContainer: {
+        flex: 1,
+    },
+    overlaySearchHeader: {
+        paddingHorizontal: 16,
+        paddingBottom: 14,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 4,
+    },
+    overlayHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    overlayBackBtn: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    overlayInputBox: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 48,
+        borderRadius: 24,
+        borderWidth: 1.5,
+        paddingHorizontal: 14,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+        elevation: 2,
+    },
+    overlayTextInput: {
+        flex: 1,
+        fontSize: 14.5,
+        fontWeight: '600',
+    },
+    overlaySectionTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        marginBottom: 14,
+    },
+    trendingChipsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    trendingChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14,
+        paddingVertical: 9,
+        borderRadius: 20,
+        borderWidth: 1,
+    },
+    searchResultRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        marginBottom: 10,
+    },
+    searchResultThumb: {
+        width: 54,
+        height: 54,
+        borderRadius: 10,
+        backgroundColor: '#f1f5f9',
+    },
+    searchResultName: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    searchResultPrice: {
+        fontSize: 13.5,
+        fontWeight: '900',
+        color: '#056f36',
+        marginTop: 3,
+    },
+    addSmallBtn: {
+        backgroundColor: '#056f36',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 14,
+    },
+    addSmallBtnText: {
+        color: '#ffffff',
+        fontSize: 11,
+        fontWeight: '900',
+    },
+    recentSearchChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 18,
+        borderWidth: 1,
+    },
+    floatingCartOverlayBar: {
+        position: 'absolute',
+        left: 16,
+        right: 16,
+        bottom: 20,
+    },
+    floatingCartBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#056f36',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 24,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 8,
+    },
+    cartInfoGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    cartIconCircle: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+    },
+    cartBadgeDot: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        backgroundColor: '#ff385c',
+        minWidth: 18,
+        height: 18,
+        borderRadius: 9,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 4,
+    },
+    cartBadgeDotText: {
+        color: '#ffffff',
+        fontSize: 10,
+        fontWeight: '900',
+    },
+    cartBarPrice: {
+        color: '#ffffff',
+        fontSize: 15,
+        fontWeight: '900',
+    },
+    cartBarItems: {
+        color: '#dcfce7',
+        fontSize: 11.5,
+        fontWeight: '600',
+    },
+    viewCartActionBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 18,
+    },
+    viewCartActionText: {
+        color: '#ffffff',
+        fontSize: 13,
+        fontWeight: '800',
     },
 });

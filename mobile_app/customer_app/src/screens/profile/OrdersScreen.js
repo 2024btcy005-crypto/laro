@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Image, StatusBar, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Image, StatusBar, Dimensions, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, CONSTANTS } from '../../theme';
 import { orderAPI } from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
-import * as Haptics from 'expo-haptics';
+import Svg, { Path } from 'react-native-svg';
 import { OrderCardSkeleton } from '../../components/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
@@ -22,7 +22,6 @@ export default function OrdersScreen({ navigation }) {
     const slideAnim = useRef(new Animated.Value(0)).current;
 
     const handleTabChange = (tab) => {
-        Haptics.selectionAsync();
         setActiveTab(tab);
         Animated.spring(slideAnim, {
             toValue: tab === 'active' ? 0 : 1,
@@ -225,7 +224,6 @@ export default function OrdersScreen({ navigation }) {
                     <TouchableOpacity 
                         style={styles.trackButton}
                         onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                             navigation.navigate('OrderDetail', { orderId: item.id });
                         }}
                         activeOpacity={0.88}
@@ -274,11 +272,22 @@ export default function OrdersScreen({ navigation }) {
             
             {/* Custom Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Your Orders</Text>
+                <View>
+                    <Text style={styles.headerTitle}>Your Orders</Text>
+                    <View style={styles.curvedSwooshWrapperHeader}>
+                        <Svg width={140} height={14} viewBox="0 0 140 14" fill="none">
+                            <Path
+                                d="M 4,5 Q 70,1 135,6 C 141,7 137,12 115,12"
+                                stroke="#056f36"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                            />
+                        </Svg>
+                    </View>
+                </View>
                 <TouchableOpacity 
                     style={styles.cartIcon} 
                     onPress={() => {
-                        Haptics.selectionAsync();
                         navigation.navigate('Cart');
                     }}
                 >
@@ -407,7 +416,7 @@ export default function OrdersScreen({ navigation }) {
                                     ? "You don't have any active orders right now. Order something tasty to get started!" 
                                     : "You haven't placed any orders in the past."}
                             </Text>
-                            <TouchableOpacity style={styles.shopBtn} onPress={() => navigation.navigate('Home')}>
+                            <TouchableOpacity style={styles.shopBtn} onPress={() => navigation.navigate('Main', { screen: 'Home' })}>
                                 <Text style={styles.shopBtnText}>Browse Shop</Text>
                             </TouchableOpacity>
                         </View>
@@ -436,10 +445,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
-        paddingVertical: 15,
+        paddingTop: 16,
+        paddingBottom: 10,
         backgroundColor: '#fcfdfc',
     },
-    headerTitle: { fontSize: 24, fontWeight: '900', color: '#056f36' },
+    headerTitle: {
+        fontSize: 32,
+        fontFamily: Platform.select({ ios: 'Snell Roundhand', android: 'cursive', default: 'cursive' }),
+        fontWeight: '700',
+        color: '#056f36',
+        letterSpacing: 0.5,
+    },
+    curvedSwooshWrapperHeader: {
+        marginTop: 2,
+        marginLeft: 2,
+    },
     cartIcon: { padding: 4 },
     
     segmentContainer: {
@@ -531,7 +551,6 @@ const styles = StyleSheet.create({
     inactiveBadgeText: {
         color: '#64748b',
     },
-
     listContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 },
     sectionTitle: { fontSize: 18, fontWeight: '900', color: '#111', marginBottom: 15 },
     
@@ -572,11 +591,12 @@ const styles = StyleSheet.create({
     },
     statusPillText: {
         fontSize: 12.5,
-        fontWeight: '900',
+        fontWeight: '800',
+        letterSpacing: 0.3,
     },
     statusPillSub: {
         fontSize: 12,
-        fontWeight: '600',
+        fontWeight: '500',
         marginLeft: 4,
     },
     stepperContainer: {
@@ -585,7 +605,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         position: 'relative',
         marginBottom: 20,
-        marginHorizontal: 10,
+        paddingHorizontal: 10,
     },
     stepperTrackBg: {
         position: 'absolute',
@@ -670,10 +690,52 @@ const styles = StyleSheet.create({
     viewDetailsText: { fontSize: 12, fontWeight: '700', color: '#056f36' },
     deleteBtn: { padding: 4 },
 
-    emptyContainer: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20 },
-    emptyIconCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#edf5ed', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-    emptyTitle: { fontSize: 18, fontWeight: '900', color: '#111', marginBottom: 8 },
-    emptySub: { fontSize: 13, color: '#666', textAlign: 'center', lineHeight: 18, marginBottom: 24, paddingHorizontal: 10 },
-    shopBtn: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: '#056f36', borderRadius: 12 },
-    shopBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' }
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 50,
+        paddingHorizontal: 24,
+    },
+    emptyIconCircle: {
+        width: 84,
+        height: 84,
+        borderRadius: 42,
+        backgroundColor: '#f0fdf4',
+        borderWidth: 1.5,
+        borderColor: '#dcfce7',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    emptyTitle: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: '#0f172a',
+        marginBottom: 6,
+        textAlign: 'center',
+    },
+    emptySub: {
+        fontSize: 14,
+        color: '#64748b',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
+        paddingHorizontal: 16,
+    },
+    shopBtn: {
+        paddingHorizontal: 32,
+        paddingVertical: 14,
+        backgroundColor: '#056f36',
+        borderRadius: 24,
+        shadowColor: '#056f36',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    shopBtnText: {
+        color: '#ffffff',
+        fontSize: 15,
+        fontWeight: '800',
+    }
 });

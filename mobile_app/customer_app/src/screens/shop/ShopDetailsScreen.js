@@ -155,6 +155,16 @@ const SwipeableProductItem = ({
                                     <Text style={styles.bestsellerTagText}>🔥 MUST TRY</Text>
                                 </View>
                             )}
+                            {item.isB2G1 && (
+                                <View style={[styles.bestsellerTag, { backgroundColor: '#f59e0b' }]}>
+                                    <Text style={styles.bestsellerTagText}>🎁 BUY 2 GET 1 FREE</Text>
+                                </View>
+                            )}
+                            {item.isCombo && (
+                                <View style={[styles.bestsellerTag, { backgroundColor: '#ec4899' }]}>
+                                    <Text style={styles.bestsellerTagText}>🔥 COMBO MEAL</Text>
+                                </View>
+                            )}
                             {item.variants?.length > 0 && (
                                 <View style={styles.customisableTag}>
                                     <Text style={styles.customisableTagText}>✨ CUSTOMISABLE</Text>

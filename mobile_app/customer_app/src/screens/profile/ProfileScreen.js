@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, CONSTANTS } from '../../theme';
 import LaroAlert from '../../components/LaroAlert';
-import { orderAPI } from '../../services/api';
+import { orderAPI, resolveImageUrl } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { FavouriteService } from '../../services/FavouriteService';
 import { useFocusEffect } from '@react-navigation/native';
@@ -245,7 +245,7 @@ export default function ProfileScreen({ navigation }) {
                                 <TouchableOpacity key={idx} style={styles.favoriteItemCard} onPress={() => navigation.navigate('ProductDetail', { product: item })}>
                                     <View style={[styles.favoriteImageWrapper, idx === 0 && styles.favoriteActiveBorder]}>
                                         {item.imageUrl ? (
-                                            <Image source={{ uri: item.imageUrl }} style={styles.favoriteImage} />
+                                            <Image source={{ uri: resolveImageUrl(item.imageUrl) }} style={styles.favoriteImage} />
                                         ) : (
                                             <View style={styles.favoritePlaceholderImage}>
                                                 <Ionicons name="fast-food" size={24} color="#056f36" />

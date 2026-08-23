@@ -11,11 +11,17 @@ export const resolveImageUrl = (url) => {
     let normalizedUrl = url.trim().replace(/\\/g, '/');
     const serverRoot = API_BASE_URL.replace(/\/api$/, '');
 
-    if (normalizedUrl.includes('localhost') || normalizedUrl.includes('127.0.0.1')) {
-        normalizedUrl = normalizedUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1):\d+/, serverRoot);
+    if (normalizedUrl.includes('/uploads/')) {
+        const uploadIndex = normalizedUrl.indexOf('/uploads/');
+        normalizedUrl = normalizedUrl.substring(uploadIndex);
+    } else if (normalizedUrl.startsWith('uploads/')) {
+        normalizedUrl = '/' + normalizedUrl;
     }
 
     if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
+        if (normalizedUrl.includes('localhost') || normalizedUrl.includes('127.0.0.1')) {
+            normalizedUrl = normalizedUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1):\d+/, serverRoot);
+        }
         if (normalizedUrl.startsWith('http://images.unsplash.com')) {
             return normalizedUrl.replace('http://', 'https://');
         }

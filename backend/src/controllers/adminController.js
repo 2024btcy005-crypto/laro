@@ -266,7 +266,7 @@ const getAllShops = async (req, res) => {
 // @access  Private/Admin
 const createProduct = async (req, res) => {
     try {
-        const { shopId, name, description, price, originalPrice, category, imageUrl, isVeg, isEdible, isAvailable, variantOf, variantName } = req.body;
+        const { shopId, name, description, price, originalPrice, category, imageUrl, isVeg, isEdible, isB2G1, isCombo, isAvailable, variantOf, variantName } = req.body;
 
         // Campus Admin Isolation Check
         if (req.user.role === 'campus_admin') {
@@ -288,6 +288,8 @@ const createProduct = async (req, res) => {
             imageUrl,
             isVeg: isVeg !== undefined ? isVeg : (isEdible === false ? null : true),
             isEdible: isEdible !== undefined ? isEdible : (isVeg === null ? false : true),
+            isB2G1: isB2G1 !== undefined ? isB2G1 : false,
+            isCombo: isCombo !== undefined ? isCombo : false,
             isAvailable: isAvailable !== undefined ? isAvailable : true,
             variantOf,
             variantName,
@@ -306,7 +308,7 @@ const createProduct = async (req, res) => {
 // @access  Private/Admin
 const updateProduct = async (req, res) => {
     try {
-        const { name, description, price, originalPrice, category, imageUrl, isVeg, isEdible, isAvailable, shopId, variantOf, variantName, stockQuantity } = req.body;
+        const { name, description, price, originalPrice, category, imageUrl, isVeg, isEdible, isB2G1, isCombo, isAvailable, shopId, variantOf, variantName, stockQuantity } = req.body;
         const product = await Product.findByPk(req.params.id);
 
         if (!product) {
@@ -327,6 +329,8 @@ const updateProduct = async (req, res) => {
             imageUrl,
             isVeg: isVeg !== undefined ? isVeg : product.isVeg,
             isEdible: isEdible !== undefined ? isEdible : product.isEdible,
+            isB2G1: isB2G1 !== undefined ? isB2G1 : product.isB2G1,
+            isCombo: isCombo !== undefined ? isCombo : product.isCombo,
             isAvailable,
             shopId,
             variantOf,

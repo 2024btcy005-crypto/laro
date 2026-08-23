@@ -4,7 +4,7 @@ import { shopAPI, orderAPI } from '../api';
 import ShopCard from '../components/ShopCard';
 import { 
     Search, Utensils, Pizza, Coffee, Store, Zap, Clock, ShoppingBag, 
-    ChevronRight, Compass, Heart, Star, Sparkles, Filter, ChevronLeft, MapPin
+    ChevronRight, Compass, Heart, Star, Sparkles, Filter, ChevronLeft, MapPin, RotateCcw
 } from 'lucide-react';
 import './FoodDelivery.css';
 
@@ -122,43 +122,40 @@ export default function FoodDelivery() {
 
     return (
         <div className="food-delivery-container container">
-            {/* Header Banner */}
-            <div className="food-hero-banner">
-                <div className="hero-overlay"></div>
-                <div className="hero-content">
-                    <span className="badge-promo"><Sparkles size={14} /> 50% Cashback on First Order</span>
-                    <h1 className="hero-title">Delicious Meals, Delivered Hot to Your Dorm</h1>
-                    <p className="hero-subtitle">Bringing your favorite campus eateries straight to your doorstep.</p>
-                    <div className="hero-search-box">
-                        <Search className="search-icon" size={20} />
-                        <input 
-                            type="text" 
-                            placeholder="Craving burgers, pizza, or coffees? Search here..." 
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+            {/* 1/3 Clean Hero Header Section */}
+            <div className="food-hero-section-third">
+                <div className="hero-content-box">
+                    <h1 className="hero-bold-title">CAMPUS FOOD DELIVERY</h1>
+                    <p className="hero-calligraphy-sub">
+                        {selectedUniversity?.name || 'Joy University, Kanyakumari'}
+                    </p>
+                    <div className="curved-swoosh-wrapper">
+                        <svg width="220" height="18" viewBox="0 0 220 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5,6 Q 110,1 215,7 C 222,8 218,15 185,15" stroke="#056f36" strokeWidth="2.4" strokeLinecap="round" />
+                        </svg>
                     </div>
+                </div>
+
+                <div className="redesigned-search-pill">
+                    <div className="search-icon-badge">
+                        <Search size={18} color="#ffffff" />
+                    </div>
+                    <input 
+                        type="text" 
+                        className="redesigned-search-input"
+                        placeholder="Search restaurants, burgers, biryani..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    {searchQuery && (
+                        <button className="search-clear-btn" onClick={() => setSearchQuery('')}>
+                            ×
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Quick Categories */}
-            <section className="food-categories-sec">
-                <h2 className="section-title-sm">Explore Cuisines</h2>
-                <div className="food-categories-scroll">
-                    {FOOD_CATEGORIES.map(cat => (
-                        <button
-                            key={cat.id}
-                            className={`food-cat-card ${activeCategory === cat.id ? 'active' : ''}`}
-                            onClick={() => setActiveCategory(cat.id)}
-                        >
-                            <div className="food-cat-icon-circle">
-                                {cat.icon}
-                            </div>
-                            <span className="food-cat-name">{cat.name}</span>
-                        </button>
-                    ))}
-                </div>
-            </section>
+
 
             {/* Main Section */}
             <div className="food-main-layout">
@@ -188,18 +185,23 @@ export default function FoodDelivery() {
                         ))}
                     </div>
                 ) : (
-                    <div className="empty-food-state">
-                        <Compass size={48} className="empty-icon" />
-                        <h3>No Food Joints Found</h3>
-                        <p>
+                    <div className="rich-empty-state">
+                        <div className="outline-art-wrapper">
+                            <div className="dashed-circle-orbit">
+                                <Utensils size={44} color="#056f36" className="outline-center-icon" />
+                                <Sparkles size={16} color="#fbbf24" className="sparkle-accent-top" />
+                                <Search size={14} color="#94a3b8" className="search-accent-bottom" />
+                            </div>
+                            <div className="outline-status-pill">0 RESTAURANTS</div>
+                        </div>
+
+                        <h3 className="empty-title">No Restaurants Found</h3>
+                        <p className="empty-desc">
                             {searchQuery 
-                                ? `We couldn't find any restaurants matching "${searchQuery}".`
-                                : `No restaurants found in the selected category "${activeCategory}".`
+                                ? `We couldn't find any dining spots in Kanyakumari matching "${searchQuery}".`
+                                : `No restaurants found in the selected category.`
                             }
                         </p>
-                        <button className="btn-primary" onClick={() => { setActiveCategory('all'); setSearchQuery(''); }}>
-                            Browse All Restaurants
-                        </button>
                     </div>
                 )}
             </div>

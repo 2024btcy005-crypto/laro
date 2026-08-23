@@ -268,3 +268,54 @@
         transform: translateY(0);
     }
 }
+
+/* Brand Footer Section - Reference Styled */
+.brand-footer-section {
+    background: transparent;
+    border: none;
+    padding: 40px 0 20px 0;
+    margin: 40px 0 20px 0;
+}
+
+.brand-footer-content {
+    max-width: 800px;
+}
+
+.brand-footer-title {
+    font-size: 56px;
+    font-weight: 900;
+    line-height: 1.05;
+    color: #7d8590;
+    letter-spacing: -1.5px;
+    margin-bottom: 24px;
+}
+
+.brand-footer-sub {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #7d8590;
+    letter-spacing: -0.3px;
+}
+
+.brand-footer-sub .heart-icon {
+    color: #ff385c;
+    fill: #ff385c;
+}
+
+@media (max-width: 768px) {
+    .brand-footer-section {
+        padding: 40px 24px;
+        margin: 40px 0 20px 0;
+    }
+
+    .brand-footer-title {
+        font-size: 40px;
+    }
+
+    .brand-footer-sub {
+        font-size: 15px;
+    }
+}

@@ -68,6 +68,14 @@ const Product = sequelize.define('Product', {
         allowNull: true,
         defaultValue: true,
     },
+    isB2G1: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    isCombo: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
     variantOf: {
         type: DataTypes.UUID,
         allowNull: true,

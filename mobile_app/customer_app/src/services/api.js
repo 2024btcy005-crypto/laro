@@ -30,13 +30,18 @@ export const resolveImageUrl = (url) => {
     let normalizedUrl = url.trim().replace(/\\/g, '/');
     const serverRoot = API_BASE_URL.replace(/\/api$/, '');
 
-    // Replace old localhost / 127.0.0.1 with active serverRoot
-    if (normalizedUrl.includes('localhost') || normalizedUrl.includes('127.0.0.1')) {
-        normalizedUrl = normalizedUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1):\d+/, serverRoot);
+    // If URL points to uploaded files, extract relative path from /uploads/
+    if (normalizedUrl.includes('/uploads/')) {
+        const uploadIndex = normalizedUrl.indexOf('/uploads/');
+        normalizedUrl = normalizedUrl.substring(uploadIndex);
+    } else if (normalizedUrl.startsWith('uploads/')) {
+        normalizedUrl = '/' + normalizedUrl;
     }
 
     if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
-        // Upgrade http to https for external CDNs (like unsplash) to prevent ATS/Android mixed content blocks
+        if (normalizedUrl.includes('localhost') || normalizedUrl.includes('127.0.0.1')) {
+            normalizedUrl = normalizedUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1):\d+/, serverRoot);
+        }
         if (normalizedUrl.startsWith('http://images.unsplash.com')) {
             return normalizedUrl.replace('http://', 'https://');
         }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Utensils, Pizza, ChevronLeft, Trash2, ShoppingBag } from 'lucide-react';
 import { FavouriteService } from '../services/FavouriteService';
+import { resolveImageUrl } from '../api';
 import ShopCard from '../components/ShopCard';
 import './Favorites.css';
 
@@ -9,7 +10,7 @@ const FavoriteProductCard = ({ product, onRemove, onAddToCart }) => {
     return (
         <div className="favorite-product-card premium-card">
             <div className="fav-product-image">
-                <img src={product.imageUrl || 'https://via.placeholder.com/150?text=Dish'} alt={product.name} />
+                <img src={resolveImageUrl(product.imageUrl)} alt={product.name} />
             </div>
             <div className="fav-product-info">
                 <h3 className="fav-product-name">{product.name}</h3>

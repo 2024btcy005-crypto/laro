@@ -350,7 +350,14 @@ export default function Profile() {
                     {activeTab === 'orders' ? (
                         <div className="section-container">
                             <header className="section-header-row">
-                                <h3 className="section-title-sm">My Orders</h3>
+                                <div>
+                                    <h3 className="section-title-sm cursive-orders-title">My Orders</h3>
+                                    <div className="curved-swoosh-wrapper" style={{ justifyContent: 'flex-start', marginTop: '2px' }}>
+                                        <svg width="130" height="14" viewBox="0 0 130 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M 4,5 Q 65,1 125,6 C 131,7 127,12 105,12" stroke="#056f36" strokeWidth="2" strokeLinecap="round" />
+                                        </svg>
+                                    </div>
+                                </div>
                                 <span className="count-badge">{orders.length}</span>
                             </header>
                             <div className="orders-list">

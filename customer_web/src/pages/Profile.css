@@ -2,6 +2,13 @@
     padding-bottom: 100px;
 }
 
+.cursive-orders-title {
+    font-family: 'Dancing Script', 'Sacramento', 'Great Vibes', cursive !important;
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    color: #056f36 !important;
+}
+
 .profile-grid {
     display: grid;
     grid-template-columns: 340px 1fr;

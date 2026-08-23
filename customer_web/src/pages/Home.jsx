@@ -4,7 +4,7 @@ import { shopAPI } from '../api';
 import ShopCard from '../components/ShopCard';
 import PhoneSetupBanner from '../components/PhoneSetupBanner';
 import UniversitySelection from '../components/UniversitySelection';
-import { Search, SlidersHorizontal, Utensils, Pizza, Coffee, Store, Zap, BookOpen, FileText, Printer, Layers, X, School, Clock, ShoppingBag } from 'lucide-react';
+import { Search, SlidersHorizontal, Utensils, Pizza, Coffee, Store, Zap, BookOpen, FileText, Printer, Layers, X, School, Clock, ShoppingBag, Heart } from 'lucide-react';
 import './Home.css';
 
 const FOOD_CATEGORIES = [
@@ -240,6 +240,17 @@ export default function Home() {
                     </div>
                 )}
             </section>
+
+            <footer className="brand-footer-section">
+                <div className="brand-footer-content">
+                    <h2 className="brand-footer-title">
+                        Hostel<br />life, easy!
+                    </h2>
+                    <p className="brand-footer-sub">
+                        Crafted with <Heart size={16} className="heart-icon" /> in Kanyakumari, India
+                    </p>
+                </div>
+            </footer>
         </div>
     );
 }

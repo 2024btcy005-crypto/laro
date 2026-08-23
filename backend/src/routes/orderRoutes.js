@@ -11,6 +11,9 @@ router.route('/')
 router.route('/summary')
     .get(protect, getUserSummary);
 
+router.route('/user-summary')
+    .get(protect, getUserSummary);
+
 router.route('/history')
     .get(protect, getWalletHistory);
 

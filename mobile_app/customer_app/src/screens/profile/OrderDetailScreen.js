@@ -5,7 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { COLORS, CONSTANTS } from '../../theme';
-import api from '../../services/api';
+import api, { resolveImageUrl } from '../../services/api';
 import LaroAlert from '../../components/LaroAlert';
 import { useTheme } from '../../context/ThemeContext';
 import { OrderDetailScreenSkeleton } from '../../components/SkeletonLoader';
@@ -323,7 +323,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                     {order.items?.map((item, idx) => (
                         <View key={idx} style={[styles.itemRow, idx > 0 && { borderTopWidth: 1, borderTopColor: '#f2f5f2', paddingTop: 12, marginTop: 12 }]}>
                             {item.product?.imageUrl ? (
-                                <Image source={{ uri: item.product.imageUrl }} style={styles.itemImage} />
+                                <Image source={{ uri: resolveImageUrl(item.product.imageUrl) }} style={styles.itemImage} />
                             ) : (
                                 <View style={styles.itemImagePlaceholder}>
                                     <Ionicons name="fast-food-outline" size={24} color="#056f36" />

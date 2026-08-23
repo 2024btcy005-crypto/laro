@@ -9,6 +9,7 @@ import { COLORS, CONSTANTS } from '../../theme';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../context/ThemeContext';
 import { StatusBar } from 'react-native';
+import { resolveImageUrl } from '../../services/api';
 
 export default function FavoritesScreen({ navigation }) {
     const { colors, isDarkMode } = useTheme();
@@ -49,7 +50,7 @@ export default function FavoritesScreen({ navigation }) {
 
     const renderShopCard = ({ item }) => (
         <TouchableOpacity style={[styles.favoriteCard, { backgroundColor: colors.white, borderColor: colors.border }]} onPress={() => navigation.navigate('ShopDetails', { shop: item })}>
-            <Image source={{ uri: item.imageUrl }} style={styles.shopImage} />
+            <Image source={{ uri: resolveImageUrl(item.imageUrl) }} style={styles.shopImage} />
             <View style={styles.shopDetails}>
                 <Text style={[styles.shopName, { color: colors.black }]} numberOfLines={1}>{item.name}</Text>
                 <Text style={[styles.shopCategory, { color: colors.gray }]}>{item.category} • {item.deliveryTime || '30-40 min'}</Text>
@@ -66,7 +67,7 @@ export default function FavoritesScreen({ navigation }) {
     const renderProductCard = ({ item }) => (
         <TouchableOpacity style={[styles.favoriteCard, { backgroundColor: colors.white, borderColor: colors.border }]} onPress={() => navigation.navigate('ProductDetail', { product: item })}>
             <View style={[styles.productImageWrapper, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
-                <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
+                <Image source={{ uri: resolveImageUrl(item.imageUrl) }} style={styles.productImage} />
             </View>
             <View style={styles.shopDetails}>
                 <Text style={[styles.shopName, { color: colors.black }]} numberOfLines={1}>{item.name}</Text>
@@ -130,7 +131,7 @@ export default function FavoritesScreen({ navigation }) {
                     </Text>
                     <TouchableOpacity
                         style={styles.exploreBtn}
-                        onPress={() => navigation.navigate('Home')}
+                        onPress={() => navigation.navigate('Main', { screen: 'Home' })}
                     >
                         <Text style={styles.exploreBtnText}>Explore Laro</Text>
                     </TouchableOpacity>

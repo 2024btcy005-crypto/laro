@@ -49,6 +49,7 @@ import FoodDeliveryScreen from './src/screens/shop/FoodDeliveryScreen';
 import LoyaltyScreen from './src/screens/profile/LoyaltyScreen';
 import QuestScreen from './src/screens/home/QuestScreen';
 import QuestsTabScreen from './src/screens/home/QuestsTabScreen';
+import SearchScreen from './src/screens/search/SearchScreen';
 
 import OrdersScreen from './src/screens/profile/OrdersScreen';
 import FavoritesScreen from './src/screens/profile/FavoritesScreen';
@@ -327,6 +328,7 @@ function RootNavigator() {
                     <Stack.Screen name="ShopDetails" component={ShopDetailsScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ShopDetail" component={ShopDetailsScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="FoodDelivery" component={FoodDeliveryScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Search" component={SearchScreen} options={{ headerShown: false, animation: 'fade_from_bottom' }} />
                     <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Cart" component={CartScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />

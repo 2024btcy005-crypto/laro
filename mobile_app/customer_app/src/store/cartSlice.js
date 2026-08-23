@@ -35,7 +35,15 @@ const cartSlice = createSlice({
                 state.items.push({ ...itemToPush, id: productId, quantity: qtyToAdd });
             }
 
-            state.totalAmount = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+            state.totalAmount = state.items.reduce((total, item) => {
+                const price = parseFloat(item.price || 0);
+                if (item.isB2G1 && item.quantity >= 3) {
+                    const freeCount = Math.floor(item.quantity / 3);
+                    const payableQty = item.quantity - freeCount;
+                    return total + (price * payableQty);
+                }
+                return total + (price * item.quantity);
+            }, 0);
         },
         removeFromCart: (state, action) => {
             const productId = action.payload; // Typically passed as string ID
@@ -49,7 +57,15 @@ const cartSlice = createSlice({
                 }
             }
 
-            state.totalAmount = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+            state.totalAmount = state.items.reduce((total, item) => {
+                const price = parseFloat(item.price || 0);
+                if (item.isB2G1 && item.quantity >= 3) {
+                    const freeCount = Math.floor(item.quantity / 3);
+                    const payableQty = item.quantity - freeCount;
+                    return total + (price * payableQty);
+                }
+                return total + (price * item.quantity);
+            }, 0);
 
             // Clear shopId if cart becomes empty
             if (state.items.length === 0) {

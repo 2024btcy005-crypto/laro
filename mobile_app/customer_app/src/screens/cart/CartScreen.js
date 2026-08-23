@@ -8,7 +8,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { addToCart, removeFromCart, clearCart } from '../../store/cartSlice';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, CONSTANTS } from '../../theme';
-import api from '../../services/api';
+import api, { resolveImageUrl } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -148,7 +148,7 @@ export default function CartScreen({ navigation }) {
                 {cart.items.map((item, idx) => (
                     <View key={item.id || item._id} style={styles.cartCard}>
                         {item.imageUrl ? (
-                            <Image source={{ uri: item.imageUrl }} style={styles.cartItemImage} />
+                            <Image source={{ uri: resolveImageUrl(item.imageUrl) }} style={styles.cartItemImage} />
                         ) : (
                             <View style={[styles.cartItemImage, styles.cartItemPlaceholder]}>
                                 <Ionicons name="cube-outline" size={24} color="#056f36" />

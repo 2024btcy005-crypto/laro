@@ -80,7 +80,15 @@ export const CartProvider = ({ children }) => {
     };
 
     const getSubtotal = () => {
-        return cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        return cart.items.reduce((sum, item) => {
+            const price = parseFloat(item.price || 0);
+            if (item.isB2G1 && item.quantity >= 3) {
+                const freeCount = Math.floor(item.quantity / 3);
+                const payableQty = item.quantity - freeCount;
+                return sum + (price * payableQty);
+            }
+            return sum + (price * item.quantity);
+        }, 0);
     };
 
     const getTotalItems = () => {
