@@ -64,9 +64,12 @@ export default function FoodDelivery() {
         try {
             setLoading(true);
             const res = await shopAPI.getShops(lat || coords.lat, lng || coords.lng, universityId);
-            // Filter out stationery shops to only have food joints
+            // Filter to only have food joints & restaurants (exclude warehouses & stationery)
             const foodOnly = (res.data || []).filter(
-                s => !s.category || !STATIONERY_SHOP_MODES.some(m => s.category.toLowerCase().includes(m.toLowerCase()))
+                s => !s.isWarehouse &&
+                    s.shopType !== 'GROCERY' &&
+                    s.shopType !== 'STATIONERY' &&
+                    (!s.category || !STATIONERY_SHOP_MODES.some(m => s.category.toLowerCase().includes(m.toLowerCase())))
             );
             setShops(foodOnly);
         } catch (err) {
