@@ -12,6 +12,6 @@ router.route('/')
 router.route('/:id')
     .get(getShopById)
     .put(protect, authorize('super_admin', 'campus_admin'), updateShop)
-    .delete(protect, authorize('super_admin'), deleteShop);
+    .delete(protect, authorize('super_admin', 'campus_admin'), deleteShop);
 
 module.exports = router;

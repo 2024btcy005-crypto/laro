@@ -510,7 +510,6 @@ export default function RestaurantManagement() {
                                                 Edit Canteen
                                             </Button>
 
-                                            {isSuperAdmin && (
                                                 <IconButton
                                                     size="small"
                                                     onClick={() => handleDeleteRestaurant(rId)}
@@ -518,7 +517,6 @@ export default function RestaurantManagement() {
                                                 >
                                                     <DeleteIcon fontSize="small" />
                                                 </IconButton>
-                                            )}
                                         </CardActions>
                                     </Card>
                                 </Grid>
