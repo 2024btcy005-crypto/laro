@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.route('/')
     .get(getShops)
-    .post(protect, authorize('super_admin'), createShop);
+    .post(protect, authorize('super_admin', 'campus_admin'), createShop);
 
 router.route('/:id')
     .get(getShopById)

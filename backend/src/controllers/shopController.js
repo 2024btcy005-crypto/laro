@@ -172,9 +172,10 @@ const getShopById = async (req, res) => {
 const createShop = async (req, res) => {
     try {
         const {
-            name, description, category, imageUrl,
+            name, description, category, shopType, imageUrl,
             openingTime, closingTime, latitude, longitude,
-            serviceRadius, isWarehouse
+            serviceRadius, isWarehouse,
+            minOrderValue, deliveryFee, estimatedDeliveryTime, costForTwo, isOpen
         } = req.body;
 
         let finalUniversityId = null;
@@ -190,6 +191,7 @@ const createShop = async (req, res) => {
             name,
             description,
             category,
+            shopType: shopType || 'RESTAURANT',
             imageUrl,
             openingTime,
             closingTime,
@@ -197,6 +199,11 @@ const createShop = async (req, res) => {
             longitude,
             serviceRadius,
             isWarehouse,
+            minOrderValue,
+            deliveryFee,
+            estimatedDeliveryTime,
+            costForTwo,
+            isOpen,
             universityId: finalUniversityId
         });
 
