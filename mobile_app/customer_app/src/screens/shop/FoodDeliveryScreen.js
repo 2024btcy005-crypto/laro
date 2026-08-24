@@ -370,26 +370,16 @@ export default function FoodDeliveryScreen({ navigation }) {
                     )
                 }
                 ListFooterComponent={
-                    filteredShops.length > 0 ? (
-                        <View style={{ alignItems: 'center', marginVertical: 32, paddingHorizontal: 20 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                                <Ionicons name="sparkles" size={14} color="#056f36" />
-                                <Text style={{ fontSize: 13, fontWeight: '900', color: '#056f36', letterSpacing: 1.5 }}>
-                                    LARO
-                                </Text>
-                                <Ionicons name="sparkles" size={14} color="#056f36" />
-                            </View>
-                            <Text style={{
-                                fontSize: 13,
-                                fontWeight: '700',
-                                color: '#64748b',
-                                textAlign: 'center',
-                                letterSpacing: 0.3
-                            }}>
-                                Delivering Happiness to Every Hostel Room ❤️
-                            </Text>
+                    <View style={styles.brandFooterCard}>
+                        <Text style={styles.brandFooterTitle}>
+                            {"Your favorite meals,\njust a tap away."}
+                        </Text>
+                        <View style={styles.brandFooterSubRow}>
+                            <Text style={styles.brandFooterSubText}>Crafted with </Text>
+                            <Ionicons name="heart" size={16} color="#ff385c" style={{ marginHorizontal: 2 }} />
+                            <Text style={styles.brandFooterSubText}> in Kanyakumari, India</Text>
                         </View>
-                    ) : null
+                    </View>
                 }
             />
 
@@ -757,10 +747,38 @@ const styles = StyleSheet.create({
     secTitle: { fontSize: 16, fontWeight: '900', marginBottom: 12, letterSpacing: -0.2 },
     cuisinesScroll: { gap: 10, paddingBottom: 15, paddingRight: 20 },
 
+    brandFooterCard: {
+        paddingHorizontal: 20,
+        paddingTop: 28,
+        paddingBottom: 16,
+        marginTop: 20,
+        marginBottom: 8,
+    },
+    brandFooterTitle: {
+        fontSize: 32,
+        fontWeight: '900',
+        color: '#7d8590',
+        lineHeight: 38,
+        letterSpacing: -1,
+        marginBottom: 20,
+    },
+    brandFooterSubRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+    },
+    brandFooterSubText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#7d8590',
+        letterSpacing: -0.2,
+    },
+
     card: {
         borderRadius: 20,
         borderWidth: 1,
         marginBottom: 20,
+        marginHorizontal: 16,
         overflow: 'hidden',
         elevation: 3,
         shadowColor: '#000',
@@ -768,7 +786,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 10,
     },
-    imageWrapper: { width: '100%', height: 160, position: 'relative' },
+    imageWrapper: { width: '100%', height: 140, position: 'relative' },
     cardImage: { width: '100%', height: '100%' },
     discountBadge: {
         position: 'absolute',

@@ -1967,7 +1967,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     deliverToText: {
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 'bold',
         color: '#888',
         letterSpacing: 0.5,

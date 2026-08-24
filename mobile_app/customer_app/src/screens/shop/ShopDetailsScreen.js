@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
     Image, ActivityIndicator, StatusBar, ScrollView, Alert, Dimensions, Modal,
-    Animated, PanResponder
+    Animated, PanResponder, Platform
 } from 'react-native';
+import Svg, { Path, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch, useSelector } from 'react-redux';
@@ -444,33 +445,31 @@ export default function ShopDetailsScreen({ route, navigation }) {
 
     const categories = Object.keys(groupedProducts);
 
-    const renderHeader = () => (
-        <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: colors.white, borderBottomColor: colors.border }]}>
-            <View style={styles.topRow}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.iconBtn, { backgroundColor: isDarkMode ? colors.background : '#f8f8f8' }]}>
-                    <Ionicons name="arrow-back" size={24} color={colors.black} />
-                </TouchableOpacity>
-                <View style={styles.headerTitleContainer}>
-                    <Text style={[styles.headerTitle, { color: colors.black }]} numberOfLines={1}>{shop.name}</Text>
-                    <TouchableOpacity onPress={toggleFavShop} style={styles.favIconBtn}>
-                        <Ionicons
-                            name={isShopFav ? "heart" : "heart-outline"}
-                            size={22}
-                            color={isShopFav ? "#ff4757" : "#333"}
-                        />
+    const isRestaurant = shop?.shopType === 'RESTAURANT';
+
+    const renderHeader = () => {
+        if (isRestaurant) return null;
+
+        return (
+            <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: colors.white, borderBottomColor: colors.border }]}>
+                <View style={styles.topRow}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.iconBtn, { backgroundColor: isDarkMode ? colors.background : '#f8f8f8' }]}>
+                        <Ionicons name="arrow-back" size={24} color={colors.black} />
                     </TouchableOpacity>
+                    <View style={styles.headerTitleContainer}>
+                        <Text style={[styles.headerTitle, { color: colors.black }]} numberOfLines={1}>{shop.name}</Text>
+                        <TouchableOpacity onPress={toggleFavShop} style={styles.favIconBtn}>
+                            <Ionicons
+                                name={isShopFav ? "heart" : "heart-outline"}
+                                size={22}
+                                color={isShopFav ? "#ff4757" : "#333"}
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={[styles.iconBtn, { backgroundColor: isDarkMode ? colors.background : '#f8f8f8' }]}>
-                    <Ionicons name="cart-outline" size={24} color={colors.black} />
-                    {cartItemCount > 0 && (
-                        <View style={styles.cartBadge}>
-                            <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
             </View>
-        </View>
-    );
+        );
+    };
 
     const renderProduct = (item) => (
         <SwipeableProductItem
@@ -564,17 +563,71 @@ export default function ShopDetailsScreen({ route, navigation }) {
             ) : (
                 <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
 
-                    {/* Shop Banner Image */}
-                    <View style={styles.shopBannerContainer}>
-                        <Image
-                            source={{ uri: resolveImageUrl(shop.imageUrl) }}
-                            style={styles.shopBannerImage}
-                        />
-                        <View style={styles.shopBannerOverlay}>
-                            <Text style={styles.shopCategoryBadge}>{shop.category || 'Shop'}</Text>
-                            <Text style={styles.shopDescriptionText} numberOfLines={2}>{shop.description}</Text>
+                    {isRestaurant && (
+                        <View style={{ marginHorizontal: -20, marginTop: -20, marginBottom: 10 }}>
+                            <View style={[styles.heroHeaderSection, { backgroundColor: isDarkMode ? '#0f172a' : '#dcfce7', paddingTop: Math.max(insets.top, 20) }]}>
+                                {/* Top Nav inside Hero */}
+                                <View style={styles.heroTopRow}>
+                                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.heroNavBtn}>
+                                        <Ionicons name="arrow-back" size={24} color={isDarkMode ? "#fff" : "#0f172a"} />
+                                    </TouchableOpacity>
+                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                        <TouchableOpacity onPress={toggleFavShop} style={styles.heroNavBtn}>
+                                            <Ionicons
+                                                name={isShopFav ? "heart" : "heart-outline"}
+                                                size={22}
+                                                color={isShopFav ? "#ff4757" : (isDarkMode ? "#fff" : "#0f172a")}
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <View style={styles.heroContentBox}>
+                                    <Text style={[styles.heroTitleText, { color: isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                                        {shop.name?.toUpperCase() || 'RESTAURANT'}
+                                    </Text>
+                                    <Text style={styles.heroCalligraphySubText}>
+                                        {shop.category || 'Joy University, Kanyakumari'}
+                                    </Text>
+                                    <View style={styles.curvedSwooshWrapper}>
+                                        <Svg width={180} height={16} viewBox="0 0 180 16" fill="none">
+                                            <Path
+                                                d="M 5,6 Q 90,1 175,7 C 182,8 178,14 150,14"
+                                                stroke="#056f36"
+                                                strokeWidth={2.2}
+                                                strokeLinecap="round"
+                                            />
+                                        </Svg>
+                                    </View>
+                                </View>
+                            </View>
+                            <View style={{ height: 26, width: '100%', backgroundColor: colors.background }}>
+                                <Svg width="100%" height={26} preserveAspectRatio="none">
+                                    <Defs>
+                                        <LinearGradient id="edgeBlend" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <Stop offset="0%" stopColor={isDarkMode ? '#0f172a' : '#dcfce7'} stopOpacity="1" />
+                                            <Stop offset="100%" stopColor={colors.background} stopOpacity="1" />
+                                        </LinearGradient>
+                                    </Defs>
+                                    <Rect width="100%" height={26} fill="url(#edgeBlend)" />
+                                </Svg>
+                            </View>
                         </View>
-                    </View>
+                    )}
+
+                    {/* Shop Banner Image (Standard layout for non-restaurants) */}
+                    {!isRestaurant && (
+                        <View style={styles.shopBannerContainer}>
+                            <Image
+                                source={{ uri: resolveImageUrl(shop.imageUrl) }}
+                                style={styles.shopBannerImage}
+                            />
+                            <View style={styles.shopBannerOverlay}>
+                                <Text style={styles.shopCategoryBadge}>{shop.category || 'Shop'}</Text>
+                                <Text style={styles.shopDescriptionText} numberOfLines={2}>{shop.description}</Text>
+                            </View>
+                        </View>
+                    )}
 
                     {/* Xerox: Specialized Printing Flow */}
                     {isXeroxShop && (
@@ -875,8 +928,63 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5
     },
 
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     emptyText: { textAlign: 'center', fontSize: 16, color: '#888', marginTop: 50 },
+
+    header: {
+        width: '100%',
+        paddingHorizontal: 16,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+    },
+    heroContentBox: {
+        alignItems: 'center',
+        marginTop: 6,
+        marginBottom: 16,
+        paddingHorizontal: 10,
+    },
+    heroTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    heroNavBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    heroHeaderSection: {
+        paddingHorizontal: 22,
+        paddingBottom: 28,
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
+        justifyContent: 'center',
+    },
+    heroTitleText: {
+        fontSize: 28,
+        fontWeight: '900',
+        letterSpacing: -0.8,
+        textAlign: 'center',
+        lineHeight: 34,
+    },
+    heroCalligraphySubText: {
+        fontSize: 26,
+        fontFamily: Platform.select({ ios: 'Snell Roundhand', android: 'cursive', default: 'cursive' }),
+        color: '#056f36',
+        marginTop: 6,
+        textAlign: 'center',
+        fontWeight: '700',
+        letterSpacing: 0.5,
+    },
+    curvedSwooshWrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 4,
+    },
 
     floatingCartContainer: { position: 'absolute', left: 20, right: 20, zIndex: 1000 },
     floatingCartBtn: {
