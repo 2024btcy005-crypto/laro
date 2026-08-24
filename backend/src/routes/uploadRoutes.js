@@ -11,7 +11,7 @@ const cloudinary = require('../config/cloudinaryConfig');
 // @route   POST /api/upload
 // @access  Private/Admin
 router.post('/', protect, admin, (req, res) => {
-    upload.single('image')(req, res, (err) => {
+    upload.single('image')(req, res, async (err) => {
         if (err) {
             console.error('[IMAGE UPLOAD ERROR]', err);
             return res.status(500).json({ message: 'Image upload failed', error: err.message });
@@ -19,12 +19,28 @@ router.post('/', protect, admin, (req, res) => {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
-        let fileUrl = req.file.path || req.file.secure_url || req.file.url;
-        if (fileUrl && !fileUrl.startsWith('http')) {
-            const filename = req.file.filename;
-            fileUrl = `/uploads/products/${filename}`;
+        
+        try {
+            console.log('[ProductUpload] Persisting image to Cloudinary...');
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: 'laro_products',
+                transformation: [{ width: 800, height: 800, crop: 'limit' }]
+            });
+
+            // Cleanup local file
+            if (fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+
+            res.json({ message: 'Image uploaded successfully', url: result.secure_url });
+        } catch (cloudErr) {
+            console.error('[ProductUpload] Cloudinary upload failed:', cloudErr);
+            // Cleanup local file on error
+            if (req.file && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+            res.status(500).json({ message: 'Cloud storage failed', error: cloudErr.message });
         }
-        res.json({ message: 'Image uploaded successfully', url: fileUrl });
     });
 });
 
