@@ -34,19 +34,23 @@ const withDeliveryLiveStatus = (config) => {
     const packageName = 'com.zippit.laro.deliverylivestatus.DeliveryLiveStatusPackage';
 
     if (!contents.includes(packageName)) {
-      // Add import
-      contents = `import ${packageName}\n` + contents;
+      // Add import after package declaration
+      contents = contents.replace(
+        /^package .*$/m,
+        (match) => `${match}\nimport ${packageName}`
+      );
 
       // Register package in getPackages()
-      if (contents.includes('Package>(')) {
+      if (contents.includes('PackageList(this).packages.apply {')) {
         contents = contents.replace(
-          'Package>(',
-          `Package>(\n            DeliveryLiveStatusPackage(),`
+          'PackageList(this).packages.apply {',
+          `PackageList(this).packages.apply {\n          add(DeliveryLiveStatusPackage())`
         );
-      } else if (contents.includes('Package> =')) {
+      } else if (contents.includes('List<ReactPackage> =')) {
+        // Fallback for some other templates
         contents = contents.replace(
-          'Package> =',
-          `Package> = listOf(\n        DeliveryLiveStatusPackage(),`
+          'List<ReactPackage> =',
+          `List<ReactPackage> = listOf(DeliveryLiveStatusPackage()) + `
         );
       }
     }
