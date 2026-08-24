@@ -237,6 +237,20 @@ export default function OrdersScreen({ navigation }) {
             );
         }
 
+const StoreImage = ({ imageUrl }) => {
+            const [imageError, setImageError] = useState(false);
+            if (!imageUrl || imageError) {
+                return <Ionicons name="receipt-outline" size={20} color={isDarkMode ? '#94a3b8' : '#666'} />;
+            }
+            return (
+                <Image
+                    source={{ uri: resolveImageUrl(imageUrl) }}
+                    style={{ width: 40, height: 40, borderRadius: 20 }}
+                    onError={() => setImageError(true)}
+                />
+            );
+        };
+
         // Past Order Item
         return (
             <TouchableOpacity 
@@ -253,14 +267,7 @@ export default function OrdersScreen({ navigation }) {
                 <View style={styles.pastCardHeader}>
                     <View style={styles.pastStoreInfo}>
                         <View style={[styles.pastStoreIcon, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', overflow: 'hidden' }]}>
-                            {item.storeImage ? (
-                                <Image
-                                    source={{ uri: resolveImageUrl(item.storeImage) }}
-                                    style={{ width: 40, height: 40, borderRadius: 20 }}
-                                />
-                            ) : (
-                                <Ionicons name="receipt-outline" size={20} color={isDarkMode ? '#94a3b8' : '#666'} />
-                            )}
+                            <StoreImage imageUrl={item.storeImage} />
                         </View>
                         <View style={{ marginLeft: 12 }}>
                             <Text style={[styles.pastStoreName, { color: isDarkMode ? '#ffffff' : '#111827' }]}>{item.store}</Text>

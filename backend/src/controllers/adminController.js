@@ -277,6 +277,20 @@ const createProduct = async (req, res) => {
             }
         }
 
+        let uploadedFile = req.file;
+        if (!uploadedFile && req.files) {
+            uploadedFile = req.files['image']?.[0] || req.files['imageUrl']?.[0] || req.files['file']?.[0];
+        }
+
+        let finalImageUrl = imageUrl || null;
+        if (uploadedFile) {
+            if (uploadedFile.path && (uploadedFile.path.startsWith('http://') || uploadedFile.path.startsWith('https://'))) {
+                finalImageUrl = uploadedFile.path;
+            } else if (uploadedFile.filename) {
+                finalImageUrl = `/uploads/products/${uploadedFile.filename}`;
+            }
+        }
+
         const product = await Product.create({
             shopId,
             universityId: req.user.role === 'campus_admin' ? req.user.universityId : (req.body.universityId || null),
@@ -285,7 +299,7 @@ const createProduct = async (req, res) => {
             price,
             originalPrice,
             category,
-            imageUrl,
+            imageUrl: finalImageUrl,
             isVeg: isVeg !== undefined ? isVeg : (isEdible === false ? null : true),
             isEdible: isEdible !== undefined ? isEdible : (isVeg === null ? false : true),
             isB2G1: isB2G1 !== undefined ? isB2G1 : false,
@@ -320,13 +334,27 @@ const updateProduct = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to update this product' });
         }
 
+        let uploadedFile = req.file;
+        if (!uploadedFile && req.files) {
+            uploadedFile = req.files['image']?.[0] || req.files['imageUrl']?.[0] || req.files['file']?.[0];
+        }
+
+        let finalImageUrl = imageUrl !== undefined ? imageUrl : product.imageUrl;
+        if (uploadedFile) {
+            if (uploadedFile.path && (uploadedFile.path.startsWith('http://') || uploadedFile.path.startsWith('https://'))) {
+                finalImageUrl = uploadedFile.path;
+            } else if (uploadedFile.filename) {
+                finalImageUrl = `/uploads/products/${uploadedFile.filename}`;
+            }
+        }
+
         await product.update({
             name,
             description,
             price,
             originalPrice,
             category,
-            imageUrl,
+            imageUrl: finalImageUrl,
             isVeg: isVeg !== undefined ? isVeg : product.isVeg,
             isEdible: isEdible !== undefined ? isEdible : product.isEdible,
             isB2G1: isB2G1 !== undefined ? isB2G1 : product.isB2G1,

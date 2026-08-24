@@ -33,7 +33,8 @@ app.use(helmet({
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
-app.use('/uploads', express.static('uploads'));
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Basic Route
 app.get('/', (req, res) => {

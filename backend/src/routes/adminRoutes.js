@@ -28,6 +28,13 @@ const {
     deleteQuest
 } = require('../controllers/questController');
 
+const upload = require('../config/multerConfig');
+const uploadProductImage = upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'imageUrl', maxCount: 1 },
+    { name: 'file', maxCount: 1 }
+]);
+
 const router = express.Router();
 
 // Apply middleware to all admin routes
@@ -36,8 +43,8 @@ router.use(protect, admin);
 router.get('/stats', getDashboardStats);
 router.get('/orders', getAllOrders);
 router.get('/products', getAllProducts);
-router.post('/products', authorize('campus_admin', 'shop_admin'), createProduct);
-router.put('/products/:id', updateProduct);
+router.post('/products', authorize('campus_admin', 'shop_admin'), uploadProductImage, createProduct);
+router.put('/products/:id', uploadProductImage, updateProduct);
 router.delete('/products/:id', authorize('campus_admin', 'shop_admin'), deleteProduct);
 router.get('/shops', getAllShops);
 router.get('/users', getAllUsers);

@@ -290,7 +290,7 @@ export default function HomeScreen({ navigation }) {
                 if (defaultAddr) {
                     setDefaultAddress({
                         title: defaultAddr.hostel || defaultAddr.type || 'Home',
-                        subtitle: defaultAddr.room ? `Room ${defaultAddr.room}` : defaultAddr.address
+                        subtitle: defaultAddr.name || user?.name || defaultAddr.address
                     });
                 } else {
                     setDefaultAddress({ title: 'Set up delivery address', subtitle: 'Tap to add your location' });

@@ -23,11 +23,35 @@ const api = axios.create({
 
 export const resolveImageUrl = (url) => {
     const DEFAULT_PLACEHOLDER = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80';
+    
     if (!url || typeof url !== 'string' || url.trim() === '') {
         return DEFAULT_PLACEHOLDER;
     }
 
-    let normalizedUrl = url.trim().replace(/\\/g, '/');
+    let normalizedUrl = url.trim();
+
+    // Handle case where imageUrl might be a JSON array string
+    if (normalizedUrl.startsWith('[') && normalizedUrl.endsWith(']')) {
+        try {
+            const parsed = JSON.parse(normalizedUrl);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                normalizedUrl = parsed[0];
+            } else {
+                return DEFAULT_PLACEHOLDER;
+            }
+        } catch (e) {
+            // Ignore parse errors and fallback
+        }
+    } else if (normalizedUrl.includes(',')) {
+        // Handle comma-separated strings
+        normalizedUrl = normalizedUrl.split(',')[0].trim();
+    }
+
+    if (typeof normalizedUrl !== 'string' || normalizedUrl === '') {
+        return DEFAULT_PLACEHOLDER;
+    }
+
+    normalizedUrl = normalizedUrl.replace(/\\/g, '/');
     const serverRoot = API_BASE_URL.replace(/\/api$/, '');
 
     // If URL points to uploaded files, extract relative path from /uploads/
