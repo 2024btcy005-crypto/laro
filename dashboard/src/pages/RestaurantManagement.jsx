@@ -95,7 +95,7 @@ export default function RestaurantManagement() {
         try {
             const [shopsRes, productsRes, ordersRes, unisRes] = await Promise.all([
                 api.get('/shops?all=true'),
-                api.get('/products'),
+                api.get('/admin/products'),
                 api.get('/admin/orders'),
                 getAllUniversities()
             ]);
