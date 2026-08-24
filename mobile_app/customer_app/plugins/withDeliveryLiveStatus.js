@@ -1,4 +1,4 @@
-const { withAndroidManifest, withMainApplication, createRunOncePlugin } = require('@expo/config-plugins');
+const { withAndroidManifest, withMainApplication, withSettingsGradle, withAppBuildGradle, createRunOncePlugin } = require('@expo/config-plugins');
 
 /**
  * Expo Config Plugin for DeliveryLiveStatus
@@ -28,7 +28,32 @@ const withDeliveryLiveStatus = (config) => {
     return config;
   });
 
-  // 2. MainApplication: Register DeliveryLiveStatusPackage
+  // 2. Link in settings.gradle
+  config = withSettingsGradle(config, (config) => {
+    const settingsStr = `
+include ':delivery-live-status'
+project(':delivery-live-status').projectDir = new File(rootProject.projectDir, '../modules/delivery-live-status/android')
+`;
+    if (!config.modResults.contents.includes("include ':delivery-live-status'")) {
+      config.modResults.contents += settingsStr;
+    }
+    return config;
+  });
+
+  // 3. Link in app/build.gradle
+  config = withAppBuildGradle(config, (config) => {
+    const dependencyStr = `    implementation project(':delivery-live-status')`;
+    if (!config.modResults.contents.includes("implementation project(':delivery-live-status')")) {
+      // Find dependencies block and inject
+      config.modResults.contents = config.modResults.contents.replace(
+        /dependencies\s*{/,
+        `dependencies {\n${dependencyStr}`
+      );
+    }
+    return config;
+  });
+
+  // 4. MainApplication: Register DeliveryLiveStatusPackage
   config = withMainApplication(config, (config) => {
     let contents = config.modResults.contents;
     const packageName = 'com.zippit.laro.deliverylivestatus.DeliveryLiveStatusPackage';
