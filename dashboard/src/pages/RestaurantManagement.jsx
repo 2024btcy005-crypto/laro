@@ -178,16 +178,20 @@ export default function RestaurantManagement() {
         if (!file) return;
 
         setUploading(true);
+        setError(null);
         try {
             const uploadFormData = new FormData();
             uploadFormData.append('image', file);
             const res = await uploadImage(uploadFormData);
-            setFormData(prev => ({ ...prev, imageUrl: res.data.url }));
+            if (res.data && res.data.url) {
+                setFormData(prev => ({ ...prev, imageUrl: res.data.url }));
+            }
         } catch (err) {
             console.error('Image upload error:', err);
-            setError('Failed to upload banner image.');
+            setError(err.response?.data?.message || 'Failed to upload banner image. Please check your connection.');
         } finally {
             setUploading(false);
+            if (e.target) e.target.value = '';
         }
     };
 
@@ -588,18 +592,52 @@ export default function RestaurantManagement() {
                                     <TextField
                                         fullWidth
                                         label="Banner Image URL"
+                                        placeholder="https://images.unsplash.com/... or upload file below"
                                         value={formData.imageUrl}
                                         onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                                        sx={{ mb: 1 }}
                                     />
-                                    <Button
-                                        variant="outlined"
-                                        component="label"
-                                        startIcon={uploading ? <CircularProgress size={18} /> : <CloudUploadIcon />}
-                                        sx={{ mt: 1, borderColor: '#006d33', color: '#006d33' }}
-                                    >
-                                        {uploading ? 'Uploading...' : 'Upload Image File'}
-                                        <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
-                                    </Button>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                                        <Button
+                                            variant="outlined"
+                                            component="label"
+                                            disabled={uploading}
+                                            startIcon={uploading ? <CircularProgress size={18} /> : <CloudUploadIcon />}
+                                            sx={{ borderColor: '#006d33', color: '#006d33', fontWeight: 700 }}
+                                        >
+                                            {uploading ? 'Uploading to Cloud...' : 'Upload Image File'}
+                                            <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+                                        </Button>
+                                        {formData.imageUrl && (
+                                            <Button
+                                                size="small"
+                                                color="error"
+                                                onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                                            >
+                                                Remove Image
+                                            </Button>
+                                        )}
+                                    </Box>
+
+                                    {formData.imageUrl && (
+                                        <Box sx={{ mt: 2, borderRadius: 2, overflow: 'hidden', border: '1px solid #e5e7eb', height: 160, position: 'relative', bgcolor: '#f9fafb' }}>
+                                            <Box
+                                                component="img"
+                                                src={resolveImageUrl(formData.imageUrl)}
+                                                alt="Restaurant Banner Preview"
+                                                sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80';
+                                                }}
+                                            />
+                                            <Chip
+                                                label="Preview"
+                                                size="small"
+                                                sx={{ position: 'absolute', top: 8, left: 8, bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', fontWeight: 700 }}
+                                            />
+                                        </Box>
+                                    )}
                                 </Grid>
 
                                 <Grid item xs={12} sm={6}>

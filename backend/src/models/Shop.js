@@ -27,7 +27,7 @@ const Shop = sequelize.define('Shop', {
         allowNull: false,
     },
     imageUrl: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
     },
     isOpen: {
         type: DataTypes.BOOLEAN,
