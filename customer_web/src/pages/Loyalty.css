@@ -163,8 +163,8 @@
 
 .roadmap-item.active {
     border-color: var(--primary);
-    background: #fff5faff;
-    box-shadow: 0 4px 20px rgba(157, 23, 77, 0.08);
+    background: #f0fdf4;
+    box-shadow: 0 4px 20px rgba(5, 111, 54, 0.12);
 }
 
 .roadmap-item.locked {

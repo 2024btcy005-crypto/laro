@@ -74,7 +74,7 @@
 
 .payment-method.active {
     border-color: var(--primary);
-    background: rgba(157, 23, 77, 0.05);
+    background: rgba(5, 111, 54, 0.08);
 }
 
 .payment-icon {
@@ -301,7 +301,7 @@
 .coupon-input-group .input-wrapper:focus-within {
     border-color: var(--primary);
     background: #fff;
-    box-shadow: 0 0 0 4px rgba(157, 23, 77, 0.05);
+    box-shadow: 0 0 0 4px rgba(5, 111, 54, 0.1);
 }
 
 .coupon-input-group .input-icon {

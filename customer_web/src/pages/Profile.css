@@ -40,7 +40,7 @@
     font-size: 40px;
     font-weight: 900;
     margin: 0 auto 20px;
-    box-shadow: 0 10px 25px rgba(157, 23, 77, 0.2);
+    box-shadow: 0 10px 25px rgba(5, 111, 54, 0.25);
 }
 
 .profile-name {
@@ -698,7 +698,7 @@
 }
 
 .detail-modal-header {
-    background: linear-gradient(135deg, var(--primary) 0%, #db2777 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, #047857 100%);
     padding: 40px 32px;
     color: var(--white);
     display: flex;
@@ -747,7 +747,7 @@
     border-radius: 50%;
     margin-top: 6px;
     position: relative;
-    box-shadow: 0 0 0 4px rgba(157, 23, 77, 0.1);
+    box-shadow: 0 0 0 4px rgba(5, 111, 54, 0.15);
 }
 
 .step-info .step-label {

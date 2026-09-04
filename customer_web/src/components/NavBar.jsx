@@ -72,14 +72,14 @@ const NavBar = () => {
                         </Link>
 
                         <div className="campus-selector" onClick={handleChangeCampus} title="Switch campus">
-                            <School size={15} className="icon-pink" />
+                            <School size={15} className="icon-green" />
                             <span className="campus-name">{universityName}</span>
                             <ChevronDown size={13} className="icon-gray" />
                         </div>
                     </div>
 
                     <form className="search-bar desktop-search" onSubmit={handleSearch}>
-                        <Search size={18} className="icon-pink" />
+                        <Search size={18} className="icon-green" />
                         <input
                             type="text"
                             placeholder="Search for snacks, groceries, stationery..."
@@ -120,7 +120,7 @@ const NavBar = () => {
 
                 {/* Mobile Search Bar Row (visible on <768px) */}
                 <form className="mobile-search-bar" onSubmit={handleSearch}>
-                    <Search size={16} className="icon-pink" />
+                    <Search size={16} className="icon-green" />
                     <input
                         type="text"
                         placeholder="Search for snacks, groceries, stationery..."

@@ -313,8 +313,8 @@
     color: #ef4444;
 }
 
-.icon-pink {
-    color: var(--primary);
+.icon-green {
+    color: var(--primary, #056f36);
 }
 
 .icon-gray {

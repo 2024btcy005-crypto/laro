@@ -43,7 +43,7 @@ export default function UniversitySelection({ onSelect }) {
     if (loading) return (
         <div className="uni-selection-overlay">
             <div className="uni-selection-card loading">
-                <Loader2 className="animate-spin" size={48} color="#ec4899" />
+                <Loader2 className="animate-spin" size={48} color="#056f36" />
                 <p>Finding campuses near you...</p>
             </div>
         </div>
@@ -54,7 +54,7 @@ export default function UniversitySelection({ onSelect }) {
             <div className="uni-selection-card">
                 <div className="uni-header">
                     <div className="uni-icon-circle">
-                        <School size={32} color="#ec4899" />
+                        <School size={32} color="#056f36" />
                     </div>
                     <h2>Select Your Campus</h2>
                     <p>Choose your university to see the best spots serving your location.</p>

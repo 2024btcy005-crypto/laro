@@ -1,19 +1,22 @@
 :root {
-  --primary: #9D174D;
-  --secondary: #F472B6;
-  --accent: #DB2777;
-  --background: #FFF0F6;
-  --laro-green: #27994B;
+  --primary: #056F36;
+  --primary-hover: #035227;
+  --secondary: #10B981;
+  --accent: #22C55E;
+  --background: #F4FBF7;
+  --laro-green: #056F36;
+  --laro-green-light: #F0FDF4;
+  --laro-green-border: #BBF7D0;
   --white: #FFFFFF;
-  --black: #1A1A2E;
-  --gray: #64748b;
-  --light-gray: #f8fafc;
-  --border: #f1f5f9;
+  --black: #0F172A;
+  --gray: #64748B;
+  --light-gray: #F8FAFC;
+  --border: #E2E8F0;
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-premium: 0 20px 25px -5px rgb(157 23 77 / 0.1), 0 8px 10px -6px rgb(157 23 77 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-premium: 0 20px 25px -5px rgb(5 111 54 / 0.12), 0 8px 10px -6px rgb(5 111 54 / 0.08);
   --card-bg: var(--white);
   --input-bg: var(--white);
 
@@ -141,5 +144,5 @@ ul {
 }
 
 .dark-theme .btn-primary {
-  box-shadow: 0 10px 20px rgba(157, 23, 77, 0.2);
+  box-shadow: 0 10px 20px rgba(5, 111, 54, 0.3);
 }

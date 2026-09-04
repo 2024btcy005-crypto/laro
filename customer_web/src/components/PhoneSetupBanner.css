@@ -32,7 +32,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 8px 16px rgba(157, 23, 77, 0.3);
+    box-shadow: 0 8px 16px rgba(5, 111, 54, 0.35);
 }
 
 .phone-text-content {

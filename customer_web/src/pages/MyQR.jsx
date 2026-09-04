@@ -9,7 +9,7 @@ export default function MyQR() {
 
     // Use the user's phone number as the QR data (the same as mobile)
     const qrData = user.phoneNumber || user.id || 'LaroUser';
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=9d174d&bgcolor=ffffff&margin=10`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=056f36&bgcolor=ffffff&margin=10`;
 
     const handleDownload = () => {
         const link = document.createElement('a');
