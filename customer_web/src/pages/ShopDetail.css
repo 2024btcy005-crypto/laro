@@ -989,60 +989,9 @@
         font-size: 24px;
     }
 
-    /* Fixed floating bottom cart bar on mobile */
+    /* Hide local cart sidebar on mobile - global FloatingCartFAB handles floating cart */
     .cart-sidebar {
-        position: fixed;
-        bottom: 16px;
-        left: 16px;
-        right: 16px;
-        top: auto;
-        z-index: 1000;
-    }
-
-    .cart-sidebar-card {
-        padding: 12px 16px;
-        border-radius: 16px;
-        background: #111827;
-        color: #ffffff;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .sidebar-title,
-    .sidebar-subtitle,
-    .sidebar-items {
-        display: none; /* Keep bottom cart super clean on mobile */
-    }
-
-    .sidebar-footer {
-        padding-top: 0;
-        border-top: none;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-    }
-
-    .subtotal-row {
-        margin-bottom: 0;
-        color: #ffffff;
-        font-size: 15px;
-        flex-direction: column;
-        align-items: flex-start;
-        line-height: 1.2;
-    }
-
-    .subtotal-row span:first-child {
-        font-size: 11px;
-        color: #94a3b8;
-        font-weight: 600;
-    }
-
-    .checkout-btn {
-        width: auto;
-        padding: 10px 20px;
-        font-size: 14px;
-        border-radius: 10px;
+        display: none !important;
     }
 }
 
