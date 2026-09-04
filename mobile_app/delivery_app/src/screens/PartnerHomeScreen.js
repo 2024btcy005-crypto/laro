@@ -131,11 +131,20 @@ export default function PartnerHomeScreen({ navigation }) {
                     
                     Notifications.setNotificationHandler({
                         handleNotification: async () => ({
-                            shouldShowAlert: false,
+                            shouldShowAlert: true,
                             shouldPlaySound: true,
                             shouldSetBadge: true,
                         }),
                     });
+
+                    if (Platform.OS === 'android') {
+                        await Notifications.setNotificationChannelAsync('default', {
+                            name: 'default',
+                            importance: Notifications.AndroidImportance.MAX,
+                            vibrationPattern: [0, 250, 250, 250],
+                            lightColor: '#006d33',
+                        });
+                    }
 
                     const { status: existingStatus } = await Notifications.getPermissionsAsync();
                     let finalStatus = existingStatus;
