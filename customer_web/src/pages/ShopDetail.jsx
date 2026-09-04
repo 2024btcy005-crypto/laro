@@ -52,7 +52,8 @@ const MenuItem = ({ item, shop, cart, addToCart, removeFromCart, getItemQuantity
         checkFav();
     }, [user.id, item.id]);
 
-    const handleToggleFav = async () => {
+    const handleToggleFav = async (e) => {
+        e?.stopPropagation();
         if (!user.id) {
             alert('Please login to save favorites!');
             return;
@@ -64,98 +65,103 @@ const MenuItem = ({ item, shop, cart, addToCart, removeFromCart, getItemQuantity
     const edible = isEdibleProduct(item);
     const isVeg = item.isVeg !== false;
     const rating = item.rating || (4.2 + (typeof item.id === 'string' ? item.id.charCodeAt(0) % 7 : 3) * 0.1).toFixed(1);
+    const itemQty = getItemQuantity(item.id);
 
     return (
         <div className={`menu-item-card ${item.isBestseller ? 'bestseller-card' : ''}`}>
-            <div className="item-info">
-                <div className="item-badge-row">
-                    {edible && (
-                        <span className={`veg-badge ${isVeg ? 'veg' : 'non-veg'}`}>
-                            <span className="dot" />
-                        </span>
-                    )}
-                    {item.isBestseller && <span className="bestseller-tag">🔥 MUST TRY</span>}
-                    {item.variants?.length > 0 && <span className="customisable-tag">✨ CUSTOMISABLE</span>}
-                </div>
-                {item.isB2G1 && <span className="b2g1-badge" style={{ display: 'inline-block', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', fontSize: '0.65rem', fontWeight: 900, padding: '2px 8px', borderRadius: '4px', marginBottom: '4px' }}>🎁 BUY 2 GET 1 FREE</span>}
-                {item.isCombo && <span className="combo-badge" style={{ display: 'inline-block', background: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#fff', fontSize: '0.65rem', fontWeight: 900, padding: '2px 8px', borderRadius: '4px', marginBottom: '4px' }}>🔥 COMBO MEAL</span>}
-                <h3 className="item-name">{item.name}</h3>
-                <div className="item-price-rating-row">
-                    <span className="item-price">₹{item.price}{item.variants?.length > 0 && <span className="onwards-tag"> onwards</span>}</span>
-                    <span className="item-rating-pill">⭐ {rating}</span>
-                </div>
-                <p className="item-desc">{item.description || 'Prepared fresh with high-quality ingredients by campus chefs.'}</p>
-            </div>
-            <div className="item-action">
-                <div className="item-image-sm">
-                    <img
-                        src={resolveImageUrl(item.imageUrl)}
-                        alt={item.name}
-                        onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop';
-                        }}
-                    />
-                    <button
-                        className={`item-fav-btn ${isFav ? 'active' : ''}`}
-                        onClick={handleToggleFav}
-                        title="Save to favorites"
-                    >
-                        <Heart size={16} fill={isFav ? "#ff4757" : "transparent"} stroke={isFav ? "#ff4757" : "#fff"} />
-                    </button>
-
-                    <div className="item-button-overlay">
-                        {getItemQuantity(item.id) > 0 ? (
-                            <div className="quantity-control">
-                                <button onClick={() => removeFromCart(item.id)}><Minus size={14} /></button>
-                                <span>{getItemQuantity(item.id)}</span>
-                                <button onClick={() => addToCart(item, shop)}><Plus size={14} /></button>
-                            </div>
-                        ) : (
-                            !item.isAvailable ? (
-                                <button className="add-btn disabled" disabled>OUT OF STOCK</button>
-                            ) : (
-                                item.variants?.length > 0 ? (
-                                    <button className="add-btn" onClick={() => setShowVariants(!showVariants)}>
-                                        {showVariants ? 'CLOSE' : 'CHOOSE +'}
-                                    </button>
-                                ) : (
-                                    <button className="add-btn" onClick={() => addToCart(item, shop)}>ADD +</button>
-                                )
-                            )
+            <div className="item-main-row">
+                <div className="item-info">
+                    <div className="item-badge-row">
+                        {edible && (
+                            <span className={`veg-badge ${isVeg ? 'veg' : 'non-veg'}`}>
+                                <span className="dot" />
+                            </span>
                         )}
+                        {item.isBestseller && <span className="bestseller-tag">🔥 MUST TRY</span>}
+                        {item.variants?.length > 0 && <span className="customisable-tag">✨ CUSTOMISABLE</span>}
+                    </div>
+                    {item.isB2G1 && <span className="b2g1-badge">🎁 BUY 2 GET 1 FREE</span>}
+                    {item.isCombo && <span className="combo-badge">🔥 COMBO MEAL</span>}
+                    <h3 className="item-name">{item.name}</h3>
+                    <div className="item-price-rating-row">
+                        <span className="item-price">₹{item.price}{item.variants?.length > 0 && <span className="onwards-tag"> onwards</span>}</span>
+                        <span className="item-rating-pill">⭐ {rating}</span>
+                    </div>
+                    {item.description && (
+                        <p className="item-desc">{item.description}</p>
+                    )}
+                </div>
+
+                <div className="item-action">
+                    <div className="item-image-sm">
+                        <img
+                            src={resolveImageUrl(item.imageUrl)}
+                            alt={item.name}
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop';
+                            }}
+                        />
+                        <button
+                            className={`item-fav-btn ${isFav ? 'active' : ''}`}
+                            onClick={handleToggleFav}
+                            title="Save to favorites"
+                            type="button"
+                        >
+                            <Heart size={15} fill={isFav ? "#ff4757" : "transparent"} stroke={isFav ? "#ff4757" : "#fff"} />
+                        </button>
+
+                        <div className="item-button-overlay">
+                            {itemQty > 0 ? (
+                                <div className="quantity-control">
+                                    <button type="button" onClick={() => removeFromCart(item.id)}><Minus size={14} /></button>
+                                    <span className="qty-number">{itemQty}</span>
+                                    <button type="button" onClick={() => addToCart(item, shop)}><Plus size={14} /></button>
+                                </div>
+                            ) : (
+                                !item.isAvailable ? (
+                                    <button className="add-btn disabled" disabled>SOLD OUT</button>
+                                ) : (
+                                    item.variants?.length > 0 ? (
+                                        <button className="add-btn" type="button" onClick={() => setShowVariants(!showVariants)}>
+                                            {showVariants ? 'CLOSE' : 'ADD +'}
+                                        </button>
+                                    ) : (
+                                        <button className="add-btn" type="button" onClick={() => addToCart(item, shop)}>ADD +</button>
+                                    )
+                                )
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {
-                showVariants && item.variants?.length > 0 && (
-                    <div className="variant-selection-area">
-                        <p className="variant-label">Customizable</p>
-                        {item.variants.map(variant => {
-                            const variantQty = getItemQuantity(variant.id);
-                            return (
-                                <div key={variant.id} className="variant-option">
-                                    <div className="variant-info">
-                                        <span className="variant-name">{variant.variantName}</span>
-                                        <span className="variant-price">₹{variant.price}</span>
-                                    </div>
-                                    {variantQty > 0 ? (
-                                        <div className="quantity-control sm">
-                                            <button onClick={() => removeFromCart(variant.id)}><Minus size={12} /></button>
-                                            <span>{variantQty}</span>
-                                            <button onClick={() => addToCart(variant, shop)}><Plus size={12} /></button>
-                                        </div>
-                                    ) : (
-                                        <button className="add-btn-sm" onClick={() => addToCart(variant, shop)}>ADD</button>
-                                    )}
+            {showVariants && item.variants?.length > 0 && (
+                <div className="variant-selection-area">
+                    <p className="variant-label">Select Options</p>
+                    {item.variants.map(variant => {
+                        const variantQty = getItemQuantity(variant.id);
+                        return (
+                            <div key={variant.id} className="variant-option">
+                                <div className="variant-info">
+                                    <span className="variant-name">{variant.variantName}</span>
+                                    <span className="variant-price">₹{variant.price}</span>
                                 </div>
-                            );
-                        })}
-                    </div>
-                )
-            }
-        </div >
+                                {variantQty > 0 ? (
+                                    <div className="quantity-control sm">
+                                        <button type="button" onClick={() => removeFromCart(variant.id)}><Minus size={12} /></button>
+                                        <span>{variantQty}</span>
+                                        <button type="button" onClick={() => addToCart(variant, shop)}><Plus size={12} /></button>
+                                    </div>
+                                ) : (
+                                    <button className="add-btn-sm" type="button" onClick={() => addToCart(variant, shop)}>ADD +</button>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
     );
 };
 

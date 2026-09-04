@@ -2,21 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { shopAPI, orderAPI } from '../api';
 import ShopCard from '../components/ShopCard';
+import UniversitySelection from '../components/UniversitySelection';
 import { 
     Search, Utensils, Pizza, Coffee, Store, Zap, Clock, ShoppingBag, 
-    ChevronRight, Compass, Heart, Star, Sparkles, Filter, ChevronLeft, MapPin, RotateCcw
+    ChevronRight, Compass, Heart, Star, Sparkles, Filter, ChevronLeft, MapPin, RotateCcw, Flame
 } from 'lucide-react';
 import './FoodDelivery.css';
 
 const FOOD_CATEGORIES = [
-    { id: 'all', name: 'All Cuisines', icon: <Utensils size={18} /> },
-    { id: 'Burgers', name: 'Burgers & Fries', icon: <Zap size={18} /> },
-    { id: 'Pizza', name: 'Pizzas', icon: <Pizza size={18} /> },
-    { id: 'Cafe', name: 'Cafe & Drinks', icon: <Coffee size={18} /> },
-    { id: 'Stores', name: 'Convenience', icon: <Store size={18} /> },
+    { id: 'all', name: 'All Restaurants', icon: <Utensils size={16} /> },
+    { id: 'biryani', name: 'Biryani & Rice', icon: <Flame size={16} /> },
+    { id: 'curry', name: 'Curries & Gravies', icon: <Utensils size={16} /> },
+    { id: 'starter', name: 'Starters & Snacks', icon: <Zap size={16} /> },
+    { id: 'burger', name: 'Burgers & Pizzas', icon: <Pizza size={16} /> },
+    { id: 'cafe', name: 'Cafe & Drinks', icon: <Coffee size={16} /> },
 ];
 
-const STATIONERY_SHOP_MODES = ['Stationery', 'Books', 'Xerox', 'Printing', 'Stationary'];
+const STATIONERY_KEYWORDS = ['stationery', 'books', 'xerox', 'printing', 'stationary', 'paper', 'a4'];
 
 export default function FoodDelivery() {
     const navigate = useNavigate();
@@ -31,6 +33,10 @@ export default function FoodDelivery() {
         const id = localStorage.getItem('selectedUniversityId');
         const name = localStorage.getItem('selectedUniversityName');
         return (id && id !== 'null' && id !== 'undefined') ? { id, name } : null;
+    });
+    const [showUniSelection, setShowUniSelection] = useState(() => {
+        const id = localStorage.getItem('selectedUniversityId');
+        return !(id && id !== 'null' && id !== 'undefined');
     });
 
     const [coords, setCoords] = useState({ lat: null, lng: null });
@@ -53,7 +59,7 @@ export default function FoodDelivery() {
                     executeFetch(lat, lng);
                 },
                 (error) => {
-                    console.warn("[FoodDelivery] Geolocation error or fallback:", error.message);
+                    console.warn("[FoodDelivery] Geolocation fallback:", error.message);
                     executeFetch(null, null);
                 },
                 { timeout: 3500, enableHighAccuracy: false }
@@ -79,15 +85,24 @@ export default function FoodDelivery() {
         try {
             setLoading(true);
             const res = await shopAPI.getShops(lat || coords.lat, lng || coords.lng, universityId);
-            // Filter to only have food joints & restaurants (exclude warehouses & stationery)
-            const foodOnly = (res.data || []).filter(
-                s => !s.isWarehouse &&
-                    (s.shopType === 'RESTAURANT' ||
-                     (s.shopType !== 'GROCERY' && s.shopType !== 'STATIONERY' && (!s.category || !STATIONERY_SHOP_MODES.some(m => s.category.toLowerCase().includes(m.toLowerCase())))))
-            );
-            setShops(foodOnly);
+            const rawShops = res.data || [];
+
+            // Filter exclusively for Restaurants & Dining spots (exclude warehouses, grocery & stationery)
+            const restaurantShops = rawShops.filter(s => {
+                if (s.isWarehouse) return false;
+                if (s.shopType === 'RESTAURANT') return true;
+                
+                const cat = (s.category || '').toLowerCase();
+                const isStationery = STATIONERY_KEYWORDS.some(k => cat.includes(k));
+                if (isStationery) return false;
+                if (s.shopType === 'GROCERY' || s.shopType === 'STATIONERY') return false;
+                
+                return true;
+            });
+
+            setShops(restaurantShops);
         } catch (err) {
-            console.error('Failed to fetch food shops:', err);
+            console.error('Failed to fetch restaurants:', err);
         } finally {
             setLoading(false);
         }
@@ -95,9 +110,10 @@ export default function FoodDelivery() {
 
     const fetchActiveOrders = async () => {
         try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
             const res = await orderAPI.getMyOrders();
             if (res.data && Array.isArray(res.data)) {
-                // filter active orders
                 const active = res.data.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
                 setActiveOrders(active);
             }
@@ -111,15 +127,33 @@ export default function FoodDelivery() {
 
         // Apply search query
         if (searchQuery.trim()) {
-            base = base.filter(s =>
-                s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (s.category && s.category.toLowerCase().includes(searchQuery.toLowerCase()))
-            );
+            const q = searchQuery.toLowerCase();
+            base = base.filter(s => {
+                const nameMatch = s.name.toLowerCase().includes(q);
+                const catMatch = (s.category || '').toLowerCase().includes(q);
+                const productMatch = s.products && Array.isArray(s.products) && s.products.some(p => 
+                    p.name.toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q)
+                );
+                return nameMatch || catMatch || productMatch;
+            });
         }
 
         // Apply category chip
         if (activeCategory !== 'all') {
-            base = base.filter(shop => shop.category === activeCategory);
+            const target = activeCategory.toLowerCase();
+            base = base.filter(shop => {
+                const shopCat = (shop.category || '').toLowerCase();
+                const shopName = (shop.name || '').toLowerCase();
+                if (shopCat.includes(target) || shopName.includes(target)) return true;
+                
+                if (shop.products && Array.isArray(shop.products)) {
+                    return shop.products.some(p => 
+                        (p.category || '').toLowerCase().includes(target) || 
+                        (p.name || '').toLowerCase().includes(target)
+                    );
+                }
+                return false;
+            });
         }
 
         setFilteredShops(base);
@@ -136,7 +170,14 @@ export default function FoodDelivery() {
 
     return (
         <div className="food-delivery-container container">
-            {/* 1/3 Clean Hero Header Section */}
+            {showUniSelection && (
+                <UniversitySelection onSelect={(uni) => {
+                    setSelectedUniversity(uni);
+                    setShowUniSelection(false);
+                }} />
+            )}
+
+            {/* Hero Header Section */}
             <div className="food-hero-section-third">
                 <div className="hero-content-box">
                     <h1 className="hero-bold-title">CAMPUS FOOD DELIVERY</h1>
@@ -157,7 +198,7 @@ export default function FoodDelivery() {
                     <input 
                         type="text" 
                         className="redesigned-search-input"
-                        placeholder="Search restaurants, burgers, biryani..." 
+                        placeholder="Search restaurants, biryani, burgers, rotis..." 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -169,14 +210,41 @@ export default function FoodDelivery() {
                 </div>
             </div>
 
+            {/* Food Cuisine Category Chips */}
+            <div className="hero-pill-chips-row" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px', marginBottom: '24px' }}>
+                {FOOD_CATEGORIES.map(cat => (
+                    <button
+                        key={cat.id}
+                        className={`hero-pill-chip ${activeCategory === cat.id ? 'active' : ''}`}
+                        onClick={() => setActiveCategory(cat.id)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '8px 16px',
+                            borderRadius: '50px',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                            cursor: 'pointer',
+                            background: activeCategory === cat.id ? '#056f36' : 'var(--white)',
+                            color: activeCategory === cat.id ? '#ffffff' : 'var(--black)',
+                            border: '1px solid var(--border)',
+                            boxShadow: activeCategory === cat.id ? '0 4px 12px rgba(5, 111, 54, 0.25)' : 'none'
+                        }}
+                    >
+                        <span>{cat.icon}</span>
+                        <span>{cat.name}</span>
+                    </button>
+                ))}
+            </div>
 
-
-            {/* Main Section */}
+            {/* Main Restaurants Section */}
             <div className="food-main-layout">
                 <div className="food-main-header">
                     <div>
-                        <h2 className="main-heading">Popular Restaurants</h2>
-                        <p className="sub-heading">{filteredShops.length} restaurants open near you</p>
+                        <h2 className="main-heading">Campus Dining & Canteens</h2>
+                        <p className="sub-heading">{filteredShops.length} restaurants serving your campus</p>
                     </div>
                     {selectedUniversity && (
                         <div className="campus-badge">
@@ -189,7 +257,7 @@ export default function FoodDelivery() {
                 {loading ? (
                     <div className="loading-grid">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="skeleton-card" />
+                            <div key={i} className="skeleton-card" style={{ height: '280px' }} />
                         ))}
                     </div>
                 ) : filteredShops.length > 0 ? (
@@ -212,10 +280,17 @@ export default function FoodDelivery() {
                         <h3 className="empty-title">No Restaurants Found</h3>
                         <p className="empty-desc">
                             {searchQuery 
-                                ? `We couldn't find any dining spots in Kanyakumari matching "${searchQuery}".`
-                                : `No restaurants found in the selected category.`
+                                ? `We couldn't find any dining spots matching "${searchQuery}".`
+                                : `No restaurants found matching the selected cuisine.`
                             }
                         </p>
+                        <button
+                            className="btn-primary"
+                            style={{ marginTop: '16px', background: '#056f36', color: '#fff', padding: '10px 24px', borderRadius: '50px', fontWeight: 700 }}
+                            onClick={() => { setSearchQuery(''); setActiveCategory('all'); }}
+                        >
+                            View All Restaurants
+                        </button>
                     </div>
                 )}
             </div>
