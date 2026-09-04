@@ -129,6 +129,12 @@ ul {
   padding: 0 20px;
 }
 
+@media (max-width: 640px) {
+  .container {
+    padding: 0 12px;
+  }
+}
+
 .dark-theme .premium-card {
   background: var(--card-bg);
   border-color: var(--border);

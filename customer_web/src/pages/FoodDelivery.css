@@ -543,29 +543,63 @@
 }
 
 @media (max-width: 768px) {
-    .food-hero-banner {
-        padding: 40px 24px;
-        border-radius: 24px;
+    .food-delivery-container {
+        padding-top: 12px;
+        padding-bottom: 60px;
+    }
+
+    .food-hero-section-third {
+        padding: 24px 16px 20px;
+        border-radius: 16px;
+        margin-bottom: 20px;
     }
     
-    .hero-title {
-        font-size: 32px;
+    .hero-bold-title {
+        font-size: 24px;
+        letter-spacing: -0.5px;
     }
     
-    .hero-subtitle {
-        font-size: 15px;
+    .hero-calligraphy-sub {
+        font-size: 14px;
     }
     
     .food-main-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 16px;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .main-heading {
+        font-size: 20px;
     }
     
     .live-order-tracker-card {
-        width: calc(100% - 40px);
-        bottom: 20px;
-        right: 20px;
-        left: 20px;
+        width: calc(100% - 24px);
+        bottom: 12px;
+        right: 12px;
+        left: 12px;
+        padding: 12px;
+    }
+
+    .redesigned-search-pill {
+        max-width: 100%;
+        height: 44px;
+        padding: 4px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .food-delivery-container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .hero-bold-title {
+        font-size: 20px;
+    }
+
+    .curved-swoosh-wrapper svg {
+        width: 160px;
     }
 }

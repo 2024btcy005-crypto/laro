@@ -54,63 +54,89 @@ const NavBar = () => {
 
     return (
         <nav className="navbar">
-            <div className="container nav-content">
-                <button className="menu-toggle" onClick={() => window.dispatchEvent(new CustomEvent('toggleSidebar'))}>
-                    <span className="hamburger-box">
-                        <span className="hamburger-inner"></span>
-                    </span>
-                </button>
+            <div className="container nav-container-wrapper">
+                <div className="nav-content">
+                    <div className="nav-left">
+                        <button
+                            className="menu-toggle"
+                            onClick={() => window.dispatchEvent(new CustomEvent('toggleSidebar'))}
+                            aria-label="Open menu"
+                        >
+                            <span className="hamburger-box">
+                                <span className="hamburger-inner"></span>
+                            </span>
+                        </button>
 
-                <Link to="/" className="logo">
-                    <span className="logo-text">LARO</span>
-                </Link>
+                        <Link to="/" className="logo">
+                            <span className="logo-text">LARO</span>
+                        </Link>
 
-                <div className="campus-selector" onClick={handleChangeCampus}>
-                    <School size={16} className="icon-pink" />
-                    <span className="campus-name">{universityName}</span>
-                    <ChevronDown size={14} className="icon-gray" />
+                        <div className="campus-selector" onClick={handleChangeCampus} title="Switch campus">
+                            <School size={15} className="icon-pink" />
+                            <span className="campus-name">{universityName}</span>
+                            <ChevronDown size={13} className="icon-gray" />
+                        </div>
+                    </div>
+
+                    <form className="search-bar desktop-search" onSubmit={handleSearch}>
+                        <Search size={18} className="icon-pink" />
+                        <input
+                            type="text"
+                            placeholder="Search for snacks, groceries, stationery..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </form>
+
+                    <div className="nav-actions">
+                        {token ? (
+                            <>
+                                <Link to="/profile" className="nav-item user-profile-link" title="My Profile">
+                                    <div className="user-avatar">
+                                        {user.name?.charAt(0) || 'U'}
+                                    </div>
+                                    <span className="nav-label">{user.name || 'Profile'}</span>
+                                </Link>
+                                <button onClick={handleLogout} className="nav-item logout-btn" title="Logout">
+                                    <LogOut size={18} />
+                                </button>
+                            </>
+                        ) : (
+                            <Link to="/login" className="btn-primary-nav">Login</Link>
+                        )}
+
+                        <button onClick={toggleTheme} className="nav-item theme-toggle" title="Toggle theme">
+                            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+                        </button>
+
+                        <Link to="/checkout" className={`cart-btn ${isCartBouncing ? 'cart-bounce' : ''}`} title="Cart">
+                            <ShoppingBag size={20} />
+                            {totalItems > 0 && (
+                                <span className="cart-count">{totalItems}</span>
+                            )}
+                        </Link>
+                    </div>
                 </div>
-                <form className="search-bar" onSubmit={handleSearch}>
-                    <MapPin size={18} className="icon-pink" />
+
+                {/* Mobile Search Bar Row (visible on <768px) */}
+                <form className="mobile-search-bar" onSubmit={handleSearch}>
+                    <Search size={16} className="icon-pink" />
                     <input
                         type="text"
                         placeholder="Search for snacks, groceries, stationery..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
-                    <button type="submit" style={{ background: 'none', border: 'none', padding: 0, display: 'flex' }}>
-                        <Search size={18} className="icon-gray" style={{ cursor: 'pointer' }} />
-                    </button>
-                </form>
-
-                <div className="nav-actions">
-                    {token ? (
-                        <>
-                            <Link to="/profile" className="nav-item">
-                                <div className="user-avatar">
-                                    {user.name?.charAt(0) || 'U'}
-                                </div>
-                                <span className="nav-label">{user.name || 'Profile'}</span>
-                            </Link>
-                            <button onClick={handleLogout} className="nav-item logout-btn">
-                                <LogOut size={20} />
-                            </button>
-                        </>
-                    ) : (
-                        <Link to="/login" className="btn-primary">Login</Link>
+                    {searchQuery && (
+                        <button
+                            type="button"
+                            className="mobile-search-clear"
+                            onClick={() => setSearchQuery('')}
+                        >
+                            ×
+                        </button>
                     )}
-
-                    <button onClick={toggleTheme} className="nav-item theme-toggle">
-                        {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-                    </button>
-
-                    <Link to="/checkout" className={`cart-btn ${isCartBouncing ? 'cart-bounce' : ''}`}>
-                        <ShoppingBag size={22} />
-                        {totalItems > 0 && (
-                            <span className="cart-count">{totalItems}</span>
-                        )}
-                    </Link>
-                </div>
+                </form>
             </div>
         </nav>
     );
