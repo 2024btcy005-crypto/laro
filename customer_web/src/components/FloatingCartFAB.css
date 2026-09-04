@@ -1,0 +1,231 @@
+/* ==========================================================================
+   Floating Cart FAB (Floating Action Bar / Button)
+   ========================================================================== */
+
+.floating-cart-fab-wrapper {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    width: 92%;
+    max-width: 480px;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+    animation: fabSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-cart-fab-wrapper.fab-pop {
+    transform: translateX(-50%) scale(1.03);
+}
+
+.floating-cart-fab {
+    pointer-events: auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #056f36 0%, #034b24 100%);
+    color: #ffffff;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(5, 111, 54, 0.4), 0 2px 8px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.floating-cart-fab::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+    transform: skewX(-20deg);
+    animation: fabShimmer 3s infinite;
+}
+
+.floating-cart-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 36px rgba(5, 111, 54, 0.5), 0 4px 12px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, #06813f 0%, #03572a 100%);
+}
+
+.floating-cart-fab:active {
+    transform: scale(0.98);
+}
+
+/* Left Section: Bag Icon + Price Details */
+.fab-left-section {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.fab-bag-icon-wrapper {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.fab-item-count-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #fbbf24;
+    color: #78350f;
+    font-size: 11px;
+    font-weight: 900;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #056f36;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.fab-info-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.fab-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.fab-total-price {
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+    color: #ffffff;
+}
+
+.fab-items-count-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.fab-shop-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+/* Right Section: View Cart Action + Circular Arrow */
+.fab-right-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.fab-action-text {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    color: #ffffff;
+}
+
+.fab-arrow-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease;
+}
+
+.floating-cart-fab:hover .fab-arrow-circle {
+    transform: translateX(3px);
+}
+
+/* ── Keyframe Animations ─────────────────────────────── */
+@keyframes fabSlideUp {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 30px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+}
+
+@keyframes fabShimmer {
+    0% {
+        left: -100%;
+    }
+    30% {
+        left: 150%;
+    }
+    100% {
+        left: 150%;
+    }
+}
+
+/* ── Mobile Viewport Fine-Tuning ─────────────────────── */
+@media (max-width: 480px) {
+    .floating-cart-fab-wrapper {
+        bottom: 16px;
+        width: calc(100% - 24px);
+    }
+
+    .floating-cart-fab {
+        padding: 10px 14px;
+        border-radius: 16px;
+    }
+
+    .fab-bag-icon-wrapper {
+        width: 38px;
+        height: 38px;
+    }
+
+    .fab-total-price {
+        font-size: 15px;
+    }
+
+    .fab-items-count-text {
+        font-size: 11px;
+    }
+
+    .fab-action-text {
+        font-size: 13px;
+    }
+
+    .fab-arrow-circle {
+        width: 28px;
+        height: 28px;
+    }
+
+    .fab-shop-label {
+        max-width: 140px;
+        font-size: 10px;
+    }
+}

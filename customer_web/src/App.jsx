@@ -16,6 +16,7 @@ import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import NavBar from './components/NavBar';
 import Sidebar from './components/Sidebar';
+import FloatingCartFAB from './components/FloatingCartFAB';
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { registerWebPushNotifications } from './services/notificationService';
@@ -39,6 +40,7 @@ const Layout = ({ children }) => {
       <main className="main-content">
         {children}
       </main>
+      <FloatingCartFAB />
       <footer className="footer">
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <p>&copy; 2026 Laro. All rights reserved.</p>
