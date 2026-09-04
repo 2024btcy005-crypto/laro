@@ -30,27 +30,42 @@ export default function FoodDelivery() {
     const [selectedUniversity, setSelectedUniversity] = useState(() => {
         const id = localStorage.getItem('selectedUniversityId');
         const name = localStorage.getItem('selectedUniversityName');
-        return id ? { id, name } : null;
+        return (id && id !== 'null' && id !== 'undefined') ? { id, name } : null;
     });
 
     const [coords, setCoords] = useState({ lat: null, lng: null });
 
     useEffect(() => {
-        // Fetch location
+        let isFetched = false;
+
+        const executeFetch = (lat, lng) => {
+            if (isFetched) return;
+            isFetched = true;
+            fetchShops(lat, lng, selectedUniversity?.id);
+        };
+
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     setCoords({ lat, lng });
-                    fetchShops(lat, lng, selectedUniversity?.id);
+                    executeFetch(lat, lng);
                 },
                 (error) => {
-                    fetchShops(null, null, selectedUniversity?.id);
-                }
+                    console.warn("[FoodDelivery] Geolocation error or fallback:", error.message);
+                    executeFetch(null, null);
+                },
+                { timeout: 3500, enableHighAccuracy: false }
             );
+
+            const fallbackTimer = setTimeout(() => {
+                executeFetch(null, null);
+            }, 4000);
+
+            return () => clearTimeout(fallbackTimer);
         } else {
-            fetchShops(null, null, selectedUniversity?.id);
+            executeFetch(null, null);
         }
         
         fetchActiveOrders();
@@ -67,9 +82,8 @@ export default function FoodDelivery() {
             // Filter to only have food joints & restaurants (exclude warehouses & stationery)
             const foodOnly = (res.data || []).filter(
                 s => !s.isWarehouse &&
-                    s.shopType !== 'GROCERY' &&
-                    s.shopType !== 'STATIONERY' &&
-                    (!s.category || !STATIONERY_SHOP_MODES.some(m => s.category.toLowerCase().includes(m.toLowerCase())))
+                    (s.shopType === 'RESTAURANT' ||
+                     (s.shopType !== 'GROCERY' && s.shopType !== 'STATIONERY' && (!s.category || !STATIONERY_SHOP_MODES.some(m => s.category.toLowerCase().includes(m.toLowerCase())))))
             );
             setShops(foodOnly);
         } catch (err) {

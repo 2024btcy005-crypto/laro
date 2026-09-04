@@ -1,6 +1,9 @@
 const { Shop, Product, University } = require('../models');
 const { Op } = require('sequelize');
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isValidUUID = (str) => typeof str === 'string' && UUID_REGEX.test(str.trim());
+
 // Helper to calculate distance between two coordinates in km
 const getDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth's radius
@@ -34,9 +37,11 @@ const getShops = async (req, res) => {
             whereClause.isActive = true;
         }
 
-        if (universityId && universityId !== 'null' && universityId !== '') {
+        const validUniId = (universityId && isValidUUID(universityId)) ? universityId : null;
+
+        if (validUniId) {
             whereClause[Op.or] = [
-                { universityId: universityId },
+                { universityId: validUniId },
                 { universityId: { [Op.is]: null } } // Include global shops
             ];
         }
@@ -58,7 +63,7 @@ const getShops = async (req, res) => {
                         // If universityId provided, show its products + global products
                         // If NO universityId, only show global products
                         [Op.or]: [
-                            { universityId: (universityId && universityId !== 'null' && universityId !== '') ? universityId : null },
+                            { universityId: validUniId ? validUniId : null },
                             { universityId: { [Op.is]: null } },
                             // If no university selected, allow showing university products for now (in dev) 
                             // or if the shop is a warehouse.
@@ -71,7 +76,7 @@ const getShops = async (req, res) => {
                         where: {
                             isAvailable: true,
                             [Op.or]: [
-                                { universityId: (universityId && universityId !== 'null' && universityId !== '') ? universityId : null },
+                                { universityId: validUniId ? validUniId : null },
                                 { universityId: { [Op.is]: null } }
                             ]
                         },
@@ -129,14 +134,15 @@ const getShops = async (req, res) => {
 const getShopById = async (req, res) => {
     try {
         const { universityId } = req.query;
+        const validUniId = (universityId && isValidUUID(universityId)) ? universityId : null;
         let productWhere = {
             isAvailable: true,
             variantOf: null
         };
 
-        if (universityId && universityId !== 'null' && universityId !== 'undefined' && universityId !== '') {
+        if (validUniId) {
             productWhere[Op.or] = [
-                { universityId: universityId },
+                { universityId: validUniId },
                 { universityId: { [Op.is]: null } }
             ];
         }

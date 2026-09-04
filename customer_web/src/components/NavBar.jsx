@@ -74,7 +74,7 @@ const NavBar = () => {
                     <MapPin size={18} className="icon-pink" />
                     <input
                         type="text"
-                        placeholder="Search for shops or dishes..."
+                        placeholder="Search for snacks, groceries, stationery..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />

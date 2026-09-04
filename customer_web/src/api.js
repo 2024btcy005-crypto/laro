@@ -83,8 +83,8 @@ export const shopAPI = {
             params.push(`lat=${lat}`);
             params.push(`lng=${lng}`);
         }
-        if (universityId) {
-            params.push(`universityId=${universityId}`);
+        if (universityId && universityId !== 'null' && universityId !== 'undefined' && universityId !== '') {
+            params.push(`universityId=${encodeURIComponent(universityId)}`);
         }
         if (params.length > 0) {
             url += '?' + params.join('&');
@@ -93,8 +93,8 @@ export const shopAPI = {
     },
     getShopDetails: (id, universityId) => {
         let url = `/shops/${id}`;
-        if (universityId) {
-            url += `?universityId=${universityId}`;
+        if (universityId && universityId !== 'null' && universityId !== 'undefined' && universityId !== '') {
+            url += `?universityId=${encodeURIComponent(universityId)}`;
         }
         return api.get(url);
     },

@@ -169,6 +169,7 @@ export default function ShopDetail() {
     const [previewUrl, setPreviewUrl] = useState(null);
     const [landscape, setLandscape] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('All');
     const { cart, addToCart, removeFromCart, getSubtotal, xeroxFile, setXeroxFile } = useCart();
 
     const XEROX_CATEGORIES = ['xerox', 'printing', 'stationery', 'books', 'stationary'];
@@ -385,40 +386,105 @@ export default function ShopDetail() {
                             </div>
                         </div>
                     )}
+
+                    {/* Category Filter Pills */}
+                    {!isXeroxShop && shop.products && (() => {
+                        const uniqueCats = Array.from(new Set(shop.products.map(p => p.category || 'General').filter(Boolean)));
+                        if (uniqueCats.length <= 1) return null;
+                        return (
+                            <div className="shop-category-pills">
+                                <button
+                                    className={`category-pill ${selectedCategory === 'All' ? 'active' : ''}`}
+                                    onClick={() => setSelectedCategory('All')}
+                                >
+                                    All ({shop.products.length})
+                                </button>
+                                {uniqueCats.map(cat => {
+                                    const c = cat.toLowerCase();
+                                    const icon = (c.includes('rotti') || c.includes('roti') || c.includes('bread') || c.includes('chapathi') || c.includes('naan')) ? '🫓 ' :
+                                        (c.includes('curry') || c.includes('curries') || c.includes('gravy')) ? '🥘 ' :
+                                        (c.includes('rice') || c.includes('biryani')) ? '🍚 ' :
+                                        (c.includes('veg') && !c.includes('non')) ? '🌱 ' :
+                                        (c.includes('non-veg') || c.includes('non veg') || c.includes('chicken')) ? '🍗 ' : '🍽️ ';
+                                    return (
+                                        <button
+                                            key={cat}
+                                            className={`category-pill ${selectedCategory === cat ? 'active' : ''}`}
+                                            onClick={() => setSelectedCategory(cat)}
+                                        >
+                                            {icon}{cat} ({shop.products.filter(p => (p.category || 'General') === cat).length})
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
+
                     <div className="menu-list">
                         {!isXeroxShop && (
-                            shop.products && shop.products.length > 0 ? (
-                                shop.products
-                                    .filter(item =>
-                                        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
-                                    )
-                                    .map(item => (
-                                        <MenuItem
-                                            key={item.id}
-                                            item={item}
-                                            shop={shop}
-                                            cart={cart}
-                                            addToCart={addToCart}
-                                            removeFromCart={removeFromCart}
-                                            getItemQuantity={getItemQuantity}
-                                            user={user}
-                                        />
-                                    ))
-                            ) : (
-                                <p className="empty-menu-text">No menu items found for this shop.</p>
-                            )
-                        )}
-                        {!isXeroxShop && shop.products?.length > 0 && searchTerm && shop.products.filter(item =>
-                            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
-                        ).length === 0 && (
-                                <div className="no-results-state">
-                                    <Search size={40} className="empty-icon" />
-                                    <p>No products match "{searchTerm}"</p>
-                                    <button className="btn-secondary-sm" onClick={() => setSearchTerm('')}>Clear Search</button>
-                                </div>
-                            )}
+                            (() => {
+                                const filtered = (shop.products || []).filter(item => {
+                                    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+                                    const matchesCat = selectedCategory === 'All' || (item.category || 'General') === selectedCategory;
+                                    return matchesSearch && matchesCat;
+                                });
+
+                                if (!shop.products || shop.products.length === 0) {
+                                    return <p className="empty-menu-text">No menu items found for this shop.</p>;
+                                }
+
+                                if (filtered.length === 0 && searchTerm) {
+                                    return (
+                                        <div className="no-results-state">
+                                            <Search size={40} className="empty-icon" />
+                                            <p>No products match "{searchTerm}"</p>
+                                            <button className="btn-secondary-sm" onClick={() => setSearchTerm('')}>Clear Search</button>
+                                        </div>
+                                    );
+                                }
+
+                                const grouped = filtered.reduce((acc, item) => {
+                                    const cat = item.category || 'General';
+                                    if (!acc[cat]) acc[cat] = [];
+                                    acc[cat].push(item);
+                                    return acc;
+                                }, {});
+
+                                return Object.entries(grouped).map(([categoryName, items]) => {
+                                    const c = categoryName.toLowerCase();
+                                    const icon = (c.includes('rotti') || c.includes('roti') || c.includes('bread') || c.includes('chapathi') || c.includes('naan')) ? '🫓 ' :
+                                        (c.includes('curry') || c.includes('curries') || c.includes('gravy')) ? '🥘 ' :
+                                        (c.includes('rice') || c.includes('biryani')) ? '🍚 ' :
+                                        (c.includes('veg') && !c.includes('non')) ? '🌱 ' :
+                                        (c.includes('non-veg') || c.includes('non veg') || c.includes('chicken')) ? '🍗 ' : '🍽️ ';
+
+                                    return (
+                                        <div key={categoryName} className="menu-category-group">
+                                            <div className="category-section-header">
+                                                <h3 className="category-section-title">
+                                                    {icon}{categoryName}
+                                                </h3>
+                                                <span className="category-count-badge">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
+                                            </div>
+                                        <div className="category-items-grid">
+                                            {items.map(item => (
+                                                <MenuItem
+                                                    key={item.id}
+                                                    item={item}
+                                                    shop={shop}
+                                                    cart={cart}
+                                                    addToCart={addToCart}
+                                                    removeFromCart={removeFromCart}
+                                                    getItemQuantity={getItemQuantity}
+                                                    user={user}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            });
+                        })())}
                     </div>
 
                     {!isXeroxShop && (

@@ -1,0 +1,431 @@
+.product-card {
+    background: var(--white);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.product-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(5, 111, 54, 0.3);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+.bestseller-product {
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* Image Section */
+.product-image-container {
+    width: 100%;
+    height: 170px;
+    background: #f8fafc;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+}
+
+.product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-image {
+    transform: scale(1.05);
+}
+
+/* Badges */
+.product-badges-left {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 2;
+}
+
+.badge-discount {
+    background: linear-gradient(135deg, #056f36, #10b981);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 6px rgba(5, 111, 54, 0.3);
+}
+
+.badge-b2g1 {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #ffffff;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 6px;
+    border-radius: 6px;
+    letter-spacing: 0.4px;
+}
+
+.badge-combo {
+    background: linear-gradient(135deg, #ec4899, #be185d);
+    color: #ffffff;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 6px;
+    border-radius: 6px;
+}
+
+.product-fav-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(4px);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.2s ease;
+}
+
+.product-fav-btn:hover {
+    background: rgba(0, 0, 0, 0.55);
+    transform: scale(1.1);
+}
+
+.product-fav-btn.active {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+}
+
+.veg-indicator-corner {
+    position: absolute;
+    bottom: 8px;
+    left: 10px;
+    z-index: 2;
+}
+
+.veg-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+    background: #ffffff;
+    padding: 1px;
+}
+
+.veg-badge.veg {
+    border: 1.5px solid #22c55e;
+}
+
+.veg-badge.veg .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+}
+
+.veg-badge.non-veg {
+    border: 1.5px solid #ef4444;
+}
+
+.veg-badge.non-veg .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ef4444;
+}
+
+/* Product Details */
+.product-details {
+    padding: 14px 16px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.product-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 11px;
+}
+
+.product-category-tag {
+    background: var(--light-gray);
+    color: var(--gray);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.product-unit-tag {
+    color: var(--gray);
+    font-weight: 500;
+}
+
+.product-rating-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--black);
+    background: #fef3c7;
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.product-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--black);
+    margin: 0 0 4px 0;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 38px;
+}
+
+.product-desc {
+    font-size: 12px;
+    color: var(--gray);
+    margin: 0 0 10px 0;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.product-shop-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray);
+    margin-bottom: 12px;
+    margin-top: auto;
+}
+
+/* Price and Action */
+.product-action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.product-pricing {
+    display: flex;
+    flex-direction: column;
+}
+
+.price-main-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.price-current {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--black);
+}
+
+.price-original {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray);
+    text-decoration: line-through;
+}
+
+.variants-hint {
+    font-size: 10px;
+    font-weight: 700;
+    color: #056f36;
+    letter-spacing: 0.2px;
+}
+
+/* Buttons and Stepper */
+.btn-add-product {
+    background: #f0fdf4;
+    color: #056f36;
+    border: 1.5px solid #056f36;
+    border-radius: 10px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+}
+
+.btn-add-product:hover {
+    background: #056f36;
+    color: #ffffff;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(5, 111, 54, 0.25);
+}
+
+.btn-add-product.variants {
+    background: #fffbeb;
+    color: #b45309;
+    border-color: #f59e0b;
+}
+
+.btn-add-product.variants:hover {
+    background: #f59e0b;
+    color: #ffffff;
+}
+
+.btn-stock-out {
+    background: var(--light-gray);
+    color: var(--gray);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: not-allowed;
+}
+
+.product-qty-stepper {
+    display: flex;
+    align-items: center;
+    background: #056f36;
+    border-radius: 10px;
+    padding: 3px 6px;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(5, 111, 54, 0.3);
+}
+
+.product-qty-stepper.sm {
+    padding: 2px 4px;
+    gap: 6px;
+    border-radius: 8px;
+}
+
+.stepper-btn {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+.stepper-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.stepper-count {
+    font-size: 13px;
+    font-weight: 800;
+    color: #ffffff;
+    min-width: 14px;
+    text-align: center;
+}
+
+/* Variants Box */
+.product-variants-box {
+    margin-top: 12px;
+    padding: 10px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    animation: slideDown 0.2s ease-out;
+}
+
+.variants-heading {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--gray);
+    margin: 0 0 6px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.variant-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border);
+}
+
+.variant-item-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.variant-item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.variant-item-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--black);
+}
+
+.variant-item-price {
+    font-size: 11px;
+    font-weight: 600;
+    color: #056f36;
+}
+
+.btn-variant-add {
+    background: #ffffff;
+    border: 1px solid #056f36;
+    color: #056f36;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-variant-add:hover {
+    background: #056f36;
+    color: #ffffff;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
